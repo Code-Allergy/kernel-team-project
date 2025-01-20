@@ -1,0 +1,11 @@
+#ifndef MEMORY_MAP_H
+#define MEMORY_MAP_H
+
+//----------------------------------------//
+//            Qemu memory map             //
+//----------------------------------------//
+// UART0
+#define UART0_BASE 0x101f1000
+#define UART0_DR   (UART0_BASE + 0x00)
+
+#endif
