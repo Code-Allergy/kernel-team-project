@@ -56,6 +56,6 @@ disassemble: $(OUTPUT_ELF)
 
 # Run QEMU with the binary output
 qemu-gdb: $(OUTPUT_BIN)
-	qemu-system-arm -M versatilepb -cpu cortex-a8 -nographic -kernel $(OUTPUT_BIN) -S -gdb tcp::1234
+	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(OUTPUT_BIN) -S -gdb tcp::1234
 qemu-run: $(OUTPUT_BIN)
-	qemu-system-arm -M versatilepb -cpu cortex-a8 -nographic -kernel $(OUTPUT_BIN)
+	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(OUTPUT_BIN)
