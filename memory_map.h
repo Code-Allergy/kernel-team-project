@@ -1,11 +1,10 @@
 #ifndef MEMORY_MAP_H
 #define MEMORY_MAP_H
 
-//----------------------------------------//
-//            Qemu memory map             //
-//----------------------------------------//
-// UART0
-#define UART0_BASE 0x01C28000
-#define UART0_DR   (UART0_BASE + 0x00)
+#if defined(PLATFORM) && (PLATFORM == BBB)
+    #include "memory_map_bbb.h"
+#else
+    #include "memory_map_qemu.h"
+#endif
 
 #endif
