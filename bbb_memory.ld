@@ -4,7 +4,6 @@ MEMORY
 {
     INTERNAL_RAM (rwx)  : ORIGIN = 0x402F0000, LENGTH = 0x10000     /* 16KB (first 1KB reserved) */
     L3_OCMCO_RAM (rwx)  : ORIGIN = 0x40300000, LENGTH = 0x10000     /* 64KB */
-
     EXTERNAL_RAM (rwx)  : ORIGIN = 0x80000000, LENGTH = 0x20000000  /* 512MB */
 }
 
@@ -20,15 +19,20 @@ SECTIONS
     .reserved ORIGIN(INTERNAL_RAM) (NOLOAD) : { . += 0x400; } > INTERNAL_RAM :NONE
     . = ORIGIN(INTERNAL_RAM) + 0x400; /* Skip 1 KB (1024 bytes) */
 
-    .text . : {
+    /* .text section */
+    .text : {
 		KEEP( *( .text._start ) )
 		*( .text .text.* )
 	} :image
+    . = ALIGN(4);  /* Ensure proper alignment for the next section */
 
-	.rodata : {
+    /* .rodata section */
+    .rodata : {
 		*( .rodata .rodata.* )
     } :image
-    
+    . = ALIGN(4);  /* Ensure proper alignment for the next section */
+
+    /* .data section */
     .data : {
 		*( .data .data.* )
 	} :image
@@ -38,18 +42,13 @@ SECTIONS
     . = . + 0x1000; /* 4 KB stack memory */
     _stack_start = .;
 
-    . = .;
-
-	/********* end of output segment **************************************/
-
-	/* uninitialized shared RAM */
+    /* Shared uninitialized RAM */
 	.shared (NOLOAD) : { *( .shared .shared.* ) } >L3_OCMCO_RAM :NONE
 
-	/* uninitialized private RAM */
+	/* Private uninitialized RAM */
 	.noinit (NOLOAD) : { *( .noinit .noinit.* ) } >INTERNAL_RAM :NONE
 
-    /* catch any unknown sections and yell loudly about them */
+    /* Catch any unknown sections and yell loudly about them */
 	.orphan : { INPUT_SECTION_FLAGS (SHF_ALLOC) *(*) } :NONE
 	ASSERT( SIZEOF(.orphan) == 0, "unassigned sections!" )
 }
-

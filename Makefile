@@ -12,7 +12,7 @@ endif
 AS = arm-none-eabi-as
 ASFLAGS = -mcpu=cortex-a8 -g
 LD = arm-none-eabi-ld
-LDFLAGS = -T $(LDSCRIPT) -Wl --build-id=none -nostdlib -static -nostartfiles
+LDFLAGS = -T $(LDSCRIPT) --build-id=none -nostdlib -static
 OBJCOPY = arm-none-eabi-objcopy
 IFLAGS = -I. -I./src -I./src/bootloader
 CC = arm-none-eabi-gcc
@@ -27,7 +27,13 @@ MLO_DEST_ADDR = 0x402f0400
 OUTPUT_SDIMG = bootloader.img
 PREFILES = $(BUILD_DIR)/init.i $(BUILD_DIR)/main.i $(BUILD_DIR)/start.i
 #OBJFILES = bootloader.o #uart.o uart_test.o
-OBJFILES = $(BUILD_DIR)/init.o $(BUILD_DIR)/main.o $(BUILD_DIR)/start.o
+OBJFILES = $(BUILD_DIR)/init.o \
+		   $(BUILD_DIR)/main.o \
+		   $(BUILD_DIR)/start.o \
+		   $(BUILD_DIR)/gpio.o \
+		   $(BUILD_DIR)/gpio_test.o \
+		   $(BUILD_DIR)/uart.o \
+		   $(BUILD_DIR)/uart_test.o
 
 BOOT_DIR = src/bootloader
 SRC_DIR = src
@@ -38,7 +44,8 @@ all: $(OUTPUT_ELF) $(OUTPUT_BIN) $(OUTPUT_SDIMG) disassemble
 
 # create ELF file
 $(OUTPUT_ELF): $(OBJFILES)
-	$(LD) -T $(LDSCRIPT) -o $(OUTPUT_ELF) $(OBJFILES)
+	$(LD) $(LDFLAGS) -o $(OUTPUT_ELF) $(OBJFILES) 
+#-Map=bootloader.map
 
 # create binary file
 $(OUTPUT_BIN): $(OUTPUT_ELF)
@@ -57,14 +64,17 @@ $(BUILD_DIR)/start.o: $(BOOT_DIR)/start.S memory_map.h
 	$(CC) $(IFLAGS) $(CFLAGS) -E $(BOOT_DIR)/start.S -o $(BUILD_DIR)/start.i
 	$(AS) $(IFLAGS) $(ASFLAGS) $(BUILD_DIR)/start.i -o $(BUILD_DIR)/start.o
 
+$(BUILD_DIR)/uart.o: $(SRC_DIR)/uart.c $(SRC_DIR)/uart.h memory_map.h
+	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/uart.c -o $(BUILD_DIR)/uart.o
 
+$(BUILD_DIR)/uart_test.o: $(SRC_DIR)/uart_test.c $(SRC_DIR)/uart.h memory_map.h
+	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/uart_test.c -o $(BUILD_DIR)/uart_test.o
 
-uart.o: $(SRC_DIR)/uart.c $(SRC_DIR)/uart.h memory_map.h
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/uart.c
+$(BUILD_DIR)/gpio.o: $(SRC_DIR)/gpio.c $(SRC_DIR)/gpio.h memory_map.h
+	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/gpio.c -o $(BUILD_DIR)/gpio.o
 
-uart_test.o: $(SRC_DIR)/uart_test.c $(SRC_DIR)/uart.h memory_map.h
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/uart_test.c
-
+$(BUILD_DIR)/gpio_test.o: $(SRC_DIR)/gpio_test.c $(SRC_DIR)/gpio.h memory_map.h
+	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/gpio_test.c -o $(BUILD_DIR)/gpio_test.o
 
 
 # clean up generated files
