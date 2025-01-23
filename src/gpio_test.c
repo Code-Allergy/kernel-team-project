@@ -18,18 +18,18 @@ void gpio_test() {
 
     GPIO_init(); // Currently only configures GPIO1
 
-    uart_init();
+    //uart_init();
 
-    uart_puts("GPIO test\n");
+    //uart_puts("GPIO test\r\n");
 
     int i = 0;
 
     while (1) {
         GPIO_set(gpio_base, LED_PINS);
-        uart_puts("LEDs on\n");
+        //uart_puts("LEDs on\r\n");
         delay(0x1FFFFFF);
         GPIO_clear(gpio_base, LED_PINS);
-        uart_puts("LEDs off\n");
+        //uart_puts("LEDs off\r\n");
         delay(0x1FFFFFF);
     }
 }

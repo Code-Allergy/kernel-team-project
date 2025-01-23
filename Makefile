@@ -22,7 +22,7 @@ CFLAGS += -static -ffreestanding -fbuiltin -marm
 
 OUTPUT_ELF = bootloader.elf
 OUTPUT_BIN = bootloader.bin
-OUTPUT_MLO = bootloader.mlo
+OUTPUT_MLO = MLO
 MLO_DEST_ADDR = 0x402f0400
 OUTPUT_SDIMG = bootloader.img
 PREFILES = $(BUILD_DIR)/init.i $(BUILD_DIR)/main.i $(BUILD_DIR)/start.i
@@ -40,7 +40,7 @@ SRC_DIR = src
 BUILD_DIR = build
 TOP_DIR = .
 
-all: $(OUTPUT_ELF) $(OUTPUT_BIN) $(OUTPUT_SDIMG) disassemble
+all: $(OUTPUT_ELF) $(OUTPUT_BIN) $(OUTPUT_SDIMG) MLO disassemble
 
 # create ELF file
 $(OUTPUT_ELF): $(OBJFILES)
