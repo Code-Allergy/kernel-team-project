@@ -20,14 +20,16 @@ void gpio_test() {
 
     uart_init();
 
-
     uart_puts("GPIO test\n");
 
+    int i = 0;
 
     while (1) {
         GPIO_set(gpio_base, LED_PINS);
+        uart_puts("LEDs on\n");
         delay(0x1FFFFFF);
         GPIO_clear(gpio_base, LED_PINS);
+        uart_puts("LEDs off\n");
         delay(0x1FFFFFF);
     }
 }

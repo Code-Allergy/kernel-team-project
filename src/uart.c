@@ -2,50 +2,110 @@
 #include "uart.h"
 #include "gpio.h"
 
-
-// Base addresses (specific to AM335x)
-#define UART0_BASE   0x44E09000  // UART0 base address
-#define CM_WKUP      0x44E00400  // Clock Module Wakeup register base
-#define L4LS_BASE    0x44E00000  // L4LS clock domain base
-
-// General Registers offests
-#define CLK_L4LS	0x000
-#define CM_WKUP_UART0_CLKCTRL   0xB4
+#define UART_MODE_A 0x80
+#define UART_MODE_B 0xBF
 
 
-// UART Register Offsets
-#define UART_SYSC    0x54  // UART System Configuration Register
-#define UART_SYSS    0x58  // UART System Status Register
-
-#define UART_LCR     0x0C  // UART Line Control Register
-#define UART_EFR     0x08  // UART Enhanced Feature Register
-#define UART_MCR     0x10  // UART Modem Control Register
-#define UART_FCR     0x08  // UART FIFO Control Register (Write-only)
-#define UART_TLR     0x1C  // UART FIFO Triggers Control register
-#define UART_SCR     0x40  // UART Supplementary Control Register
-#define UART_LSR     0x14  // UART interupt register
-#define UART_THR     0x00  // UART Base register to write to 
-#define UART_MDR1    0x20  // UART Mode Definition Register
-#define UART_IER     0x04  // UART Interrupt Enable Register
-#define UART_DLL     0x00  // UART Divisor Latch LSB Register
-#define UART_DLH     0x04  // UART Divisor Latch MSB Register
-
-#define REG32(addr) (*(volatile unsigned int *)(addr))
-
-
-void switch_to_mode_b(void) {
-    REG32(UART0_BASE + UART_LCR) = 0x00BF;  // Set UART_LCR to 0x00BF for Mode B
+void uart_switch_mode(unsigned short uart, unsigned int mode) {
+    switch (uart){
+        case 0:
+            UART0_REG32(UART_LCR_OFF) = mode;
+            break;
+        case 1:
+            UART1_REG32(UART_LCR_OFF) = mode;
+            break;
+        case 2:
+            UART2_REG32(UART_LCR_OFF) = mode;
+            break;
+        case 3:
+            UART3_REG32(UART_LCR_OFF) = mode;
+            break;
+        case 4:
+            UART4_REG32(UART_LCR_OFF) = mode;
+            break;
+        case 5:
+            UART5_REG32(UART_LCR_OFF) = mode;
+            break;
+        default:
+            break;
+    }
 }
 
-
-void switch_to_mode_a(void) {
-    REG32(UART0_BASE + UART_LCR) = 0x0080;  // Set UART_LCR to 0x0000 for operational mode
+// TODO: move this to a clock control module
+#define CLK_GPIO1 0xAC
+#define CLK_GPIO2 0xB0
+#define CLK_GPIO3 0xB4
+//Note: GPIO0 does not have a clock control module
+void set_gpio_ckm_per_clkctrl(unsigned int clk_gpio_offset) {
+    unsigned int cm_per_base = 0x44e00000;
+    volatile unsigned int *cm_per_gpio_clkctrl = (volatile unsigned int *)(cm_per_base + clk_gpio_offset);
+    *cm_per_gpio_clkctrl = (1<<18) | (0x2<<0);  // Enable the module and set the module to functional mode
+    while ((*cm_per_gpio_clkctrl & (3 << 16)));  // Wait for the IDLEST field to be 0
 }
 
-int d = 1;
+int leds = 1;
+void _uart_init( unsigned short  uart,
+                unsigned int    baud_rate, 
+                unsigned short  stop_bit_en,
+                unsigned short  parity_en, 
+                unsigned short  parity_type, 
+                unsigned short  char_length
+            ) {
+    // // Enable the UART Clock
+    // switch(uart){
+    //     case 0:
+    //         set_gpio_ckm_per_clkctrl(CLK_GPIO1);
+    //         break;
+    //     case 1:
+    //         set_gpio_ckm_per_clkctrl(CLK_GPIO2);
+    //         break;
+    //     case 2:
+    //         set_gpio_ckm_per_clkctrl(CLK_GPIO3);
+    //         break;
+    //     default:
+    //         break;
+    // }
+
+    // Only support UART0 for now
+    switch (uart){
+        case 0:
+            // Software Reset UART0
+            UART0_REG32(UART_SYSC_OFF) |= (1 << 1);  // Set SOFTRESET bit
+            while ((UART0_REG32(UART_SYSS_OFF) & 0x1) == 0);  // Wait for RESETDONE bit to be set
+            GPIO_clear(GPIO1_BASE, 0xF<<21);
+            GPIO_set(GPIO1_BASE, ++leds<<21);
+
+            // Disable idle mode
+            UART0_REG32(UART_SYSC_OFF) = 0x08;
+
+            // DIV_EN (mode A), 8 data bits,  19.5.1.13 19.4.1.1.2
+            UART0_REG32(UART_LCR_OFF) = 0x83;
+
+            // CLK_LSB
+            UART0_REG32(UART_DLL_OFF) = 0x1A;  // Set UART_DLL to 0x1A for 115200 baud rate
+            //UART0_REG32(UART_DLH_OFF) = 0x0;  // Set UART_DLH to 0x0 for 115200 baud rate
+
+            // Enable FIFO mode, disable DMA mode, disable interrupt mode
+            //UART0_REG32(UART_EFR_OFF) |= 0x10;  // Enable access to UARTi.IER[7:4]
+
+            // UART Mode to 16x
+            UART0_REG32(UART_MDR1_OFF) = 0x0;   // Set MDR1 to 0x0 for UART16x mode
+            // Clear DIV_EN and Switch to operational mode
+            unsigned int saved_lcr = UART0_REG32(UART_LCR_OFF);
+            saved_lcr &= ~(0x80);  // Clear DIV_EN
+            UART0_REG32(UART_LCR_OFF) = saved_lcr;
+
+            break;
+        default:
+            break;
+    }
+
+}
+
 
 void uart_init(void) {
-    GPIO_set(GPIO1_BASE, d<<21);
+    GPIO_set(GPIO1_BASE, leds<<21);
+    _uart_init(0, 115200, 0, 0, 0, 8);
 /*
     // Ensure the L4LS clock domain is active
     //unsigned int l4ls_status = REG32(L4LS_BASE + CLK_L4LS);
@@ -158,7 +218,7 @@ void uart_init(void) {
 
 */
 
-
+/*
     // Ungate UART0 Clock
     // REG32(L4LS_BASE + CLK_L4LS) |= 1<<10;
     REG32(CM_WKUP + CM_WKUP_UART0_CLKCTRL) = 0x2;  // Enable UART0 functional clock
@@ -212,21 +272,20 @@ void uart_init(void) {
     REG32(UART0_BASE + UART_LCR) = 0x0; // Restore the UART_LCR value
     GPIO_clear(GPIO1_BASE, 0xF<<21);
     GPIO_set(GPIO1_BASE, ++d<<21);
-
+*/
 }
 
 
 // Function to Transmit a Character
 void uart_putc(char c) {
-    GPIO_clear(GPIO1_BASE, 0xF<<21);
-    GPIO_set(GPIO1_BASE, ++d<<21);
-    while (!(REG32(UART0_BASE + UART_LSR) & (1 << 5))) {
-        // Busy-wait until Transmitter Holding Register is empty
-    }
-    GPIO_clear(GPIO1_BASE, 0xF<<21);
-    GPIO_set(GPIO1_BASE, ++d<<21);
-    // Write the character to the Transmit Holding Register (THR)
-    REG32(UART0_BASE + UART_THR) = c;
+    // GPIO_clear(GPIO1_BASE, 0xF<<21);
+    // GPIO_set(GPIO1_BASE, ++leds<<21);
+    while (!(UART0_REG32(UART_LSR_UART_OFF) & 0x20));  // Wait for the THR empty bit to be set
+    UART0_REG32(UART_THR_OFF) = c;  // Write the character to the THR
+
+    // GPIO_clear(GPIO1_BASE, 0xF<<21);
+    // GPIO_set(GPIO1_BASE, ++leds<<21);
+
 }
 
 // Function to Transmit a Null-Terminated String
