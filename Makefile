@@ -17,7 +17,7 @@ OBJCOPY = arm-none-eabi-objcopy
 IFLAGS = -I. -I./src -I./src/bootloader
 CC = arm-none-eabi-gcc
 CCDEFINES = -DPLATFORM=$(PLATFORM)
-CFLAGS = -Wall -Wextra -g -O0 -mcpu=cortex-a8  -mfloat-abi=soft  $(CCDEFINES)
+CFLAGS = -Wall -Wextra -g -O0 -mcpu=cortex-a8  -mfloat-abi=soft -pedantic $(CCDEFINES) 
 CFLAGS += -static -ffreestanding -fbuiltin -marm
 
 OUTPUT_ELF = bootloader.elf
@@ -33,7 +33,8 @@ OBJFILES = $(BUILD_DIR)/init.o \
 		   $(BUILD_DIR)/gpio.o \
 		   $(BUILD_DIR)/gpio_test.o \
 		   $(BUILD_DIR)/uart.o \
-		   $(BUILD_DIR)/uart_test.o
+		   $(BUILD_DIR)/uart_test.o \
+		   $(BUILD_DIR)/utils.o \
 
 BOOT_DIR = src/bootloader
 SRC_DIR = src
@@ -64,18 +65,24 @@ $(BUILD_DIR)/start.o: $(BOOT_DIR)/start.S memory_map.h
 	$(CC) $(IFLAGS) $(CFLAGS) -E $(BOOT_DIR)/start.S -o $(BUILD_DIR)/start.i
 	$(AS) $(IFLAGS) $(ASFLAGS) $(BUILD_DIR)/start.i -o $(BUILD_DIR)/start.o
 
-$(BUILD_DIR)/uart.o: $(SRC_DIR)/uart.c $(SRC_DIR)/uart.h memory_map.h
+$(BUILD_DIR)/uart.o: $(SRC_DIR)/uart.c \
+					 $(SRC_DIR)/uart.h \
+					 memory_map.h \
+					 $(SRC_DIR)/utils.h \
+					 $(SRC_DIR)/clock_module.h
 	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/uart.c -o $(BUILD_DIR)/uart.o
 
 $(BUILD_DIR)/uart_test.o: $(SRC_DIR)/uart_test.c $(SRC_DIR)/uart.h memory_map.h
 	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/uart_test.c -o $(BUILD_DIR)/uart_test.o
 
-$(BUILD_DIR)/gpio.o: $(SRC_DIR)/gpio.c $(SRC_DIR)/gpio.h memory_map.h
+$(BUILD_DIR)/gpio.o: $(SRC_DIR)/gpio.c $(SRC_DIR)/gpio.h memory_map.h $(SRC_DIR)/utils.h $(SRC_DIR)/clock_module.h
 	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/gpio.c -o $(BUILD_DIR)/gpio.o
 
 $(BUILD_DIR)/gpio_test.o: $(SRC_DIR)/gpio_test.c $(SRC_DIR)/gpio.h memory_map.h
 	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/gpio_test.c -o $(BUILD_DIR)/gpio_test.o
 
+$(BUILD_DIR)/utils.o: $(SRC_DIR)/utils.c $(SRC_DIR)/utils.h
+	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/utils.c -o $(BUILD_DIR)/utils.o
 
 # clean up generated files
 clean:

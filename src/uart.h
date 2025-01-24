@@ -9,6 +9,9 @@
 #define UART4_BASE 0x481A8000
 #define UART5_BASE 0x481AA000
 
+#define UART_MODE_A 0x80
+#define UART_MODE_B 0xBF
+
 /* UART Register Offsets by mode */
 // Page 4337 of the TRM
 /*
@@ -119,18 +122,6 @@ Ch LCR Line Control Register Section 19.5.1.13
 #define UART_FREQ_SEL_OFF   0x74 // FREQ_SEL Register
 #define UART_MDR3_OFF       0x80 // Mode Definition Register 3
 #define UART_TX_DMA_THRESHOLD_OFF 0x84 // TX DMA Threshold Register
-
-// Useful Macros
-#define UART0_REG32(offset) (*(volatile unsigned int *)(UART0_BASE + offset))
-#define UART1_REG32(offset) (*(volatile unsigned int *)(UART1_BASE + offset))
-#define UART2_REG32(offset) (*(volatile unsigned int *)(UART2_BASE + offset))
-#define UART3_REG32(offset) (*(volatile unsigned int *)(UART3_BASE + offset))
-#define UART4_REG32(offset) (*(volatile unsigned int *)(UART4_BASE + offset))
-#define UART5_REG32(offset) (*(volatile unsigned int *)(UART5_BASE + offset))
-
-
-
-
 
 
 

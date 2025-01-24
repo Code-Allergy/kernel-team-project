@@ -2,5 +2,10 @@
 #define UTILS_H
 
 
+void REG32_write(unsigned int base, unsigned int offset, unsigned int value);
+void REG32_write_masked(unsigned int base, unsigned int offset, unsigned int mask, unsigned int value);
 
-#endif
+unsigned int REG32_read(unsigned int base, unsigned int offset);
+unsigned int REG32_read_masked(unsigned int base, unsigned int offset, unsigned int mask);
+
+#endif /*UTILS_H*/

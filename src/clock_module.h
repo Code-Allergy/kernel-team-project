@@ -1,0 +1,137 @@
+#ifndef CLOCK_MODULE_H
+#define CLOCK_MODULE_H
+
+#define CM_PER_BASE     0x44E00000 // Clock Module Peripheral Registers
+#define CM_WKUP_BASE    0x44E00400 // Clock Module Wakeup Registers
+#define CM_DPLL_BASE    0x44E00500 // Clock Module DPLL Registers
+#define CM_MPU_BASE     0x44E00600 // Clock Module MPU Registers
+#define CM_RTC_BASE     0x44E00800 // Clock Module RTC Registers
+#define CM_GFX_BASE     0x44E00900 // Clock Module Graphics Registers
+
+/*
+8.1.12.1 CM_PER Registers
+Table 8-30 lists the memory-mapped registers for the CM_PER. All register offset addresses not listed in
+Table 8-30 should be considered as reserved locations and the register contents should not be modified.
+*/
+/*-----------------------------------------------------------
+0h CM_PER_L4LS_CLKSTCTRL Section 8.1.12.1.1
+4h CM_PER_L3S_CLKSTCTRL Section 8.1.12.1.2
+Ch CM_PER_L3_CLKSTCTRL Section 8.1.12.1.3
+14h CM_PER_CPGMAC0_CLKCTRL Section 8.1.12.1.4
+18h CM_PER_LCDC_CLKCTRL Section 8.1.12.1.5
+1Ch CM_PER_USB0_CLKCTRL Section 8.1.12.1.6
+24h CM_PER_TPTC0_CLKCTRL Section 8.1.12.1.7
+28h CM_PER_EMIF_CLKCTRL Section 8.1.12.1.8
+2Ch CM_PER_OCMCRAM_CLKCTRL Section 8.1.12.1.9
+30h CM_PER_GPMC_CLKCTRL Section 8.1.12.1.10
+34h CM_PER_MCASP0_CLKCTRL Section 8.1.12.1.11
+38h CM_PER_UART5_CLKCTRL Section 8.1.12.1.12
+3Ch CM_PER_MMC0_CLKCTRL Section 8.1.12.1.13
+40h CM_PER_ELM_CLKCTRL Section 8.1.12.1.14
+44h CM_PER_I2C2_CLKCTRL Section 8.1.12.1.15
+48h CM_PER_I2C1_CLKCTRL Section 8.1.12.1.16
+4Ch CM_PER_SPI0_CLKCTRL Section 8.1.12.1.17
+50h CM_PER_SPI1_CLKCTRL Section 8.1.12.1.18
+60h CM_PER_L4LS_CLKCTRL Section 8.1.12.1.19
+68h CM_PER_MCASP1_CLKCTRL Section 8.1.12.1.20
+6Ch CM_PER_UART1_CLKCTRL Section 8.1.12.1.21
+70h CM_PER_UART2_CLKCTRL Section 8.1.12.1.22
+74h CM_PER_UART3_CLKCTRL Section 8.1.12.1.23
+78h CM_PER_UART4_CLKCTRL Section 8.1.12.1.24
+7Ch CM_PER_TIMER7_CLKCTRL Section 8.1.12.1.25
+80h CM_PER_TIMER2_CLKCTRL Section 8.1.12.1.26
+84h CM_PER_TIMER3_CLKCTRL Section 8.1.12.1.27
+88h CM_PER_TIMER4_CLKCTRL Section 8.1.12.1.28
+ACh CM_PER_GPIO1_CLKCTRL Section 8.1.12.1.29
+B0h CM_PER_GPIO2_CLKCTRL Section 8.1.12.1.30
+B4h CM_PER_GPIO3_CLKCTRL Section 8.1.12.1.31
+BCh CM_PER_TPCC_CLKCTRL Section 8.1.12.1.32
+C0h CM_PER_DCAN0_CLKCTRL Section 8.1.12.1.33
+C4h CM_PER_DCAN1_CLKCTRL Section 8.1.12.1.34
+CCh CM_PER_EPWMSS1_CLKCTRL Section 8.1.12.1.35
+D4h CM_PER_EPWMSS0_CLKCTRL Section 8.1.12.1.36
+D8h CM_PER_EPWMSS2_CLKCTRL Section 8.1.12.1.37
+DCh CM_PER_L3_INSTR_CLKCTRL Section 8.1.12.1.38
+E0h CM_PER_L3_CLKCTRL Section 8.1.12.1.39
+E4h CM_PER_IEEE5000_CLKCTRL Section 8.1.12.1.40
+E8h CM_PER_PRU_ICSS_CLKCTRL Section 8.1.12.1.41
+ECh CM_PER_TIMER5_CLKCTRL Section 8.1.12.1.42
+F0h CM_PER_TIMER6_CLKCTRL Section 8.1.12.1.43
+F4h CM_PER_MMC1_CLKCTRL Section 8.1.12.1.44
+F8h CM_PER_MMC2_CLKCTRL Section 8.1.12.1.45
+FCh CM_PER_TPTC1_CLKCTRL Section 8.1.12.1.46
+100h CM_PER_TPTC2_CLKCTRL Section 8.1.12.1.47
+10Ch CM_PER_SPINLOCK_CLKCTRL Section 8.1.12.1.48
+110h CM_PER_MAILBOX0_CLKCTRL Section 8.1.12.1.49
+11Ch CM_PER_L4HS_CLKSTCTRL Section 8.1.12.1.50
+120h CM_PER_L4HS_CLKCTRL Section 8.1.12.1.51
+12Ch CM_PER_OCPWP_L3_CLKSTCTRL Section 8.1.12.1.52
+130h CM_PER_OCPWP_CLKCTRL Section 8.1.12.1.53
+140h CM_PER_PRU_ICSS_CLKSTCTRL Section 8.1.12.1.54
+144h CM_PER_CPSW_CLKSTCTRL Section 8.1.12.1.55
+148h CM_PER_LCDC_CLKSTCTRL Section 8.1.12.1.56
+14Ch CM_PER_CLKDIV32K_CLKCTRL Section 8.1.12.1.57
+150h CM_PER_CLK_24MHZ_CLKSTCTRL Section 8.1.12.1.58
+-----------------------------------------------------------*/
+#define CM_PER_L4LS_CLKSTCTRL       0x00
+#define CM_PER_L3S_CLKSTCTRL        0x04
+#define CM_PER_L3_CLKSTCTRL         0x0C
+#define CM_PER_CPGMAC0_CLKCTRL      0x14
+#define CM_PER_LCDC_CLKCTRL         0x18
+#define CM_PER_USB0_CLKCTRL         0x1C
+#define CM_PER_TPTC0_CLKCTRL        0x24
+#define CM_PER_EMIF_CLKCTRL         0x28
+#define CM_PER_OCMCRAM_CLKCTRL      0x2C
+#define CM_PER_GPMC_CLKCTRL         0x30
+#define CM_PER_MCASP0_CLKCTRL       0x34
+#define CM_PER_UART5_CLKCTRL        0x38
+#define CM_PER_MMC0_CLKCTRL         0x3C
+#define CM_PER_ELM_CLKCTRL          0x40
+#define CM_PER_I2C2_CLKCTRL         0x44
+#define CM_PER_I2C1_CLKCTRL         0x48
+#define CM_PER_SPI0_CLKCTRL         0x4C
+#define CM_PER_SPI1_CLKCTRL         0x50
+#define CM_PER_L4LS_CLKCTRL         0x60
+#define CM_PER_MCASP1_CLKCTRL       0x68
+#define CM_PER_UART1_CLKCTRL        0x6C
+#define CM_PER_UART2_CLKCTRL        0x70
+#define CM_PER_UART3_CLKCTRL        0x74
+#define CM_PER_UART4_CLKCTRL        0x78
+#define CM_PER_TIMER7_CLKCTRL       0x7C
+#define CM_PER_TIMER2_CLKCTRL       0x80
+#define CM_PER_TIMER3_CLKCTRL       0x84
+#define CM_PER_TIMER4_CLKCTRL       0x88
+#define CM_PER_GPIO1_CLKCTRL        0xAC
+#define CM_PER_GPIO2_CLKCTRL        0xB0
+#define CM_PER_GPIO3_CLKCTRL        0xB4
+#define CM_PER_TPCC_CLKCTRL         0xBC
+#define CM_PER_DCAN0_CLKCTRL        0xC0
+#define CM_PER_DCAN1_CLKCTRL        0xC4
+#define CM_PER_EPWMSS1_CLKCTRL      0xCC
+#define CM_PER_EPWMSS0_CLKCTRL      0xD4
+#define CM_PER_EPWMSS2_CLKCTRL      0xD8
+#define CM_PER_L3_INSTR_CLKCTRL     0xDC
+#define CM_PER_L3_CLKCTRL           0xE0
+#define CM_PER_IEEE5000_CLKCTRL     0xE4
+#define CM_PER_PRU_ICSS_CLKCTRL     0xE8
+#define CM_PER_TIMER5_CLKCTRL       0xEC
+#define CM_PER_TIMER6_CLKCTRL       0xF0
+#define CM_PER_MMC1_CLKCTRL         0xF4
+#define CM_PER_MMC2_CLKCTRL         0xF8
+#define CM_PER_TPTC1_CLKCTRL        0xFC
+#define CM_PER_TPTC2_CLKCTRL        0x100
+#define CM_PER_SPINLOCK_CLKCTRL     0x10C
+#define CM_PER_MAILBOX0_CLKCTRL     0x110
+#define CM_PER_L4HS_CLKSTCTRL       0x11C
+#define CM_PER_L4HS_CLKCTRL         0x120
+#define CM_PER_OCPWP_L3_CLKSTCTRL   0x12C
+#define CM_PER_OCPWP_CLKCTRL        0x130
+#define CM_PER_PRU_ICSS_CLKSTCTRL   0x140
+#define CM_PER_CPSW_CLKSTCTRL       0x144
+#define CM_PER_LCDC_CLKSTCTRL       0x148
+#define CM_PER_CLKDIV32K_CLKCTRL    0x14C
+#define CM_PER_CLK_24MHZ_CLKSTCTRL  0x150
+
+
+
+#endif /*CLOCK_MODULE_H*/
