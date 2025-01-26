@@ -7,7 +7,7 @@ void GPIO_init(void) {
     //1. Enable the clock for GPIO1
     REG32_write(CM_PER_BASE, CM_PER_GPIO1_CLKCTRL, 0x2);
     //2. Wait for the clock to be enabled
-    while ((REG32_read(CM_PER_BASE, CM_PER_GPIO1_CLKCTRL) & (0b11 << 16)) != 0x0);
+    while ((REG32_read(CM_PER_BASE, CM_PER_GPIO1_CLKCTRL) & (0x3 << 16)) != 0x0);
     //3. Configure the GPIO1 module clock gating to disabled (module not gated)
     REG32_write(GPIO1_BASE, GPIO_CTRL_OFF, 0x0);
 

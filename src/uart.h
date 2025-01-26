@@ -125,7 +125,37 @@ Ch LCR Line Control Register Section 19.5.1.13
 
 
 
-void uart_init(void);
+/**
+ * @brief Initializes a UART port
+ *
+ * @param uart_index    Index of the UART to initialize.
+ * @param baud_rate     Desired baud rate for UART communication.
+ * @param stop_bit_en   Enable or disable stop bits.
+ * @param num_stop_bits Number of stop bits to use (0= 1 top bit, 1 = 1.5 stop bits).
+ * @param parity_en     Enable or disable parity checking.
+ * @param parity_type   Type of parity (0 for even, 1 for odd ignored if parity is disabled).
+ * @param char_length   Length of the character (number of data bits).
+ * 
+ * Function Call:
+ * 
+ uart_init(
+    0,         // UART index (0 = UART0, 1 = UART1, etc.)
+    115200,    // Baud rate for communication
+    1,         // Stop bit enable (1 = enabled, 0 = disabled)
+    0,         // Number of stop bits (0 = 1 stop bit, 1 = 1.5/2 stop bits)
+    0,         // Parity enable (1 = enabled, 0 = disabled)
+    0,         // Parity type (0 = even, 1 = odd; ignored if parity is disabled)
+    3          // Character length
+ );
+ */
+void uart_init( unsigned short uart_index,
+                unsigned int    baud_rate, 
+                unsigned short  stop_bit_en,
+                unsigned short  num_stop_bits,
+                unsigned short  parity_en, 
+                unsigned short  parity_type, 
+                unsigned short  char_length
+);
 void uart_putc(char c);
 void uart_puts(const char *str);
 
