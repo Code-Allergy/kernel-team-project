@@ -9,3 +9,9 @@
 .global _start
 _start:
 	bl init
+
+.global setup_vbar
+setup_vbar:
+    ldr r0, =vector_table    @ Load vector table address
+    mcr p15, 0, r0, c12, c0, 0  @ Write to VBAR register
+    bx lr
