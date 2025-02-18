@@ -1,111 +1,146 @@
 # Default platform is QEMU
 PLATFORM ?=BBB
 
-# Set platform-specific include
-ifeq ($(PLATFORM), BBB)
-	LDSCRIPT = bbb_memory.ld
-else
-	LDSCRIPT = qemu_memory.ld
-endif
+# # Set platform-specific include
+# ifeq ($(PLATFORM), BBB)
+# 	LDSCRIPT = bbb_memory.ld
+# else
+# 	LDSCRIPT = qemu_memory.ld
+# endif
 
-# Compiler and assembler flags
-AS = arm-none-eabi-as
-ASFLAGS = -mcpu=cortex-a8 -g
-LD = arm-none-eabi-ld
-LDFLAGS = -T $(LDSCRIPT) --build-id=none -nostdlib -static
-OBJCOPY = arm-none-eabi-objcopy
-IFLAGS = -I. -I./src -I./src/bootloader
-CC = arm-none-eabi-gcc
-CCDEFINES = -DPLATFORM=$(PLATFORM)
-CFLAGS = -Wall -Wextra -g -O0 -mcpu=cortex-a8  -mfloat-abi=soft -pedantic $(CCDEFINES) 
-CFLAGS += -static -ffreestanding -fbuiltin -marm
+# # Compiler and assembler flags
+# AS = arm-none-eabi-as
+# ASFLAGS = -mcpu=cortex-a8 -g
+# LD = arm-none-eabi-ld
+# LDFLAGS = -T $(LDSCRIPT) --build-id=none -nostdlib -static
+# OBJCOPY = arm-none-eabi-objcopy
+# IFLAGS = -I. -I./src -I./src/bootloader
+# CC = arm-none-eabi-gcc
+# CCDEFINES = -DPLATFORM=$(PLATFORM)
+# CFLAGS = -Wall -Wextra -g -O0 -mcpu=cortex-a8  -mfloat-abi=soft -pedantic $(CCDEFINES) 
+# CFLAGS += -static -ffreestanding -fbuiltin -marm
 
-OUTPUT_ELF = bootloader.elf
-OUTPUT_BIN = bootloader.bin
-OUTPUT_MLO = MLO
-MLO_DEST_ADDR = 0x402f0400
-OUTPUT_SDIMG = bootloader.img
-PREFILES = $(BUILD_DIR)/init.i $(BUILD_DIR)/main.i $(BUILD_DIR)/start.i
-#OBJFILES = bootloader.o #uart.o uart_test.o
-OBJFILES = $(BUILD_DIR)/init.o \
-		   $(BUILD_DIR)/main.o \
-		   $(BUILD_DIR)/start.o \
-		   $(BUILD_DIR)/gpio.o \
-		   $(BUILD_DIR)/gpio_test.o \
-		   $(BUILD_DIR)/uart.o \
-		   $(BUILD_DIR)/uart_test.o \
-		   $(BUILD_DIR)/utils.o \
+# OUTPUT_ELF = bootloader.elf
+# OUTPUT_BIN = bootloader.bin
+# OUTPUT_MLO = MLO
+# MLO_DEST_ADDR = 0x402f0400
+# OUTPUT_SDIMG = bootloader.img
+# PREFILES = $(BUILD_DIR)/init.i $(BUILD_DIR)/main.i $(BUILD_DIR)/start.i
+# #OBJFILES = bootloader.o #uart.o uart_test.o
+# OBJFILES = $(BUILD_DIR)/init.o \
+# 		   $(BUILD_DIR)/main.o \
+# 		   $(BUILD_DIR)/start.o \
+# 		   $(BUILD_DIR)/gpio.o \
+# 		   $(BUILD_DIR)/gpio_test.o \
+# 		   $(BUILD_DIR)/uart.o \
+# 		   $(BUILD_DIR)/uart_test.o \
+# 		   $(BUILD_DIR)/utils.o \
 
-BOOT_DIR = src/bootloader
-SRC_DIR = src
-BUILD_DIR = build
-TOP_DIR = .
 
-all: $(OUTPUT_ELF) $(OUTPUT_BIN) $(OUTPUT_SDIMG) MLO disassemble
+TOP_DIR 		= .
+BOOT_DIR 		= $(TOP_DIR)/boot
+OS_DIR 			= $(TOP_DIR)/os
+DRIVERS_DIR 	= $(OS_DIR)/drivers
+BUILD_DIR 		= $(TOP_DIR)/build
 
-# create ELF file
-$(OUTPUT_ELF): $(OBJFILES)
-	$(LD) $(LDFLAGS) -o $(OUTPUT_ELF) $(OBJFILES) 
-#-Map=bootloader.map
 
-# create binary file
-$(OUTPUT_BIN): $(OUTPUT_ELF)
-	$(OBJCOPY) -O binary $(OUTPUT_ELF) $(OUTPUT_BIN)
+all: boot
 
-# assemble the source
-$(BUILD_DIR)/init.o: $(BOOT_DIR)/init.S memory_map.h
-	$(CC) $(IFLAGS) $(CFLAGS) -E $(BOOT_DIR)/init.S -o $(BUILD_DIR)/init.i
-	$(AS) $(IFLAGS) $(ASFLAGS) $(BUILD_DIR)/init.i -o $(BUILD_DIR)/init.o
+utils:
+	make -f $(OS_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM) \
+		utils
 
-$(BUILD_DIR)/main.o: $(BOOT_DIR)/main.S memory_map.h
-	$(CC) $(IFLAGS) $(CFLAGS) -E $(BOOT_DIR)/main.S -o $(BUILD_DIR)/main.i
-	$(AS) $(IFLAGS) $(ASFLAGS) $(BUILD_DIR)/main.i -o $(BUILD_DIR)/main.o
+drivers: utils
+	make -f $(OS_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM) \
+		drivers
 
-$(BUILD_DIR)/start.o: $(BOOT_DIR)/start.S memory_map.h
-	$(CC) $(IFLAGS) $(CFLAGS) -E $(BOOT_DIR)/start.S -o $(BUILD_DIR)/start.i
-	$(AS) $(IFLAGS) $(ASFLAGS) $(BUILD_DIR)/start.i -o $(BUILD_DIR)/start.o
+boot: utils drivers
+	make -f $(BOOT_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM)
+	cp $(BOOT_DIR)/MLO $(BUILD_DIR)/
 
-$(BUILD_DIR)/uart.o: $(SRC_DIR)/uart.c \
-					 $(SRC_DIR)/uart.h \
-					 memory_map.h \
-					 $(SRC_DIR)/utils.h \
-					 $(SRC_DIR)/clock_module.h
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/uart.c -o $(BUILD_DIR)/uart.o
+clean:
+	make -f $(OS_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM) \
+		clean
+	make -f $(BOOT_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM) \
+		clean
 
-$(BUILD_DIR)/uart_test.o: $(SRC_DIR)/uart_test.c $(SRC_DIR)/uart.h memory_map.h
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/uart_test.c -o $(BUILD_DIR)/uart_test.o
 
-$(BUILD_DIR)/gpio.o: $(SRC_DIR)/gpio.c $(SRC_DIR)/gpio.h memory_map.h $(SRC_DIR)/utils.h $(SRC_DIR)/clock_module.h
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/gpio.c -o $(BUILD_DIR)/gpio.o
+# all: $(OUTPUT_ELF) $(OUTPUT_BIN) $(OUTPUT_SDIMG) MLO disassemble
 
-$(BUILD_DIR)/gpio_test.o: $(SRC_DIR)/gpio_test.c $(SRC_DIR)/gpio.h memory_map.h
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/gpio_test.c -o $(BUILD_DIR)/gpio_test.o
+# # create ELF file
+# $(OUTPUT_ELF): $(OBJFILES)
+# 	$(LD) $(LDFLAGS) -o $(OUTPUT_ELF) $(OBJFILES) 
+# #-Map=bootloader.map
 
-$(BUILD_DIR)/utils.o: $(SRC_DIR)/utils.c $(SRC_DIR)/utils.h
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/utils.c -o $(BUILD_DIR)/utils.o
+# # create binary file
+# $(OUTPUT_BIN): $(OUTPUT_ELF)
+# 	$(OBJCOPY) -O binary $(OUTPUT_ELF) $(OUTPUT_BIN)
+
+# # assemble the source
+# $(BUILD_DIR)/init.o: $(BOOT_DIR)/init.S memory_map.h
+# 	$(CC) $(IFLAGS) $(CFLAGS) -E $(BOOT_DIR)/init.S -o $(BUILD_DIR)/init.i
+# 	$(AS) $(IFLAGS) $(ASFLAGS) $(BUILD_DIR)/init.i -o $(BUILD_DIR)/init.o
+
+# $(BUILD_DIR)/main.o: $(BOOT_DIR)/main.S memory_map.h
+# 	$(CC) $(IFLAGS) $(CFLAGS) -E $(BOOT_DIR)/main.S -o $(BUILD_DIR)/main.i
+# 	$(AS) $(IFLAGS) $(ASFLAGS) $(BUILD_DIR)/main.i -o $(BUILD_DIR)/main.o
+
+# $(BUILD_DIR)/start.o: $(BOOT_DIR)/start.S memory_map.h
+# 	$(CC) $(IFLAGS) $(CFLAGS) -E $(BOOT_DIR)/start.S -o $(BUILD_DIR)/start.i
+# 	$(AS) $(IFLAGS) $(ASFLAGS) $(BUILD_DIR)/start.i -o $(BUILD_DIR)/start.o
+
+# $(BUILD_DIR)/uart.o: $(SRC_DIR)/uart.c \
+# 					 $(SRC_DIR)/uart.h \
+# 					 memory_map.h \
+# 					 $(SRC_DIR)/utils.h \
+# 					 $(SRC_DIR)/clock_module.h
+# 	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/uart.c -o $(BUILD_DIR)/uart.o
+
+# $(BUILD_DIR)/uart_test.o: $(SRC_DIR)/uart_test.c $(SRC_DIR)/uart.h memory_map.h
+# 	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/uart_test.c -o $(BUILD_DIR)/uart_test.o
+
+# $(BUILD_DIR)/gpio.o: $(SRC_DIR)/gpio.c $(SRC_DIR)/gpio.h memory_map.h $(SRC_DIR)/utils.h $(SRC_DIR)/clock_module.h
+# 	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/gpio.c -o $(BUILD_DIR)/gpio.o
+
+# $(BUILD_DIR)/gpio_test.o: $(SRC_DIR)/gpio_test.c $(SRC_DIR)/gpio.h memory_map.h
+# 	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/gpio_test.c -o $(BUILD_DIR)/gpio_test.o
+
+# $(BUILD_DIR)/utils.o: $(SRC_DIR)/utils.c $(SRC_DIR)/utils.h
+# 	$(CC) $(IFLAGS) $(CFLAGS) -c $(SRC_DIR)/utils.c -o $(BUILD_DIR)/utils.o
 
 # clean up generated files
-clean:
-	rm -f $(OBJFILES) $(PREFILES) $(OUTPUT_ELF) $(OUTPUT_BIN) disassembly.txt
+# clean:
+# 	rm -f $(OBJFILES) $(PREFILES) $(OUTPUT_ELF) $(OUTPUT_BIN) disassembly.txt
 
-$(OUTPUT_MLO): $(OUTPUT_BIN)
-	$(TOP_DIR)/sdimager/mk-gpimage $(MLO_DEST_ADDR) $< $@
+# $(OUTPUT_MLO): $(OUTPUT_BIN)
+# 	$(TOP_DIR)/sdimager/mk-gpimage $(MLO_DEST_ADDR) $< $@
 
-$(OUTPUT_SDIMG): $(OUTPUT_MLO)
-	cp $(TOP_DIR)/sdimager/raw-mmc-header.img $@
-	dd if=$< of=$@ iflag=fullblock conv=sync seek=1 status=none
-	echo 'label: dos' | /sbin/sfdisk --quiet $@
+# $(OUTPUT_SDIMG): $(OUTPUT_MLO)
+# 	cp $(TOP_DIR)/sdimager/raw-mmc-header.img $@
+# 	dd if=$< of=$@ iflag=fullblock conv=sync seek=1 status=none
+# 	echo 'label: dos' | /sbin/sfdisk --quiet $@
 
 
-flash: $(OUTPUT_SDIMG)
-ifndef DEV
-	$(error DEV is not set. Run "make flash DEV=path/to/dev" to flash the image)
-endif
-	$(TOP_DIR)/sdimager/flash_img.sh $(OUTPUT_SDIMG) $(DEV)
+# flash: $(OUTPUT_SDIMG)
+# ifndef DEV
+# 	$(error DEV is not set. Run "make flash DEV=path/to/dev" to flash the image)
+# endif
+# 	$(TOP_DIR)/sdimager/flash_img.sh $(OUTPUT_SDIMG) $(DEV)
 
-disassemble: $(OUTPUT_ELF)
-	arm-none-eabi-objdump -d $(OUTPUT_ELF) > disassembly.txt
+# disassemble: $(OUTPUT_ELF)
+# 	arm-none-eabi-objdump -d $(OUTPUT_ELF) > disassembly.txt
 
+# TODO: Fix these
 # Run QEMU with the binary output
 qemu-gdb: $(OUTPUT_BIN)
 	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(OUTPUT_BIN) -S -gdb tcp::1234

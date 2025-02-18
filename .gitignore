@@ -1,0 +1,5 @@
+# Ignore all .a, .o, and .d files
+**/*.a
+**/*.o
+**/*.d
+**/*.i

@@ -1,4 +1,3 @@
-#include <memory_map.h>
 #include <uart.h>
 #include <gpio.h>
 #include <utils.h>
