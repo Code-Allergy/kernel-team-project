@@ -1,4 +1,4 @@
-#include "configs/types.h"
+#include "../common/types.h"
 #include "vectors.h"
 
 /* Function prototypes */
