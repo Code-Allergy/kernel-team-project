@@ -1,3 +1,4 @@
+#include "configs/types.h"
 #include "vectors.h"
 
 /* Function prototypes */
@@ -12,7 +13,7 @@ void fiq_handler(void);
 /* Weak default handlers - can be overridden */
 __attribute__((weak)) void reset_handler(void) { while (1); }
 __attribute__((weak)) void undef_handler(void) { while (1); }
-__attribute__((weak)) void swi_handler(void) { while (1); }
+__attribute__((weak)) void svc_handler(void) { while (1); }
 __attribute__((weak)) void prefetch_abort_handler(void) { while (1); }
 __attribute__((weak)) void data_abort_handler(void) { while (1); }
 __attribute__((weak)) void irq_handler(void) { while (1); }
