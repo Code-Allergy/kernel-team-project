@@ -12,15 +12,15 @@ __init:
 	// cps (change processor state) id (interrupt / abort disable)
 	cpsid aif, #MODE_System	// disable : imprecise aborts, irq interrupt, fiq interrupt. Enter mode #MODE_System
 
-	ldr r0, =isr_vector
+	ldr r0, =__isr_vector
 
 	// arm cortex v8 reference 3-5, table 3-2
 	mcr	p15, 0, r0, c12, c0, 0	// set vector base (bit 0 is ignored), move control <- register (mcr)
 
 	// cortex v8, page 3-45 - cache and branch predictor
 	mrc	p15, 0, r0, c1, c0, 0	// read system control register
-	// data cache, strict alignment, MMU
-	orr	r0, r0, #0b101	
+	// data cache, strict alignment, MMU (MMU = 1 current breaks, idk)
+	orr	r0, r0, #0b100
 	// Instruction cache, Program flow predict 
 	orr r0, r0, #(0b11 << 11)
 	// enable arm exceptions, clear the 30th bit in r0
@@ -28,8 +28,9 @@ __init:
 	mcr	p15, 0, r0, c1, c0, 0	// system control register
 
 	// L2 cache enable
-	mov r1, #1
-	mcr p15, 0, r1, c1, c0, 1 // auxiliary control reg
+	mrc p15, 0, r0, c1, c0, 1
+	orr r0, r0, #0b10
+	mcr p15, 0, r0, c1, c0, 1 // auxiliary control reg
 
 	cpsie	aif			// reenable all interrupts
 

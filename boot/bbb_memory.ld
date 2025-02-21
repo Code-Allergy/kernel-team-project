@@ -48,9 +48,12 @@ SECTIONS
 	    *( .bss* )
 	    __BssEnd = .;
 	} > SRAM
+	. = ALIGN(4);
 
-	/* .vectors : { */
-	/* } */
+	.isr_vector : {
+	    __isr_vector = .;
+	    *(.isr_vector*)
+	}
 
     . = ALIGN(4);
     __StackEnd = .;
