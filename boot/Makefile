@@ -62,8 +62,9 @@ all: $(OUTPUT_ELF) $(OUTPUT_BIN) $(OUTPUT_MLO) disassemble
 # Link to ELF
 $(OUTPUT_ELF): $(OBJFILES)
 	# TODO : fix this hack
-	arm-none-eabi-gcc -I/ -I./os/drivers -I./common -Wall -Wextra -g -O0 -mcpu=cortex-a8 -mfloat-abi=soft -pedantic -static -ffreestanding -fbuiltin -marm -MMD -MP -DPLATFORM=BBB  -c os/drivers/gpio.c -o os/drivers/gpio.o
-	$(LD) $(LDFLAGS) -o $(OUTPUT_ELF) $(OBJFILES) ${TOP_DIR}/common/utils.o ${DRIVERS_DIR}/gpio.o -luart -lgpio -lutils
+	arm-none-eabi-gcc -I/ -I./os/drivers -I./common -Wall -Wextra -mcpu=cortex-a8 -mfloat-abi=soft -pedantic -static -ffreestanding -fbuiltin -marm -MMD -MP -DPLATFORM=BBB  -c os/drivers/gpio.c -o os/drivers/gpio.o
+	arm-none-eabi-gcc -I/ -I./os/drivers -I./common -Wall -Wextra -mcpu=cortex-a8 -mfloat-abi=soft -pedantic -static -ffreestanding -fbuiltin -marm -MMD -MP -DPLATFORM=BBB  -c os/drivers/uart.c -o os/drivers/uart.o
+	$(LD) $(LDFLAGS) -o $(OUTPUT_ELF) $(OBJFILES) ${TOP_DIR}/common/utils.o ${DRIVERS_DIR}/uart.o ${DRIVERS_DIR}/gpio.o
 
 # create binary file
 $(OUTPUT_BIN): $(OUTPUT_ELF)
