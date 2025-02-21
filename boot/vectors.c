@@ -1,5 +1,5 @@
-#include "../common/types.h"
-#include "vectors.h"
+#include <types.h>
+#include <vectors.h>
 
 /* Function prototypes */
 void reset_handler(void);
@@ -22,7 +22,7 @@ __attribute__((weak)) void fiq_handler(void) { while (1); }
 __attribute__((section(".isr_vector")))
 void (*const vector_table[])(void) = {
     reset_handler,          // Reset
-    undefined_handler,      // Undefined Instruction
+    undef_handler,      // Undefined Instruction
     svc_handler,            // Supervisor Call (SVC)
     prefetch_abort_handler, // Prefetch Abort
     data_abort_handler,     // Data Abort
