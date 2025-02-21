@@ -1,52 +1,65 @@
-ENTRY(_start)
+ENTRY(__init)
 
 MEMORY
 {
-    INTERNAL_RAM (rwx)  : ORIGIN = 0x402F0000, LENGTH = 0x10000     /* 16KB (first 1KB reserved) */
-    L3_OCMCO_RAM (rwx)  : ORIGIN = 0x40300000, LENGTH = 0x10000     /* 64KB */
-    EXTERNAL_RAM (rwx)  : ORIGIN = 0x80000000, LENGTH = 0x20000000  /* 512MB */
+    SRAM (rwx)  : ORIGIN = 0x402F0400, LENGTH = __BBB_LD_SRAM_END - ORIGIN(SRAM)
+    L3_OCMCO_RAM (rwx)  : ORIGIN = 0x40300000, LENGTH = __BBB_LD_L3_OCMC0_END - ORIGIN(L3_OCMCO_RAM)     /* 64KB */
+    DRAM (rwx)  : ORIGIN = 0x80000000, LENGTH = 512M    /* 512MB */
 }
 
+__BBB_LD_SRAM_END = 0x402FFFFF;
+__BBB_LD_L3_OCMC0_END = 0x4030FFFF;
+__BBB_DRAM_END = ORIGIN(DRAM) + 512M;
+
+
+
 /* ROM bootloader just loads a single contiguous segment, so make the ELF
- * program headers do the same */
+ * program headers do the same 
+ * ?????
+ */
 PHDRS {
 	image PT_LOAD;
 }
 
 SECTIONS
 {
-    /* Reserve the first 1 KB of INTERNAL_RAM */
-    .reserved ORIGIN(INTERNAL_RAM) (NOLOAD) : { . += 0x400; } > INTERNAL_RAM :NONE
-    . = ORIGIN(INTERNAL_RAM) + 0x400; /* Skip 1 KB (1024 bytes) */
-
     /* .text section */
     .text : {
 		KEEP( *( .text._start ) )
-		*( .text .text.* )
+		*( .text* )
 	} :image
     . = ALIGN(4);  /* Ensure proper alignment for the next section */
 
     /* .rodata section */
     .rodata : {
-		*( .rodata .rodata.* )
+		*( .rodata* )
     } :image
     . = ALIGN(4);  /* Ensure proper alignment for the next section */
 
     /* .data section */
     .data : {
-		*( .data .data.* )
+		*( .data* )
 	} :image
+	. = ALIGN(4);
 
-    /* Stack (4 KB) */
-    . = ALIGN(8);
-    . = . + 0x1000; /* 4 KB stack memory */
-    _stack_start = .;
+	.bss : {
+	    __BssStart = .;
+	    *( .bss* )
+	    __BssEnd = .;
+	} > SRAM
+
+	/* .vectors : { */
+	/* } */
+
+    . = ALIGN(4);
+    __StackEnd = .;
+    __StackStart = __BBB_LD_SRAM_END - 0xf;
 
     /* Shared uninitialized RAM */
 	.shared (NOLOAD) : { *( .shared .shared.* ) } >L3_OCMCO_RAM :NONE
 
 	/* Private uninitialized RAM */
-	.noinit (NOLOAD) : { *( .noinit .noinit.* ) } >INTERNAL_RAM :NONE
+	.noinit (NOLOAD) : { *( .noinit .noinit.* ) } >SRAM :NONE
 
     /* Catch any unknown sections and yell loudly about them */
 	.orphan : { INPUT_SECTION_FLAGS (SHF_ALLOC) *(*) } :NONE

@@ -1,12 +1,15 @@
 #ifndef CLOCK_MODULE_H
 #define CLOCK_MODULE_H
 
-#define CM_PER_BASE     0x44E00000 // Clock Module Peripheral Registers
-#define CM_WKUP_BASE    0x44E00400 // Clock Module Wakeup Registers
-#define CM_DPLL_BASE    0x44E00500 // Clock Module DPLL Registers
-#define CM_MPU_BASE     0x44E00600 // Clock Module MPU Registers
-#define CM_RTC_BASE     0x44E00800 // Clock Module RTC Registers
-#define CM_GFX_BASE     0x44E00900 // Clock Module Graphics Registers
+enum ClockModuleBase
+{
+    CM_PER_BASE  = 0x44E00000, // Clock Module Peripheral Registers
+    CM_WKUP_BASE = 0x44E00400, // Clock Module Wakeup Registers
+    CM_DPLL_BASE = 0x44E00500, // Clock Module DPLL Registers
+    CM_MPU_BASE  = 0x44E00600, // Clock Module MPU Registers
+    CM_RTC_BASE  = 0x44E00800, // Clock Module RTC Registers
+    CM_GFX_BASE  = 0x44E00900, // Clock Module Graphics Registers
+};
 
 /*
 8.1.12.1 CM_PER Registers
@@ -73,66 +76,67 @@ FCh CM_PER_TPTC1_CLKCTRL Section 8.1.12.1.46
 14Ch CM_PER_CLKDIV32K_CLKCTRL Section 8.1.12.1.57
 150h CM_PER_CLK_24MHZ_CLKSTCTRL Section 8.1.12.1.58
 -----------------------------------------------------------*/
-#define CM_PER_L4LS_CLKSTCTRL       0x00
-#define CM_PER_L3S_CLKSTCTRL        0x04
-#define CM_PER_L3_CLKSTCTRL         0x0C
-#define CM_PER_CPGMAC0_CLKCTRL      0x14
-#define CM_PER_LCDC_CLKCTRL         0x18
-#define CM_PER_USB0_CLKCTRL         0x1C
-#define CM_PER_TPTC0_CLKCTRL        0x24
-#define CM_PER_EMIF_CLKCTRL         0x28
-#define CM_PER_OCMCRAM_CLKCTRL      0x2C
-#define CM_PER_GPMC_CLKCTRL         0x30
-#define CM_PER_MCASP0_CLKCTRL       0x34
-#define CM_PER_UART5_CLKCTRL        0x38
-#define CM_PER_MMC0_CLKCTRL         0x3C
-#define CM_PER_ELM_CLKCTRL          0x40
-#define CM_PER_I2C2_CLKCTRL         0x44
-#define CM_PER_I2C1_CLKCTRL         0x48
-#define CM_PER_SPI0_CLKCTRL         0x4C
-#define CM_PER_SPI1_CLKCTRL         0x50
-#define CM_PER_L4LS_CLKCTRL         0x60
-#define CM_PER_MCASP1_CLKCTRL       0x68
-#define CM_PER_UART1_CLKCTRL        0x6C
-#define CM_PER_UART2_CLKCTRL        0x70
-#define CM_PER_UART3_CLKCTRL        0x74
-#define CM_PER_UART4_CLKCTRL        0x78
-#define CM_PER_TIMER7_CLKCTRL       0x7C
-#define CM_PER_TIMER2_CLKCTRL       0x80
-#define CM_PER_TIMER3_CLKCTRL       0x84
-#define CM_PER_TIMER4_CLKCTRL       0x88
-#define CM_PER_GPIO1_CLKCTRL        0xAC
-#define CM_PER_GPIO2_CLKCTRL        0xB0
-#define CM_PER_GPIO3_CLKCTRL        0xB4
-#define CM_PER_TPCC_CLKCTRL         0xBC
-#define CM_PER_DCAN0_CLKCTRL        0xC0
-#define CM_PER_DCAN1_CLKCTRL        0xC4
-#define CM_PER_EPWMSS1_CLKCTRL      0xCC
-#define CM_PER_EPWMSS0_CLKCTRL      0xD4
-#define CM_PER_EPWMSS2_CLKCTRL      0xD8
-#define CM_PER_L3_INSTR_CLKCTRL     0xDC
-#define CM_PER_L3_CLKCTRL           0xE0
-#define CM_PER_IEEE5000_CLKCTRL     0xE4
-#define CM_PER_PRU_ICSS_CLKCTRL     0xE8
-#define CM_PER_TIMER5_CLKCTRL       0xEC
-#define CM_PER_TIMER6_CLKCTRL       0xF0
-#define CM_PER_MMC1_CLKCTRL         0xF4
-#define CM_PER_MMC2_CLKCTRL         0xF8
-#define CM_PER_TPTC1_CLKCTRL        0xFC
-#define CM_PER_TPTC2_CLKCTRL        0x100
-#define CM_PER_SPINLOCK_CLKCTRL     0x10C
-#define CM_PER_MAILBOX0_CLKCTRL     0x110
-#define CM_PER_L4HS_CLKSTCTRL       0x11C
-#define CM_PER_L4HS_CLKCTRL         0x120
-#define CM_PER_OCPWP_L3_CLKSTCTRL   0x12C
-#define CM_PER_OCPWP_CLKCTRL        0x130
-#define CM_PER_PRU_ICSS_CLKSTCTRL   0x140
-#define CM_PER_CPSW_CLKSTCTRL       0x144
-#define CM_PER_LCDC_CLKSTCTRL       0x148
-#define CM_PER_CLKDIV32K_CLKCTRL    0x14C
-#define CM_PER_CLK_24MHZ_CLKSTCTRL  0x150
-
-
+enum ClockModulePeripheral
+{
+    CM_PER_L4LS_CLKSTCTRL      = 0x00,
+    CM_PER_L3S_CLKSTCTRL       = 0x04,
+    CM_PER_L3_CLKSTCTRL        = 0x0C,
+    CM_PER_CPGMAC0_CLKCTRL     = 0x14,
+    CM_PER_LCDC_CLKCTRL        = 0x18,
+    CM_PER_USB0_CLKCTRL        = 0x1C,
+    CM_PER_TPTC0_CLKCTRL       = 0x24,
+    CM_PER_EMIF_CLKCTRL        = 0x28,
+    CM_PER_OCMCRAM_CLKCTRL     = 0x2C,
+    CM_PER_GPMC_CLKCTRL        = 0x30,
+    CM_PER_MCASP0_CLKCTRL      = 0x34,
+    CM_PER_UART5_CLKCTRL       = 0x38,
+    CM_PER_MMC0_CLKCTRL        = 0x3C,
+    CM_PER_ELM_CLKCTRL         = 0x40,
+    CM_PER_I2C2_CLKCTRL        = 0x44,
+    CM_PER_I2C1_CLKCTRL        = 0x48,
+    CM_PER_SPI0_CLKCTRL        = 0x4C,
+    CM_PER_SPI1_CLKCTRL        = 0x50,
+    CM_PER_L4LS_CLKCTRL        = 0x60,
+    CM_PER_MCASP1_CLKCTRL      = 0x68,
+    CM_PER_UART1_CLKCTRL       = 0x6C,
+    CM_PER_UART2_CLKCTRL       = 0x70,
+    CM_PER_UART3_CLKCTRL       = 0x74,
+    CM_PER_UART4_CLKCTRL       = 0x78,
+    CM_PER_TIMER7_CLKCTRL      = 0x7C,
+    CM_PER_TIMER2_CLKCTRL      = 0x80,
+    CM_PER_TIMER3_CLKCTRL      = 0x84,
+    CM_PER_TIMER4_CLKCTRL      = 0x88,
+    CM_PER_GPIO1_CLKCTRL       = 0xAC,
+    CM_PER_GPIO2_CLKCTRL       = 0xB0,
+    CM_PER_GPIO3_CLKCTRL       = 0xB4,
+    CM_PER_TPCC_CLKCTRL        = 0xBC,
+    CM_PER_DCAN0_CLKCTRL       = 0xC0,
+    CM_PER_DCAN1_CLKCTRL       = 0xC4,
+    CM_PER_EPWMSS1_CLKCTRL     = 0xCC,
+    CM_PER_EPWMSS0_CLKCTRL     = 0xD4,
+    CM_PER_EPWMSS2_CLKCTRL     = 0xD8,
+    CM_PER_L3_INSTR_CLKCTRL    = 0xDC,
+    CM_PER_L3_CLKCTRL          = 0xE0,
+    CM_PER_IEEE5000_CLKCTRL    = 0xE4,
+    CM_PER_PRU_ICSS_CLKCTRL    = 0xE8,
+    CM_PER_TIMER5_CLKCTRL      = 0xEC,
+    CM_PER_TIMER6_CLKCTRL      = 0xF0,
+    CM_PER_MMC1_CLKCTRL        = 0xF4,
+    CM_PER_MMC2_CLKCTRL        = 0xF8,
+    CM_PER_TPTC1_CLKCTRL       = 0xFC,
+    CM_PER_TPTC2_CLKCTRL       = 0x100,
+    CM_PER_SPINLOCK_CLKCTRL    = 0x10C,
+    CM_PER_MAILBOX0_CLKCTRL    = 0x110,
+    CM_PER_L4HS_CLKSTCTRL      = 0x11C,
+    CM_PER_L4HS_CLKCTRL        = 0x120,
+    CM_PER_OCPWP_L3_CLKSTCTRL  = 0x12C,
+    CM_PER_OCPWP_CLKCTRL       = 0x130,
+    CM_PER_PRU_ICSS_CLKSTCTRL  = 0x140,
+    CM_PER_CPSW_CLKSTCTRL      = 0x144,
+    CM_PER_LCDC_CLKSTCTRL      = 0x148,
+    CM_PER_CLKDIV32K_CLKCTRL   = 0x14C,
+    CM_PER_CLK_24MHZ_CLKSTCTRL = 0x150,
+};
 /*
 8.1.12.2 CM_WKUP Registers
 Table 8-89 lists the memory-mapped registers for the CM_WKUP. All register offset addresses not listed
@@ -195,61 +199,62 @@ CCh CM_L4_WKUP_AON_CLKSTCTRL Section 8.1.12.2.52
 D4h CM_WKUP_WDT1_CLKCTRL Section 8.1.12.2.53
 D8h CM_DIV_M6_DPLL_CORE Section 8.1.12.2.54
 -----------------------------------------------------------*/
-#define CM_WKUP_CLKSTCTRL           0x00
-#define CM_WKUP_CONTROL_CLKCTRL     0x04
-#define CM_WKUP_GPIO0_CLKCTRL       0x08
-#define CM_WKUP_L4WKUP_CLKCTRL      0x0C
-#define CM_WKUP_TIMER0_CLKCTRL      0x10
-#define CM_WKUP_DEBUGSS_CLKCTRL     0x14
-#define CM_L3_AON_CLKSTCTRL         0x18
-#define CM_AUTOIDLE_DPLL_MPU        0x1C
-#define CM_IDLEST_DPLL_MPU          0x20
-#define CM_SSC_DELTAMSTEP_DPLL_MPU  0x24
-#define CM_SSC_MODFREQDIV_DPLL_MPU  0x28
-#define CM_CLKSEL_DPLL_MPU          0x2C
-#define CM_AUTOIDLE_DPLL_DDR        0x30
-#define CM_IDLEST_DPLL_DDR          0x34
-#define CM_SSC_DELTAMSTEP_DPLL_DDR  0x38
-#define CM_SSC_MODFREQDIV_DPLL_DDR  0x3C
-#define CM_CLKSEL_DPLL_DDR          0x40
-#define CM_AUTOIDLE_DPLL_DISP       0x44
-#define CM_IDLEST_DPLL_DISP         0x48
-#define CM_SSC_DELTAMSTEP_DPLL_DISP 0x4C
-#define CM_SSC_MODFREQDIV_DPLL_DISP 0x50
-#define CM_CLKSEL_DPLL_DISP         0x54
-#define CM_AUTOIDLE_DPLL_CORE       0x58
-#define CM_IDLEST_DPLL_CORE         0x5C
-#define CM_SSC_DELTAMSTEP_DPLL_CORE 0x60
-#define CM_SSC_MODFREQDIV_DPLL_CORE 0x64
-#define CM_CLKSEL_DPLL_CORE         0x68
-#define CM_AUTOIDLE_DPLL_PER        0x6C
-#define CM_IDLEST_DPLL_PER          0x70
-#define CM_SSC_DELTAMSTEP_DPLL_PER  0x74
-#define CM_SSC_MODFREQDIV_DPLL_PER  0x78
-#define CM_CLKDCOLDO_DPLL_PER       0x7C
-#define CM_DIV_M4_DPLL_CORE         0x80
-#define CM_DIV_M5_DPLL_CORE         0x84
-#define CM_CLKMODE_DPLL_MPU         0x88
-#define CM_CLKMODE_DPLL_PER         0x8C
-#define CM_CLKMODE_DPLL_CORE        0x90
-#define CM_CLKMODE_DPLL_DDR         0x94
-#define CM_CLKMODE_DPLL_DISP        0x98
-#define CM_CLKSEL_DPLL_PERIPH       0x9C
-#define CM_DIV_M2_DPLL_DDR          0xA0
-#define CM_DIV_M2_DPLL_DISP         0xA4
-#define CM_DIV_M2_DPLL_MPU          0xA8
-#define CM_DIV_M2_DPLL_PER          0xAC
-#define CM_WKUP_WKUP_M3_CLKCTRL     0xB0
-#define CM_WKUP_UART0_CLKCTRL       0xB4
-#define CM_WKUP_I2C0_CLKCTRL        0xB8
-#define CM_WKUP_ADC_TSC_CLKCTRL     0xBC
-#define CM_WKUP_SMARTREFLEX0_CLKCTRL 0xC0
-#define CM_WKUP_TIMER1_CLKCTRL       0xC4
-#define CM_WKUP_SMARTREFLEX1_CLKCTRL 0xC8
-#define CM_L4_WKUP_AON_CLKSTCTRL    0xCC
-#define CM_WKUP_WDT1_CLKCTRL        0xD4
-#define CM_DIV_M6_DPLL_CORE         0xD8
-
-
+enum ClockModuleWakeUp
+{
+    CM_WKUP_CLKSTCTRL            = 0x00,
+    CM_WKUP_CONTROL_CLKCTRL      = 0x04,
+    CM_WKUP_GPIO0_CLKCTRL        = 0x08,
+    CM_WKUP_L4WKUP_CLKCTRL       = 0x0C,
+    CM_WKUP_TIMER0_CLKCTRL       = 0x10,
+    CM_WKUP_DEBUGSS_CLKCTRL      = 0x14,
+    CM_L3_AON_CLKSTCTRL          = 0x18,
+    CM_AUTOIDLE_DPLL_MPU         = 0x1C,
+    CM_IDLEST_DPLL_MPU           = 0x20,
+    CM_SSC_DELTAMSTEP_DPLL_MPU   = 0x24,
+    CM_SSC_MODFREQDIV_DPLL_MPU   = 0x28,
+    CM_CLKSEL_DPLL_MPU           = 0x2C,
+    CM_AUTOIDLE_DPLL_DDR         = 0x30,
+    CM_IDLEST_DPLL_DDR           = 0x34,
+    CM_SSC_DELTAMSTEP_DPLL_DDR   = 0x38,
+    CM_SSC_MODFREQDIV_DPLL_DDR   = 0x3C,
+    CM_CLKSEL_DPLL_DDR           = 0x40,
+    CM_AUTOIDLE_DPLL_DISP        = 0x44,
+    CM_IDLEST_DPLL_DISP          = 0x48,
+    CM_SSC_DELTAMSTEP_DPLL_DISP  = 0x4C,
+    CM_SSC_MODFREQDIV_DPLL_DISP  = 0x50,
+    CM_CLKSEL_DPLL_DISP          = 0x54,
+    CM_AUTOIDLE_DPLL_CORE        = 0x58,
+    CM_IDLEST_DPLL_CORE          = 0x5C,
+    CM_SSC_DELTAMSTEP_DPLL_CORE  = 0x60,
+    CM_SSC_MODFREQDIV_DPLL_CORE  = 0x64,
+    CM_CLKSEL_DPLL_CORE          = 0x68,
+    CM_AUTOIDLE_DPLL_PER         = 0x6C,
+    CM_IDLEST_DPLL_PER           = 0x70,
+    CM_SSC_DELTAMSTEP_DPLL_PER   = 0x74,
+    CM_SSC_MODFREQDIV_DPLL_PER   = 0x78,
+    CM_CLKDCOLDO_DPLL_PER        = 0x7C,
+    CM_DIV_M4_DPLL_CORE          = 0x80,
+    CM_DIV_M5_DPLL_CORE          = 0x84,
+    CM_CLKMODE_DPLL_MPU          = 0x88,
+    CM_CLKMODE_DPLL_PER          = 0x8C,
+    CM_CLKMODE_DPLL_CORE         = 0x90,
+    CM_CLKMODE_DPLL_DDR          = 0x94,
+    CM_CLKMODE_DPLL_DISP         = 0x98,
+    CM_CLKSEL_DPLL_PERIPH        = 0x9C,
+    CM_DIV_M2_DPLL_DDR           = 0xA0,
+    CM_DIV_M2_DPLL_DISP          = 0xA4,
+    CM_DIV_M2_DPLL_MPU           = 0xA8,
+    CM_DIV_M2_DPLL_PER           = 0xAC,
+    CM_WKUP_WKUP_M3_CLKCTRL      = 0xB0,
+    CM_WKUP_UART0_CLKCTRL        = 0xB4,
+    CM_WKUP_I2C0_CLKCTRL         = 0xB8,
+    CM_WKUP_ADC_TSC_CLKCTRL      = 0xBC,
+    CM_WKUP_SMARTREFLEX0_CLKCTRL = 0xC0,
+    CM_WKUP_TIMER1_CLKCTRL       = 0xC4,
+    CM_WKUP_SMARTREFLEX1_CLKCTRL = 0xC8,
+    CM_L4_WKUP_AON_CLKSTCTRL     = 0xCC,
+    CM_WKUP_WDT1_CLKCTRL         = 0xD4,
+    CM_DIV_M6_DPLL_CORE          = 0xD8,
+};
 
 #endif /*CLOCK_MODULE_H*/

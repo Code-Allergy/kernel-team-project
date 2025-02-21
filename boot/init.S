@@ -1,25 +1,18 @@
-#include <memory_map.h>
+.arm
 
+// these are not real
+#define MODE_USR 0b10000	// thread-mode, unprivileged
+#define MODE_THR 0b11111	// thread-mode, privileged
+#define MODE_HND 0b11111	// handler-mode (always privileged)
 
-//-------------- Allocate stack ----------------------------------------------//
-
-.pushsection .noinit.stack, "aw", %nobits
-    .balign 8           // Align the stack on an 8-byte boundary
-stack:
-    .space 512          // Reserve 512 bytes for the stack 
-    .size stack, 512    // Define the size of the stack 
-    .global stack        // Make stack a global symbol 
-    .set stack_top, .    // Define stack_top as the top of the stack
-.popsection
-
-.global init
-init:
+.global __init
+__init:
 	// minimalistic cortex-a8 initialization
 	subs	r4, lr, #4	// vector base, except bit 0 indicates thumb
 
 	cpsid	fia, #MODE_THR	// thread mode, mask all async exceptions
 
-	ldr	sp, =stack_top
+	ldr	sp, =__StackStart
 
 	mcr	p15, 0, r4, c12, c0, 0	// set vector base (bit 0 is ignored)
 
@@ -29,7 +22,13 @@ init:
 
 	cpsie	a			// enable async aborts
 
-	bl	main
+	bl	__BootloaderEntry
 idle:
 	wfi
 	b	idle
+	
+# .global setup_vbar
+# setup_vbar:
+#     ldr r0, =vector_table    @ Load vector table address
+#     mcr p15, 0, r0, c12, c0, 0  @ Write to VBAR register
+#     bx lr

@@ -1,12 +1,18 @@
 # Default platform is QEMU
 PLATFORM ?=BBB
 
-TOP_DIR 		= .
-BOOT_DIR 		= $(TOP_DIR)/boot
-OS_DIR 			= $(TOP_DIR)/os
-DRIVERS_DIR 	= $(OS_DIR)/drivers
-BUILD_DIR 		= $(TOP_DIR)/build
+export TOP_DIR 			= .
+export BOOT_DIR 		= $(TOP_DIR)/boot
+export OS_DIR 			= $(TOP_DIR)/os
+export DRIVERS_DIR 		= $(OS_DIR)/drivers
+BUILD_DIR 				= $(TOP_DIR)/build
 
+export ToolPrefix ?= arm-none-eabi
+
+export AS 		= ${ToolPrefix}-as
+export LD 		= ${ToolPrefix}-ld
+export OBJCOPY  = ${ToolPrefix}-objcopy
+export CC 		= ${ToolPrefix}-gcc
 
 all: boot
 

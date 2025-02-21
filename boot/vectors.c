@@ -1,7 +1,10 @@
+/*
 #include "../common/types.h"
 #include "vectors.h"
+*/
 
 /* Function prototypes */
+/*
 void reset_handler(void);
 void undef_handler(void);
 void swi_handler(void);
@@ -9,8 +12,10 @@ void prefetch_abort_handler(void);
 void data_abort_handler(void);
 void irq_handler(void);
 void fiq_handler(void);
+*/
 
 /* Weak default handlers - can be overridden */
+/*
 __attribute__((weak)) void reset_handler(void) { while (1); }
 __attribute__((weak)) void undef_handler(void) { while (1); }
 __attribute__((weak)) void svc_handler(void) { while (1); }
@@ -30,3 +35,4 @@ void (*const vector_table[])(void) = {
     irq_handler,            // IRQ (Interrupt Request)
     fiq_handler             // FIQ (Fast Interrupt Request)
 };
+*/

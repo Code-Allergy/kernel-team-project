@@ -1,14 +1,7 @@
 # OS makefile
 
-# Directories
-DRIVERS_DIR := $(TOP_DIR)/os/drivers
-
 # Compiler and assembler flags
-AS = arm-none-eabi-as
 ASFLAGS = -mcpu=cortex-a8 -g
-LD = arm-none-eabi-ld
-OBJCOPY = arm-none-eabi-objcopy
-CC = arm-none-eabi-gcc
 
 # Directories
 UTILS_DIR := $(TOP_DIR)/common
@@ -26,10 +19,9 @@ IFLAGS = 	-I$(OS_DIR)/ \
 
 CFLAGS =	-Wall \
 			-Wextra \
-			-g \
-			-O0 \
 			-mcpu=cortex-a8  \
 			-mfloat-abi=soft \
+			-Os \
 			-pedantic \
 			-static \
 			-ffreestanding \
