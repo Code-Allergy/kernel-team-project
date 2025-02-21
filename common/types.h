@@ -15,11 +15,13 @@
 // typedef signed long long int64_t;
 
 /* Define boolean type */
-typedef enum
-{
-    false = 0,
-    true  = ~0
-} bool;
+// typedef enum
+// {
+//     false = 0,
+//     true  = ~0
+// } bool;
+
+#include <stdbool.h>
 
 typedef volatile uint32_t* RegIO;
 
