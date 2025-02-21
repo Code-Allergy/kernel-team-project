@@ -1,5 +1,6 @@
 #include <gpio.h>
 #include <uart.h>
+#include <stdint.h>
 
 extern void setup_vbar();
 #define LED_PINS (0xF << 21)
@@ -80,6 +81,8 @@ int levenshtein(const char* str1, const char* str2, int len1, int len2)
     return 1 + min(insert, remove, replace);
 }
 
+extern uintptr_t __BBB_DRAM_BEGIN;
+
 void __BootloaderEntry()
 {
     const char* str1  = "kien";
@@ -93,4 +96,9 @@ void __BootloaderEntry()
         len1 = 20;
         gpio_test(); /* setup_vbar();  // Set the interrupt vector table */
     }
+
+    // mem copy the kernel to dram
+
+    // jump to kernel
+    ((void (*)()) __BBB_DRAM_BEGIN)();
 }
