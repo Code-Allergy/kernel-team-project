@@ -10,7 +10,7 @@ MEMORY
 /* ROM bootloader just loads a single contiguous segment, so make the ELF
  * program headers do the same */
 PHDRS {
-	image PT_LOAD;
+    image PT_LOAD;
 }
 
 SECTIONS
@@ -21,21 +21,31 @@ SECTIONS
 
     /* .text section */
     .text : {
-		KEEP( *( .text._start ) )
-		*( .text .text.* )
-	} :image
+        KEEP( *( .text._start ) )
+        *( .text .text.* )
+    } :image
     . = ALIGN(4);  /* Ensure proper alignment for the next section */
+
+    .vectors : {
+        KEEP(*(.vectors))
+    } :image
+    . = ALIGN(4);
 
     /* .rodata section */
     .rodata : {
-		*( .rodata .rodata.* )
+        *( .rodata .rodata.* )
     } :image
     . = ALIGN(4);  /* Ensure proper alignment for the next section */
 
     /* .data section */
     .data : {
-		*( .data .data.* )
-	} :image
+        *( .data .data.* )
+    } :image
+
+    /* .bss section */
+    .bss (NOLOAD) : {
+        *( .bss .bss.* )
+    } >INTERNAL_RAM
 
     /* Stack (4 KB) */
     . = ALIGN(8);
@@ -43,12 +53,12 @@ SECTIONS
     _stack_start = .;
 
     /* Shared uninitialized RAM */
-	.shared (NOLOAD) : { *( .shared .shared.* ) } >L3_OCMCO_RAM :NONE
+    .shared (NOLOAD) : { *( .shared .shared.* ) } >L3_OCMCO_RAM :NONE
 
-	/* Private uninitialized RAM */
-	.noinit (NOLOAD) : { *( .noinit .noinit.* ) } >INTERNAL_RAM :NONE
+    /* Private uninitialized RAM */
+    .noinit (NOLOAD) : { *( .noinit .noinit.* ) } >INTERNAL_RAM :NONE
 
     /* Catch any unknown sections and yell loudly about them */
-	.orphan : { INPUT_SECTION_FLAGS (SHF_ALLOC) *(*) } :NONE
-	ASSERT( SIZEOF(.orphan) == 0, "unassigned sections!" )
+    .orphan : { INPUT_SECTION_FLAGS (SHF_ALLOC) *(*) } :NONE
+    ASSERT( SIZEOF(.orphan) == 0, "unassigned sections!" )
 }

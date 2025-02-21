@@ -7,3 +7,4 @@ boot/build/*.elf
 boot/build/*.bin
 boot/build/MLO
 boot/build/boot_disassembly.txt
+boot/build/bootloader.map

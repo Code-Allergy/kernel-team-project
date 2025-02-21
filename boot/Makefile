@@ -32,7 +32,8 @@ LDFLAGS = 	-T $(LDSCRIPT) \
 			-L$(TOP_DIR)/common
 
 IFLAGS = 	-I$(BOOT_DIR) \
-			-I$(TOP_DIR)/os/drivers
+			-I$(TOP_DIR)/os/drivers \
+			-I$(TOP_DIR)/common
 
 CFLAGS = 	-Wall \
 			-Wextra \
@@ -74,7 +75,7 @@ boot_build_dir:
 
 # create ELF file
 $(OUTPUT_ELF): $(OBJFILES)
-	$(LD) $(LDFLAGS) -o $(OUTPUT_ELF) $(OBJFILES)
+	$(LD) $(LDFLAGS) -o $(OUTPUT_ELF) $(OBJFILES) -Map $(BOOT_DIR)/build/bootloader.map
 
 # create binary file
 $(OUTPUT_BIN): $(OUTPUT_ELF)
@@ -99,6 +100,7 @@ $(BOOT_DIR)/build/%.o: $(BOOT_DIR)/%.c
 clean:
 	rm -f \
 		$(BOOT_DIR)/build/*.i $(BOOT_DIR)/build/*.o $(BOOT_DIR)/build/*.d $(BOOT_DIR)/build/*.a \
+		$(BOOT_DIR)/build/*.map \
 		$(OUTPUT_ELF) \
 		$(OUTPUT_BIN) \
 		$(OUTPUT_MLO) \

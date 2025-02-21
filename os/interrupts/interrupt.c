@@ -1,5 +1,6 @@
-#include "interrupts.h"
-#include "syscalls.h"
+#include <interrupt.h>
+#include <syscall.h>
+#include <types.h>
 
 /* Read a hypothetical IRQ status register */
 #define IRQ_STATUS_REG  (*(volatile uint32_t*)0x48200000)
