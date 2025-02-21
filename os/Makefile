@@ -5,6 +5,7 @@ ASFLAGS = -mcpu=cortex-a8 -g
 
 # Directories
 UTILS_DIR := $(TOP_DIR)/common
+DRIVERS_DIR := $(TOP_DIR)/os/drivers
 
 CCDEFINES = -DPLATFORM=$(PLATFORM)
 
@@ -33,32 +34,28 @@ CFLAGS =	-Wall \
 
 #----------- COMMON
 # Utils
-UTILS_OBJS := $(patsubst $(UTILS_DIR)/%.c, $(UTILS_DIR)/%.o, $(wildcard $(UTILS_DIR)/*.c))
-UTILS_LIB := $(UTILS_DIR)/libutils.a
+UTILS_OBJS := $(patsubst $(UTILS_DIR)/%.c, $(UTILS_DIR)/build/%.o, $(wildcard $(UTILS_DIR)/*.c))
 
-utils: $(UTILS_LIB)
 
-$(UTILS_DIR)/%.o: $(UTILS_DIR)/%.c
+utils: utils_build_dir $(UTILS_OBJS)
+
+utils_build_dir:
+	mkdir -p $(UTILS_DIR)/build
+$(UTILS_DIR)/build/%.o: $(UTILS_DIR)/%.c
 	$(CC) $(IFLAGS) $(CFLAGS) -c $< -o $@
-
-$(UTILS_LIB): $(UTILS_OBJS)
-	ar rcs $@ $<
-
 
 #----------- DRIVERS
-DRIVER_OBJS := $(patsubst $(DRIVERS_DIR)/%.c, $(DRIVERS_DIR)/%.o, $(wildcard $(DRIVERS_DIR)/*.c))
-DRIVER_LIBS := $(patsubst $(DRIVERS_DIR)/%.o, $(DRIVERS_DIR)/lib%.a, $(DRIVER_OBJS))
+DRIVER_OBJS := $(patsubst $(DRIVERS_DIR)/%.c, $(DRIVERS_DIR)/build/%.o, $(wildcard $(DRIVERS_DIR)/*.c))
 
-drivers: $(DRIVER_LIBS)
+drivers: driver_build_dir $(DRIVER_OBJS)
 
-$(DRIVERS_DIR)/%.o: $(DRIVERS_DIR)/%.c
+driver_build_dir:
+	mkdir -p $(DRIVERS_DIR)/build
+$(DRIVERS_DIR)/build/%.o: $(DRIVERS_DIR)/%.c
 	$(CC) $(IFLAGS) $(CFLAGS) -c $< -o $@
-
-$(DRIVERS_DIR)/lib%.a: $(DRIVERS_DIR)/%.o
-	ar rcs $@ $<
 
 #----------- CLEAN
 clean:
 	rm -f \
-		$(UTILS_DIR)/*.o $(UTILS_DIR)/*.d $(UTILS_DIR)/*.a \
-		$(DRIVERS_DIR)/*.o $(DRIVERS_DIR)/*.d $(DRIVERS_DIR)/*.a \
+		$(UTILS_DIR)/build/*.o $(UTILS_DIR)/build/*.d \
+		$(DRIVERS_DIR)/build/*.o $(DRIVERS_DIR)/build/*.d \

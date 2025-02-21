@@ -32,7 +32,7 @@ boot: utils drivers
 	make -f $(BOOT_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM)
-	cp $(BOOT_DIR)/MLO $(BUILD_DIR)/
+	cp $(BOOT_DIR)/build/MLO $(BOOT_DIR)/build/boot_disassembly.txt $(BUILD_DIR)/
 
 clean:
 	make -f $(OS_DIR)/Makefile \
