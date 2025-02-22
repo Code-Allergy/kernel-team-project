@@ -6,9 +6,10 @@ BOOT_DIR 		= $(TOP_DIR)/boot
 OS_DIR 			= $(TOP_DIR)/os
 DRIVERS_DIR 	= $(OS_DIR)/drivers
 BUILD_DIR 		= $(TOP_DIR)/build
+OUTPUT_SDIMG 	= $(BUILD_DIR)/sd.img
 
 
-all: boot
+all: boot sdimg
 
 utils:
 	make -f $(OS_DIR)/Makefile \
@@ -38,20 +39,15 @@ clean:
 		PLATFORM=$(PLATFORM) \
 		clean
 
-# $(OUTPUT_SDIMG): $(OUTPUT_MLO)
-# 	cp $(TOP_DIR)/sdimager/raw-mmc-header.img $@
-# 	dd if=$< of=$@ iflag=fullblock conv=sync seek=1 status=none
-# 	echo 'label: dos' | /sbin/sfdisk --quiet $@
 
+sdimg: boot
+	$(TOP_DIR)/sdimager/mksdimage.sh $(BUILD_DIR)/MLO $(OUTPUT_SDIMG)
 
-# flash: $(OUTPUT_SDIMG)
-# ifndef DEV
-# 	$(error DEV is not set. Run "make flash DEV=path/to/dev" to flash the image)
-# endif
-# 	$(TOP_DIR)/sdimager/flash_img.sh $(OUTPUT_SDIMG) $(DEV)
-
-# disassemble: $(OUTPUT_ELF)
-# 	arm-none-eabi-objdump -d $(OUTPUT_ELF) > disassembly.txt
+flash: sdimg
+ifndef DEV
+	$(error DEV is not set. Run "make flash DEV=path/to/dev" to flash the image)
+endif
+	$(TOP_DIR)/sdimager/flash_img.sh $(OUTPUT_SDIMG) $(DEV)
 
 # TODO: Fix these
 # Run QEMU with the binary output
