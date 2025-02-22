@@ -36,8 +36,8 @@ CFLAGS = 	-Wall \
 			-mcpu=cortex-a8  \
 			-mfloat-abi=soft \
 			-Os \
-			-pedantic \
 			-static \
+			-std=gnu90 \
 			-ffreestanding \
 			-fbuiltin \
 			-marm \
