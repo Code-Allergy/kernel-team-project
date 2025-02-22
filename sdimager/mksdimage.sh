@@ -53,6 +53,10 @@ echo "Creating FAT32 filesystem..."
 sudo mkfs.vfat -F 32 ${LOOPDEV}p1
 
 echo "Copying MLO..."
+# if ./mnt exists (likely from failed previous run), unmout it
+if [ -d ./tmp ]; then
+    sudo umount ./tmp
+fi
 mkdir -p ./tmp
 sudo mount ${LOOPDEV}p1 ./tmp
 cp $MLO ./tmp/MLO

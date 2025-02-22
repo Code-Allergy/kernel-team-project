@@ -1,6 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+// AOF(array offset), get reg in array form
+#define ArrOff(x) (x / sizeof(RegIO))
 
 void REG32_write(unsigned int base, unsigned int offset, unsigned int value);
 void REG32_write_masked(unsigned int base, unsigned int offset, unsigned int mask, unsigned int value);

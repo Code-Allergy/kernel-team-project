@@ -19,7 +19,7 @@ __attribute__((weak)) void data_abort_handler(void) { while (1); }
 __attribute__((weak)) void irq_handler(void) { while (1); }
 __attribute__((weak)) void fiq_handler(void) { while (1); }
 
-__attribute__((section(".vectors")))
+__attribute__((section(".isr_vector")))
 void (*const vector_table[])(void) = {
     reset_handler,          // Reset
     undef_handler,      // Undefined Instruction

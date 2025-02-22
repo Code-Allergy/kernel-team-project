@@ -1,35 +1,49 @@
-#include <memory_map.h>
+.arm
 
+// these are not real
+#define MODE_Usr 0b10000	// thread-mode, unprivileged
+#define MODE_System 0b11111	// thread-mode, privileged
+#define MODE_Supervisor 0b10011	// handler-mode (always privileged)
 
-//-------------- Allocate stack ----------------------------------------------//
+.global __init
+__init:
 
-.pushsection .noinit.stack, "aw", %nobits
-    .balign 8           // Align the stack on an 8-byte boundary
-stack:
-    .space 512          // Reserve 512 bytes for the stack 
-    .size stack, 512    // Define the size of the stack 
-    .global stack        // Make stack a global symbol 
-    .set stack_top, .    // Define stack_top as the top of the stack
-.popsection
+	// https://developer.arm.com/documentation/dui0489/c/arm-and-thumb-instructions/miscellaneous-instructions/cps
+	// cps (change processor state) id (interrupt / abort disable)
+	cpsid aif, #MODE_System	// disable : imprecise aborts, irq interrupt, fiq interrupt. Enter mode #MODE_System
 
-.global init
-init:
-	// minimalistic cortex-a8 initialization
-	subs	r4, lr, #4	// vector base, except bit 0 indicates thumb
+	ldr r0, =__isr_vector
 
-	cpsid	fia, #MODE_THR	// thread mode, mask all async exceptions
+	// arm cortex v8 reference 3-5, table 3-2
+	mcr	p15, 0, r0, c12, c0, 0	// set vector base (bit 0 is ignored), move control <- register (mcr)
 
-	ldr	sp, =stack_top
-
-	mcr	p15, 0, r4, c12, c0, 0	// set vector base (bit 0 is ignored)
-
-	mov	r0, #(3 << 11)		// enable branch prediction and i-cache
-	bfi	r0, r4, #30, #1		// configure arm/thumb-mode exceptions
+	// cortex v8, page 3-45 - cache and branch predictor
+	mrc	p15, 0, r0, c1, c0, 0	// read system control register
+	// data cache, strict alignment, MMU (MMU = 1 current breaks, idk)
+	orr	r0, r0, #0b100
+	// Instruction cache, Program flow predict 
+	orr r0, r0, #(0b11 << 11)
+	// enable arm exceptions, clear the 30th bit in r0
+	bic r0, r0, #(1 << 30)
 	mcr	p15, 0, r0, c1, c0, 0	// system control register
 
-	cpsie	a			// enable async aborts
+	// L2 cache enable
+	mrc p15, 0, r0, c1, c0, 1
+	orr r0, r0, #0b10
+	mcr p15, 0, r0, c1, c0, 1 // auxiliary control reg
 
-	bl	main
+	cpsie	aif			// reenable all interrupts
+
+	ldr	sp, =__StackStart
+	
+	bl	__BootloaderEntry
+
 idle:
-	wfi
+	wfi 		// wait for interrupt
 	b	idle
+	
+# .global setup_vbar
+# setup_vbar:
+#     ldr r0, =vector_table    @ Load vector table address
+#     mcr p15, 0, r0, c12, c0, 0  @ Write to VBAR register
+#     bx lr

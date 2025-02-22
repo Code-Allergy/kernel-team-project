@@ -15,10 +15,6 @@ else
 endif
 
 # Compiler and assembler flags
-AS = arm-none-eabi-as
-LD = arm-none-eabi-ld
-CC = arm-none-eabi-gcc
-OBJCOPY = arm-none-eabi-objcopy
 
 ASFLAGS = -mcpu=cortex-a8 -g
 
@@ -37,10 +33,9 @@ IFLAGS = 	-I$(BOOT_DIR) \
 
 CFLAGS = 	-Wall \
 			-Wextra \
-			-g \
-			-O0 \
 			-mcpu=cortex-a8  \
 			-mfloat-abi=soft \
+			-Os \
 			-pedantic \
 			-static \
 			-ffreestanding \
@@ -73,7 +68,7 @@ all: boot_build_dir $(OUTPUT_ELF) $(OUTPUT_BIN) $(OUTPUT_MLO) disassemble
 boot_build_dir:
 	mkdir -p $(BOOT_DIR)/build
 
-# create ELF file
+# Link to ELF
 $(OUTPUT_ELF): $(OBJFILES)
 	$(LD) $(LDFLAGS) -o $(OUTPUT_ELF) $(OBJFILES) -Map $(BOOT_DIR)/build/bootloader.map
 

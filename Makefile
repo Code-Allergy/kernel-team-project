@@ -8,6 +8,12 @@ DRIVERS_DIR 	= $(OS_DIR)/drivers
 BUILD_DIR 		= $(TOP_DIR)/build
 OUTPUT_SDIMG 	= $(BUILD_DIR)/sd.img
 
+export ToolPrefix ?= arm-none-eabi
+
+export AS 		= ${ToolPrefix}-as
+export LD 		= ${ToolPrefix}-ld
+export OBJCOPY  = ${ToolPrefix}-objcopy
+export CC 		= ${ToolPrefix}-gcc
 
 all: boot sdimg
 
@@ -27,6 +33,7 @@ boot: utils drivers
 	make -f $(BOOT_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM)
+	mkdir -p $(BUILD_DIR)
 	cp $(BOOT_DIR)/build/MLO $(BOOT_DIR)/build/boot_disassembly.txt $(BUILD_DIR)/
 
 clean:

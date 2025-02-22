@@ -3,7 +3,7 @@
 #include <types.h>
 
 /* Read a hypothetical IRQ status register */
-#define IRQ_STATUS_REG  (*(volatile uint32_t*)0x48200000)
+#define IRQ_STATUS_REG (*(volatile uint32_t*) 0x48200000)
 
 /* IRQ Handler */
 void irq_handler(void) {
