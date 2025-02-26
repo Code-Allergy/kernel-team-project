@@ -30,7 +30,13 @@ drivers: utils
 		PLATFORM=$(PLATFORM) \
 		drivers
 
-boot: utils drivers interrupts
+fs: utils
+	make -f $(OS_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM) \
+		fs
+
+boot: utils drivers fs interrupts
 	make -f $(BOOT_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM)

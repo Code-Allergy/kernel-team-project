@@ -6,6 +6,7 @@ ASFLAGS = -mcpu=cortex-a8 -g
 # Directories
 UTILS_DIR := $(TOP_DIR)/common
 DRIVERS_DIR := $(TOP_DIR)/os/drivers
+FS_DIR      := $(TOP_DIR)/os/fs
 
 CCDEFINES = -DPLATFORM=$(PLATFORM)
 
@@ -31,7 +32,7 @@ CFLAGS =	-Wall \
 			-marm \
 			-MMD \
 			-MP \
-			$(CCDEFINES) 
+			$(CCDEFINES)
 
 #----------- COMMON
 # Utils
@@ -55,6 +56,7 @@ driver_build_dir:
 $(DRIVERS_DIR)/build/%.o: $(DRIVERS_DIR)/%.c
 	$(CC) $(IFLAGS) $(CFLAGS) -c $< -o $@
 
+
 #----------- INTERRUPTS
 #INTERRUPTS_OBJS := $(patsubst $(INTERRUPTS_DIR)/%.c, $(INTERRUPTS_DIR)/build/%.o, $(wildcard $(INTERRUPTS_DIR)/*.c))
 INTERRUPTS_OBJS := $(patsubst $(INTERRUPTS_DIR)/%.c, $(INTERRUPTS_DIR)/build/%.o, $(wildcard $(INTERRUPTS_DIR)/*.c))
@@ -68,6 +70,15 @@ interrupts_build_dir:
 $(INTERRUPTS_DIR)/build/%.o: $(INTERRUPTS_DIR)/%.c
 	$(CC) $(IFLAGS) $(CFLAGS) -c $< -o $@
 $(INTERRUPTS_DIR)/build/%.o: $(INTERRUPTS_DIR)/%.S
+
+#----------- FS
+FS_OBJS := $(patsubst $(FS_DIR)/%.c, $(FS_DIR)/build/%.o, $(wildcard $(FS_DIR)/*.c))
+
+fs: fs_build_dir $(FS_DIR)
+
+fs_build_dir:
+	mkdir -p $(FS_DIR)/build
+$(FS_DIR)/build/%.o: $(FS_DIR)/%.c
 	$(CC) $(IFLAGS) $(CFLAGS) -c $< -o $@
 
 #----------- CLEAN
