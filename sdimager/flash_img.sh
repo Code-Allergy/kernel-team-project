@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 IMAGE_FILE="$1"
 SD_DEVICE="$2"

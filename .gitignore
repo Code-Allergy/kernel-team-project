@@ -13,3 +13,4 @@
 .idea/
 .vs/
 compile_commands.json
+.direnv/

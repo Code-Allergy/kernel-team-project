@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 MLO=$1
 #TODO: add os bin file
@@ -58,7 +58,7 @@ if [ -d ./tmp ]; then
     sudo umount ./tmp
 fi
 mkdir -p ./tmp
-sudo mount ${LOOPDEV}p1 ./tmp
+sudo mount -o uid=$(id -u),gid=$(id -g) ${LOOPDEV}p1 ./tmp
 cp $MLO ./tmp/MLO
 sync
 sudo umount ./tmp
