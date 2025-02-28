@@ -22,4 +22,12 @@ typedef struct _generic_circular_buffer{
     uint16_t size;
 } generic_circular_buffer_t;
 
+void circular_char_buffer_init(circular_char_buffer_t* buffer);
+bool circular_char_buffer_push(circular_char_buffer_t* buffer, char c);
+bool circular_char_buffer_pop(circular_char_buffer_t* buffer, char* c);
+
+void generic_circular_buffer_init(generic_circular_buffer_t* buffer);
+bool generic_circular_buffer_push(generic_circular_buffer_t* buffer, void* data);
+bool generic_circular_buffer_pop(generic_circular_buffer_t* buffer, void** data);
+
 #endif /* __CIRCULAR_BUFFER_H__ */

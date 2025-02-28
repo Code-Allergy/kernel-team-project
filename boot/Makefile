@@ -38,6 +38,7 @@ CFLAGS = 	-Wall \
 			-mfloat-abi=soft \
 			-static \
 			-std=gnu90 \
+			-pedantic \
 			-ffreestanding \
 			-fbuiltin \
 			-marm \
@@ -62,6 +63,7 @@ OBJFILES := $(patsubst $(BOOT_DIR)/%.S,$(BOOT_DIR)/build/%.o,$(S_FILES)) \
 			$(DRIVERS_DIR)/build/uart.o \
 			$(DRIVERS_DIR)/build/gpio.o \
 			$(UTILS_DIR)/build/utils.o \
+			$(UTILS_DIR)/build/circular_buffer.o \
 			$(INTERRUPTS_DIR)/build/interrupt.o \
 			$(INTERRUPTS_DIR)/build/interrupt_handlers.o
 

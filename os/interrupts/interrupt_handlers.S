@@ -33,83 +33,81 @@
 
 reset_handler_asm:
     .word __init
-    B .
+    b .
 
 irq_handler_asm:
-    SUB      r14, r14, #4             // Apply lr correction
-    STMFD    r13!, {r0-r3, r12, r14}  // Save context
-    MRS      r12, spsr                // Copy spsr
-    STMFD    r13!, {r12}
+    sub      r14, r14, #4             /* Apply lr correction */
+    stmfd    r13!, {r0-r3, r12, r14}  /* Save context */
+    mrs      r12, spsr                /* Copy spsr */
+    stmfd    r13!, {r12}
 
-    LDR      r0, =(INTC_BASE_ADDR + INTC_THRESHOLD_OFF)         // Get the IRQ Threshold
-    LDR      r1, [r0, #0]             
-    STMFD    r13!, {r1}                                         // Save the threshold value
+    /* Save the threshold value */
+    ldr      r0, =(INTC_BASE_ADDR + INTC_THRESHOLD_OFF)
+    ldr      r1, [r0, #0]             
+    stmfd    r13!, {r1}                                         
     
-    LDR      r2, =(INTC_BASE_ADDR + INTC_IRQ_PRIORITY_OFF)      // Get the IRQ Priority
-    LDR      r3, [r2, #0]
-    STR      r3, [r0, #0]                                       // Set the priority as threshold
+    /* Set the priority as threshold. 
+    interrupt with priority less than threshold will not be serviced */
+    ldr      r2, =(INTC_BASE_ADDR + INTC_IRQ_PRIORITY_OFF)      
+    ldr      r3, [r2, #0]
+    str      r3, [r0, #0]
 
-    LDR      r1, =(INTC_BASE_ADDR + INTC_SIR_IRQ_OFF)           // Get the Active IRQ
-    LDR      r2, [r1]
-    AND      r2, r2, #0x7F                                      // Mask the Active IRQ number
+    /* Get the active IRQ */
+    ldr      r1, =(INTC_BASE_ADDR + INTC_SIR_IRQ_OFF)
+    ldr      r2, [r1]
+    and      r2, r2, #0x7f
 
-    MOV      r0, #0x01                                          // To enable new IRQ Generation
-    LDR      r1, =(INTC_BASE_ADDR + INTC_CONTROL_OFF)           // Get the Control Register
+    /* Enable new IRQ generation if priority is > 0 (maskable)*/ 
+    mov      r0, #0x01
+    ldr      r1, =(INTC_BASE_ADDR + INTC_CONTROL_OFF)
+    cmp      r3, #0
+    strne    r0, [r1]                 /* if > 0 priority, acknowledge INTC */
+    dsb                               /* Make sure acknowledgement is completed */
 
 
-    CMP      r3, #0                   // Check if non-maskable priority 0
-    STRNE    r0, [r1]                 // if > 0 priority, acknowledge INTC
-    DSB                               // Make sure acknowledgement is completed
-
-    //
-    // Enable IRQ and switch to system mode. But IRQ shall be enabled
-    // only if priority level is > 0. Note that priority 0 is non maskable.
-    // Interrupt Service Routines will execute in System Mode.
-    //
-    MRS      r14, cpsr                // Read cpsr
-    ORR      r14, r14, #MODE_System   // Switch to System Mode
-    BICNE    r14, r14, #I_BIT         // Enable IRQ if priority > 0
-    MSR      cpsr, r14
+    mrs      r14, cpsr                /* Read cpsr */
+    orr      r14, r14, #MODE_System   /* Switch to System Mode */
+    bicne    r14, r14, #I_BIT         /* Enable IRQ if priority > 0 */
+    msr      cpsr, r14
                             
+    stmfd    r13!, {r14}              /* Save lr_usr */
+
+    ldr      r0, =intc_vector_table   /* Load the base of the vector table */
+    add      r14, pc, #0              /* Save return address in lr */
+    ldr      pc, [r0, r2, lsl #2]     /* Jump to the ISR. pc = vector_base + (intc_num * 4) */
+
+    /* Interrupt has been serviced. Restore the context */
+    ldmfd    r13!, {r14}              /* Restore lr_usr */
+
+    /* Disable IRQ and change back to IRQ mode */
+    cpsid    i, #MODE_IRQ             /* Disable IRQ */
+
+    ldr      r0, =(INTC_BASE_ADDR + INTC_THRESHOLD_OFF)      /* Get the IRQ Threshold */
+    ldr      r1, [r0, #0]
+    /* If the threshold is 0, then enable new IRQ generation 
+    (was disabled in the beginning) */
+    cmp      r1, #0                   /* If priority 0 */
+    moveq    r2, #0x01                /* Enable new IRQ Generation */
+    ldreq    r1, =(INTC_BASE_ADDR + INTC_CONTROL_OFF) 
+    streq    r2, [r1]
     
-    STMFD    r13!, {r14}              // Save lr_usr
+    ldmfd    r13!, {r1}
+    str      r1, [r0, #0]             /* Restore the threshold value */
+    ldmfd    r13!, {r12}
+    msr      spsr, r12                /* Restore spsr */
 
-    LDR      r0, =intc_vector_table   // Load the base of the vector table
-    ADD      r14, pc, #0              // Save return address in LR
-    LDR      pc, [r0, r2, lsl #2]     // Jump to the ISR
-
-    LDMFD    r13!, {r14}              // Restore lr_usr
-
-    //
-    // Disable IRQ and change back to IRQ mode
-    //
-    CPSID    i, #MODE_IRQ             // Disable IRQ
-
-    LDR      r0, =(INTC_BASE_ADDR + INTC_THRESHOLD_OFF)      // Get the IRQ Threshold
-
-    LDR      r1, [r0, #0]
-    CMP      r1, #0                   // If priority 0
-    MOVEQ    r2, #0x01           // Enable new IRQ Generation
-    LDREQ    r1, =(INTC_BASE_ADDR + INTC_CONTROL_OFF) 
-    STREQ    r2, [r1]
-    
-    LDMFD    r13!, {r1}
-    STR      r1, [r0, #0]             // Restore the threshold value
-    LDMFD    r13!, {r12}
-    MSR      spsr, r12                // Restore spsr
-
-    LDMFD    r13!, {r0-r3, r12, pc}^  // Restore the context and return
+    ldmfd    r13!, {r0-r3, r12, pc}^  /* Restore the context and return */
 
 
 
-// Unimplemented handlers
+/* Unimplemented handlers */
 undef_handler_asm:
 svc_handler_asm:
 prefetch_abort_handler_asm:
 data_abort_handler_asm:
 fiq_handler_asm:
 reserved_handler_asm:
-    B .
+    b .
 
 /**
 * @brief Set the vector table base address
@@ -118,6 +116,6 @@ reserved_handler_asm:
 */
 .global set_vector_table_base_addr_asm
 set_vector_table_base_addr_asm:
-    MCR     p15, #0, r0, c12, c0, #0
-    DSB
-    BX      lr
+    mcr     p15, #0, r0, c12, c0, #0
+    dsb
+    bx      lr

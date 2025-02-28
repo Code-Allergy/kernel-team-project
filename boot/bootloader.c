@@ -21,6 +21,8 @@ void dumb_delay()
 
 static inline void gpio_test()
 {
+    char uart_buffer[100];
+    int read = 0;
     unsigned int gpio_base = GPIO1_BASE;
 
     delay(0xFFFF);
@@ -28,12 +30,7 @@ static inline void gpio_test()
     GpioSetPinMode(GPIO1_BASE, 0xf << 21, GpioPinOut);
     GPIO_set(GPIO1_BASE, 1 << 21);
 
-    setup_vector_table();
-    GPIO_set(GPIO1_BASE, 2 << 21);
-    CPU_irq_enable();
-    GPIO_set(GPIO1_BASE, 4 << 21);
-    INTC_init();
-    GPIO_clear(gpio_base, 0x3 << 21);
+    system_interrupt_init();
 
     // 8N1
     uart_init(0,      // UART index (0 = UART0, 1 = UART1, etc.)
@@ -45,10 +42,6 @@ static inline void gpio_test()
               8       // Character length
     );
 
-    INTC_register_irq(72, handle_uart0_irq);
-    INTC_set_priority(72, 1); /* Priority 0 is non maskable*/
-    INTC_enable_irq(72);    /* Enable UART0 interrupts */
-
     /* uart_puts("Sup bro\n"); */
 
     while (1)
@@ -56,6 +49,15 @@ static inline void gpio_test()
         GPIO_set(gpio_base, LED_PINS);
         uart_puts("LEDs on!\n");
         delay(0x1FFFFFF);
+        /*readline is not yet fully implemented */
+        read = uart0_readline(uart_buffer, 100);
+        if(read > 0)
+        {
+            uart_buffer[read - 1] = '\n';
+            uart_buffer[read] = '\0';
+            uart_puts("Received: ");
+            uart_puts(uart_buffer);
+        }
         GPIO_clear(gpio_base, LED_PINS);
         uart_puts("LEDs off!\n");
         delay(0x1FFFFFF);

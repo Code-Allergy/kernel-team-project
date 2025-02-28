@@ -57,7 +57,6 @@ SECTIONS
 
     . = ALIGN(4);
     __StackEnd = .;
-    /*VECTOR_TABLE_DEST_ADDR = __StackEnd - 0x1000; */
     __StackStart = __BBB_LD_SRAM_END - 0xf;
 
     /* Shared uninitialized RAM */

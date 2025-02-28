@@ -5,20 +5,7 @@
 #include <uart.h>
 #include <gpio.h>
 
-//extern uintptr_t VECTOR_TABLE_DEST_ADDR; /* Set in linker file*/
 const unsigned int VECTOR_TABLE_DEST_ADDR = 0x4030FC00;
-
-
-
-/* Read a hypothetical IRQ status register */
-#define IRQ_STATUS_REG (*(volatile uint32_t*) 0x48200000)
-
-#define INTC_SIR_IRQ_REG    (*(volatile uint32_t*) (INTC_BASE_ADDR + INTC_SIR_IRQ_OFF))
-#define INTC_CONTROL_REG    (*(volatile uint32_t*) (INTC_BASE_ADDR + INTC_CONTROL_OFF))
-
-
-extern void handle_uart0_irq(void);
-
 
 void (*intc_vector_table[NUM_INTERRUPTS])(void);
 
@@ -98,6 +85,12 @@ void CPU_irq_disable(void) {
         "    msr     CPSR, r0");
 }
 
+void system_interrupt_init(void) {
+    setup_vector_table();
+    CPU_irq_enable();
+    INTC_init();
+}
+
 
 extern void reset_handler_asm(void);             
 extern void undef_handler_asm(void);              
@@ -109,6 +102,7 @@ extern void fiq_handler_asm(void);
 extern void reserved_handler_asm(void);       
 
 
+/* This is the same way the default dead loops are set up*/
 static unsigned int const vector_table[] = {
     0xE59FF018,    /* Opcode for loading PC with the contents of [PC + 0x18] */
     0xE59FF018,    
@@ -129,51 +123,11 @@ static unsigned int const vector_table[] = {
 };
 
 extern set_vector_table_base_addr_asm(unsigned int addr);
+
 void setup_vector_table(void) {
     uint16_t i;
     set_vector_table_base_addr_asm(VECTOR_TABLE_DEST_ADDR);
     for (i = 0; i < sizeof(vector_table) / sizeof(vector_table[0]); i++) {
         ((unsigned int*)VECTOR_TABLE_DEST_ADDR)[i] = vector_table[i];
     }
-}
-
-
-
-
-/* IRQ Handler */
-void irq_handler(void) {
-    uint32_t irq_number;
-
-    GPIO_set(GPIO1_BASE, 2 << 21);
-    irq_number = INTC_SIR_IRQ_REG & 0x7F;
-    // See table 6-1 in the AM335x TRM for the IRQ numbers
-    switch (irq_number) {
-        case 72: // UART0 IRQ
-            handle_uart0_irq();
-            break;
-        // Add more cases as needed
-        default:
-            // Handle unknown IRQ
-            break;
-    }
-
-    // Reset IRQ output and enable new IRQ generation
-    REG32_write_masked(INTC_BASE_ADDR, INTC_CONTROL_OFF, 0x1, 0x1);
-
-    return;
-}
-
-/* SWI Handler */
-void svc_handler(void) {
-    uint32_t svc_number;
-    GPIO_set(GPIO1_BASE, 4 << 22);
-    __asm__("MRS %0, SPSR" : "=r" (svc_number));
-
-    handle_syscall(svc_number);
-}
-
-
-void __attribute__((interrupt("IRQ"))) undef_handler(void) {
-    uart_puts("Undefined instruction exception\n");
-    while (1);
 }

@@ -167,6 +167,11 @@ void uart_puts(const char* str);
 
 char uart_getc(void);
 
+void uart0_interrupt_init(void);
 void handle_uart0_irq(void);
+
+/* Both non blocking*/
+unsigned int uart0_getchar(char *c);
+unsigned int uart0_readline(char *buffer, unsigned int buffer_size);
 
 #endif
