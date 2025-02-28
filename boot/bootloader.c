@@ -53,8 +53,8 @@ static inline void gpio_test()
         read = uart0_readline(uart_buffer, 100);
         if(read > 0)
         {
-            uart_buffer[read - 1] = '\n';
-            uart_buffer[read] = '\0';
+            uart_buffer[read] = '\n';
+            uart_buffer[read + 1] = '\0';
             uart_puts("Received: ");
             uart_puts(uart_buffer);
         }
