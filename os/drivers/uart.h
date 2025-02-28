@@ -165,4 +165,8 @@ void uart_init(unsigned short uart_index,
 void uart_putc(char c);
 void uart_puts(const char* str);
 
+char uart_getc(void);
+
+void handle_uart0_irq(void);
+
 #endif

@@ -1,9 +1,10 @@
 #include <gpio.h>
 #include <uart.h>
 #include <stdint.h>
+#include <interrupt.h>
 
 extern void setup_vbar();
-#define LED_PINS (0xF << 21)
+#define LED_PINS (0x8 << 21)
 
 static inline void delay(volatile unsigned int count)
 {
@@ -26,6 +27,14 @@ static inline void gpio_test()
     GPIO_init(); // Currently only configures GPIO1
     GpioSetPinMode(GPIO1_BASE, 0xf << 21, GpioPinOut);
     GPIO_set(GPIO1_BASE, 1 << 21);
+
+    setup_vector_table();
+    GPIO_set(GPIO1_BASE, 2 << 21);
+    CPU_irq_enable();
+    GPIO_set(GPIO1_BASE, 4 << 21);
+    INTC_init();
+    GPIO_clear(gpio_base, 0x3 << 21);
+
     // 8N1
     uart_init(0,      // UART index (0 = UART0, 1 = UART1, etc.)
               115200, // Baud rate for communication
@@ -35,6 +44,10 @@ static inline void gpio_test()
               0,      // Parity type (0 = even, 1 = odd; ignored if parity is disabled)
               8       // Character length
     );
+
+    INTC_register_irq(72, handle_uart0_irq);
+    INTC_set_priority(72, 1); /* Priority 0 is non maskable*/
+    INTC_enable_irq(72);    /* Enable UART0 interrupts */
 
     /* uart_puts("Sup bro\n"); */
 

@@ -29,13 +29,13 @@ LDFLAGS = 	-T $(LDSCRIPT) \
 
 IFLAGS = 	-I$(BOOT_DIR) \
 			-I$(TOP_DIR)/os/drivers \
-			-I$(TOP_DIR)/common
+			-I$(TOP_DIR)/common \
+			-I$(INTERRUPTS_DIR)
 
 CFLAGS = 	-Wall \
 			-Wextra \
 			-mcpu=cortex-a8  \
 			-mfloat-abi=soft \
-			-Os \
 			-static \
 			-std=gnu90 \
 			-ffreestanding \
@@ -56,11 +56,14 @@ S_FILES := $(wildcard $(BOOT_DIR)/*.S)
 C_FILES := $(wildcard $(BOOT_DIR)/*.c)
 
 # Convert them to .o files
+# TODO: interrupt.o will be moved to the OS alongside the vectors in the future
 OBJFILES := $(patsubst $(BOOT_DIR)/%.S,$(BOOT_DIR)/build/%.o,$(S_FILES)) \
 			$(patsubst $(BOOT_DIR)/%.c,$(BOOT_DIR)/build/%.o,$(C_FILES)) \
 			$(DRIVERS_DIR)/build/uart.o \
 			$(DRIVERS_DIR)/build/gpio.o \
-			$(UTILS_DIR)/build/utils.o
+			$(UTILS_DIR)/build/utils.o \
+			$(INTERRUPTS_DIR)/build/interrupt.o \
+			$(INTERRUPTS_DIR)/build/interrupt_handlers.o
 
 
 all: boot_build_dir $(OUTPUT_ELF) $(OUTPUT_BIN) $(OUTPUT_MLO) disassemble

@@ -1,13 +1,10 @@
 #include <uart.h>
-#include <gpio.h>
 #include <utils.h>
 #include <clock_module.h>
 
 #define CONTROL_MODULE_BASE 0x44E10000
 #define CONTROL_MODULE_UART0_RXD_OFF 0x970
 #define CONTROL_MODULE_UART0_TXD_OFF 0x974
-
-int leds = 1;
 
 void uart_init( unsigned short uart_index,
                 unsigned int    baud_rate, 
@@ -128,9 +125,9 @@ void uart_init( unsigned short uart_index,
             REG32_write(UART0_BASE, UART_LCR_OFF, 0x00);
 
             // 9. Load the new interrupt configuration (0: Disable the interrupt; 1: Enable the interrupt)
-            // For now disable all interrupts
-            REG32_write(UART0_BASE, UART_IER_UART_OFF, 0x00);   // [0] RHRIT = 0 (Tranmission holding register interrupt)
-                                                                // [1] THRIT = 0 (Receive holding register interrupt)
+            // Enable receive holding register interrupt
+            REG32_write(UART0_BASE, UART_IER_UART_OFF, 0x01);   // [0] RHRIT = 1 (Receive holding register interrupt)
+                                                                // [1] THRIT = 0 (Tranmission holding register interrupt)
                                                                 // [2] LINESTIT = 0 (receiver line status interrupt)
                                                                 // [3] MODEMSTSIT = 0 (modem status register interrupt)
                                                                 // [4] SLEEPMODE = 0 (Disables sleep mode)
@@ -182,4 +179,28 @@ void uart_puts(const char *str) {
     while (*str) {
         uart_putc(*str++);
     }
+}
+
+char uart_getc(void) {
+    // Only support UART0 for now
+    // Wait for the RHR data ready bit to be set
+    while (!(REG32_read(UART0_BASE, UART_LSR_UART_OFF) & 0x1));
+    // Read the character from the RHR
+    return REG32_read(UART0_BASE, UART_RHR_OFF);
+}
+
+
+void handle_uart0_irq(void) {
+    /* Disable UART0 interrupts */
+    REG32_write(UART0_BASE, UART_IER_UART_OFF, 0x00);
+
+    // Echo the character back
+    char msg[] = "CHAR:x\n";
+    msg[5] = uart_getc();
+    uart_puts(msg);
+
+    /* Re enable UART0 interrupts*/
+    REG32_write(UART0_BASE, UART_IER_UART_OFF, 0x01);
+
+    return;
 }

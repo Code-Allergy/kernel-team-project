@@ -26,46 +26,47 @@ SECTIONS
 {
     /* .text section */
     .text : {
-		KEEP( *( .text._start ) )
-		*( .text* )
-	} :image
+      KEEP( *( .text._start ) )
+      *( .text* )
+	  } :image
     . = ALIGN(4);  /* Ensure proper alignment for the next section */
 
     /* .rodata section */
     .rodata : {
-		*( .rodata* )
+		  *( .rodata* )
     } :image
     . = ALIGN(4);  /* Ensure proper alignment for the next section */
 
     /* .data section */
     .data : {
-		*( .data* )
-	} :image
-	. = ALIGN(4);
+		  *( .data* )
+	  } :image
+	  . = ALIGN(4);
 
-	.bss : {
+	  .bss : {
 	    __BssStart = .;
 	    *( .bss* )
 	    __BssEnd = .;
-	} > SRAM
-	. = ALIGN(4);
+	  } > SRAM
+	  . = ALIGN(4);
 
-	.isr_vector : {
+	  .isr_vector : {
 	    __isr_vector = .;
-	    *(.isr_vector*)
-	}
+	    KEEP(*(.isr_vector*))
+	  } > SRAM
 
     . = ALIGN(4);
     __StackEnd = .;
+    /*VECTOR_TABLE_DEST_ADDR = __StackEnd - 0x1000; */
     __StackStart = __BBB_LD_SRAM_END - 0xf;
 
     /* Shared uninitialized RAM */
-	.shared (NOLOAD) : { *( .shared .shared.* ) } >L3_OCMCO_RAM :NONE
+	  .shared (NOLOAD) : { *( .shared .shared.* ) } >L3_OCMCO_RAM :NONE
 
-	/* Private uninitialized RAM */
-	.noinit (NOLOAD) : { *( .noinit .noinit.* ) } >SRAM :NONE
+	  /* Private uninitialized RAM */
+	  .noinit (NOLOAD) : { *( .noinit .noinit.* ) } >SRAM :NONE
 
     /* Catch any unknown sections and yell loudly about them */
-	.orphan : { INPUT_SECTION_FLAGS (SHF_ALLOC) *(*) } :NONE
-	ASSERT( SIZEOF(.orphan) == 0, "unassigned sections!" )
+	  .orphan : { INPUT_SECTION_FLAGS (SHF_ALLOC) *(*) } :NONE
+	  ASSERT( SIZEOF(.orphan) == 0, "unassigned sections!" )
 }
