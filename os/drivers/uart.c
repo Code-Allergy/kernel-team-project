@@ -1,13 +1,14 @@
 #include <uart.h>
-#include <gpio.h>
 #include <utils.h>
 #include <clock_module.h>
+#include <interrupt.h>
+#include <circular_buffer.h>
 
 #define CONTROL_MODULE_BASE 0x44E10000
 #define CONTROL_MODULE_UART0_RXD_OFF 0x970
 #define CONTROL_MODULE_UART0_TXD_OFF 0x974
 
-int leds = 1;
+circular_char_buffer_t uart0_rx_buffer;
 
 void uart_init( unsigned short uart_index,
                 unsigned int    baud_rate, 
@@ -17,6 +18,8 @@ void uart_init( unsigned short uart_index,
                 unsigned short  parity_type, 
                 unsigned short  char_length
             ) {
+    unsigned int lcr, efr_bit4, mcr_bit6;
+
     // Only support UART0 for now
     switch (uart_index){
         case 0:
@@ -46,18 +49,18 @@ void uart_init( unsigned short uart_index,
 
             /*-------------- 19.4.1.1.2 FIFOs and DMA Settings --------------- */
             // 1. Save LCR and switch to register configuration mode B
-            unsigned int lcr = REG32_read(UART0_BASE, UART_LCR_OFF);
+            lcr = REG32_read(UART0_BASE, UART_LCR_OFF);
             REG32_write(UART0_BASE, UART_LCR_OFF, 0xBF);
 
             // 2. Enable register submode TCR_TLR to access the UARTi.UART_TLR register (part 1 of 2):
-            unsigned int efr_bit4 = REG32_read_masked(UART0_BASE, UART_EFR_OFF, 0x10);
+            efr_bit4 = REG32_read_masked(UART0_BASE, UART_EFR_OFF, 0x10);
             REG32_write_masked(UART0_BASE, UART_EFR_OFF, 0x10, 0x10); // Set ENHANCEDEN = 1
 
             // 3. Switch to register configuration mode A to access the UARTi.UART_MCR register
             REG32_write(UART0_BASE, UART_LCR_OFF, 0x80);
 
             // 4. Enable register submode TCR_TLR to access the UARTi.UART_TLR register (part 2 of 2)
-            unsigned int mcr_bit6 = REG32_read_masked(UART0_BASE, UART_MCR_OFF, 0x40);
+            mcr_bit6 = REG32_read_masked(UART0_BASE, UART_MCR_OFF, 0x40);
             REG32_write_masked(UART0_BASE, UART_MCR_OFF, 0x40, 0x40); // Set TCR_TLR = 1
 
             // 5. Enable the FIFO; load the new FIFO triggers (part 1 of 3) and the new DMA mode (part 1 of 2)
@@ -128,9 +131,9 @@ void uart_init( unsigned short uart_index,
             REG32_write(UART0_BASE, UART_LCR_OFF, 0x00);
 
             // 9. Load the new interrupt configuration (0: Disable the interrupt; 1: Enable the interrupt)
-            // For now disable all interrupts
-            REG32_write(UART0_BASE, UART_IER_UART_OFF, 0x00);   // [0] RHRIT = 0 (Tranmission holding register interrupt)
-                                                                // [1] THRIT = 0 (Receive holding register interrupt)
+            // Enable receive holding register interrupt
+            REG32_write(UART0_BASE, UART_IER_UART_OFF, 0x01);   // [0] RHRIT = 1 (Receive holding register interrupt)
+                                                                // [1] THRIT = 0 (Tranmission holding register interrupt)
                                                                 // [2] LINESTIT = 0 (receiver line status interrupt)
                                                                 // [3] MODEMSTSIT = 0 (modem status register interrupt)
                                                                 // [4] SLEEPMODE = 0 (Disables sleep mode)
@@ -158,6 +161,12 @@ void uart_init( unsigned short uart_index,
             // 13. Load the new UART mode
             REG32_write(UART0_BASE, UART_MDR1_OFF, 0x0); // UART 16x mode
 
+            /* Setup uart0 RHR interrup*/
+            uart0_interrupt_init();
+
+            /* initialize receive buffer*/
+            circular_char_buffer_init(&uart0_rx_buffer);
+
             break;
         default:
             break;
@@ -182,4 +191,68 @@ void uart_puts(const char *str) {
     while (*str) {
         uart_putc(*str++);
     }
+}
+
+char uart_getc(void) {
+    // Only support UART0 for now
+    // Wait for the RHR data ready bit to be set
+    while (!(REG32_read(UART0_BASE, UART_LSR_UART_OFF) & 0x1));
+    // Read the character from the RHR
+    return REG32_read(UART0_BASE, UART_RHR_OFF);
+}
+
+
+void uart0_interrupt_init(void) {
+    // Register the UART0 interrupt handler
+    INTC_register_irq(UART0_INT_NUM, handle_uart0_irq);
+    INTC_set_priority(UART0_INT_NUM, 1); /* Priority 0 is non maskable*/
+    // Enable the UART0 interrupt
+    INTC_enable_irq(UART0_INT_NUM);
+}
+
+
+void handle_uart0_irq(void) {
+    /* Disable UART0 interrupts */
+    REG32_write(UART0_BASE, UART_IER_UART_OFF, 0x00);
+
+    /* Echo the character back */
+    char c = uart_getc();
+    uart_putc(c);
+
+    /* Push the character to the buffer */
+    circular_char_buffer_push(&uart0_rx_buffer, c);
+
+    /* Re enable UART0 interrupts*/
+    REG32_write(UART0_BASE, UART_IER_UART_OFF, 0x01);
+
+    return;
+}
+
+/* Device functions */
+
+unsigned int uart0_getchar(char *c) {
+    if(circular_char_buffer_pop(&uart0_rx_buffer, c)){
+        return 1;
+    }
+    return 0;
+}
+
+unsigned int uart0_readline(char *buffer, unsigned int buffer_size) {
+    char c;
+    unsigned int i = 0;
+
+    while (i < buffer_size) {
+        if (uart0_getchar(&c)) {
+            if (c == '\r') {
+                buffer[i] = '\0';
+                return i+1;
+            } else {
+                buffer[i] = c;
+                i++;
+            }
+        }else{
+            return i;
+        }
+    }
+    return i;
 }

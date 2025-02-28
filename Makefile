@@ -7,6 +7,7 @@ OS_DIR 			= $(TOP_DIR)/os
 DRIVERS_DIR 	= $(OS_DIR)/drivers
 BUILD_DIR 		= $(TOP_DIR)/build
 OUTPUT_SDIMG 	= $(BUILD_DIR)/sd.img
+export INTERRUPTS_DIR = $(OS_DIR)/interrupts
 
 export ToolPrefix ?= arm-none-eabi
 
@@ -29,12 +30,24 @@ drivers: utils
 		PLATFORM=$(PLATFORM) \
 		drivers
 
-boot: utils drivers
+boot: utils drivers interrupts
 	make -f $(BOOT_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM)
 	mkdir -p $(BUILD_DIR)
 	cp $(BOOT_DIR)/build/MLO $(BOOT_DIR)/build/boot_disassembly.txt $(BUILD_DIR)/
+
+# TODO: This will be compiled with the rest of the OS when interrupts are moved to the OS
+interrupts:
+	make -f $(OS_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM) \
+		interrupts
+
+os: utils
+	make -f $(OS_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM)
 
 clean:
 	make -f $(OS_DIR)/Makefile \
