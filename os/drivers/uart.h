@@ -171,7 +171,27 @@ void uart0_interrupt_init(void);
 void handle_uart0_irq(void);
 
 /* Both non blocking*/
+/**
+ * @brief Get a single character from UART0's buffer.'
+ *
+ * @param c Pointer to a character variable where the received character will be stored.
+ * @return Returns 1 if a character is present and 0 otherwise.
+ */
 unsigned int uart0_getchar(char *c);
+ 
+/**
+ * @brief Reads a line of text from UART0's buffer.
+ *
+ * NOTE: The destination buffer must be large enough to store the received line,
+ * including the newline character and the null terminator. The function will
+ * read characters from the buffer until a newline character is reached
+ * or the destination buffer is full (in which case the destination buffer
+ * will not have a newline and null terminator!!). 
+ *
+ * @param buffer Pointer to a character array where the received line will be stored.
+ * @param buffer_size The size of the buffer.
+ * @return Returns the number of characters read, or a non-zero error code on failure.
+ */
 unsigned int uart0_readline(char *buffer, unsigned int buffer_size);
 
 #endif

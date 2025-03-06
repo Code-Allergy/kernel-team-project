@@ -217,6 +217,9 @@ void handle_uart0_irq(void) {
 
     /* Echo the character back */
     char c = uart_getc();
+    if(c == '\r'){
+        c = '\n';
+    }
     uart_putc(c);
 
     /* Push the character to the buffer */
@@ -241,18 +244,20 @@ unsigned int uart0_readline(char *buffer, unsigned int buffer_size) {
     char c;
     unsigned int i = 0;
 
-    while (i < buffer_size) {
+    if(uart0_rx_buffer.lines == 0){
+        return 0;
+    }
+
+    while (i < buffer_size - 1) {
         if (uart0_getchar(&c)) {
-            if (c == '\r') {
-                buffer[i] = '\0';
-                return i+1;
-            } else {
-                buffer[i] = c;
-                i++;
+            buffer[i++] = c;
+            if (c == '\n') {
+                break;
             }
-        }else{
-            return i;
+        } else {
+            break;
         }
     }
+    buffer[i] = '\0';
     return i;
 }
