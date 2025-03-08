@@ -3,10 +3,10 @@ PLATFORM ?=BBB
 
 TOP_DIR 		= .
 BOOT_DIR 		= $(TOP_DIR)/boot
-OS_DIR 			= $(TOP_DIR)/os
 DRIVERS_DIR 	= $(OS_DIR)/drivers
 BUILD_DIR 		= $(TOP_DIR)/build
 OUTPUT_SDIMG 	= $(BUILD_DIR)/sd.img
+export OS_DIR 	= $(TOP_DIR)/os
 export INTERRUPTS_DIR = $(OS_DIR)/interrupts
 export FS_DIR 		  = $(OS_DIR)/fs
 
@@ -44,6 +44,13 @@ boot: utils drivers fs interrupts
 	mkdir -p $(BUILD_DIR)
 	cp $(BOOT_DIR)/build/MLO $(BOOT_DIR)/build/boot_disassembly.txt $(BUILD_DIR)/
 
+# kernel: | $(BUILD_DIR)
+# 	make -f $(OS_DIR)/Makefile \
+# 		TOP_DIR=$(TOP_DIR) \
+# 		PLATFORM=$(PLATFORM) \
+# 		kernel
+# 	cp $(OS_DIR)/build/kernel.bin $(OS_DIR)/build/kernel_disassembly.txt $(BUILD_DIR)/
+
 # TODO: This will be compiled with the rest of the OS when interrupts are moved to the OS
 interrupts:
 	make -f $(OS_DIR)/Makefile \
@@ -67,8 +74,8 @@ clean:
 		clean
 
 
-sdimg: boot
-	$(TOP_DIR)/sdimager/mksdimage.sh $(BUILD_DIR)/MLO $(OUTPUT_SDIMG)
+sdimg: boot kernel
+	$(TOP_DIR)/sdimager/mksdimage.sh $(BUILD_DIR)/MLO $(BUILD_DIR)/kernel.bin $(OUTPUT_SDIMG)
 
 flash: sdimg
 ifndef DEV

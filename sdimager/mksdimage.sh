@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
 MLO=$1
-#TODO: add os bin file
-
-IMG=$2
+KERNEL=$2
+IMG=$3
 IMG_SIZE_MB=100
 BOOT_PART_SIZE_MB=50
 LOOPDEV=""
@@ -60,6 +59,8 @@ fi
 mkdir -p ./tmp
 sudo mount -o uid=$(id -u),gid=$(id -g) ${LOOPDEV}p1 ./tmp
 cp $MLO ./tmp/MLO
+mkdir -p ./tmp/boot
+cp $KERNEL ./tmp/boot/kernel.bin
 sync
 sudo umount ./tmp
 rmdir ./tmp
