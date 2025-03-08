@@ -9,6 +9,8 @@
 **/boot_disassembly.txt
 **/bootloader.map
 
+**/qemu.log
+
 [Bb]uild/
 .idea/
 .vs/

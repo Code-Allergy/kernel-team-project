@@ -47,7 +47,7 @@ typedef struct {
 
 #define NUM_INTERRUPTS      128
 
-#define UART0_INT_NUM       2
+#define UART0_INT_NUM       1
 
 static void INTC_init(void);
 bool INTC_register_irq(uint32_t int_num, void (*handler)(void));

@@ -16,23 +16,13 @@ static void INTC_init(void) {
     //     vbar_addr &= ~0x1F;
     //     panic("VBAR unaligned");
     // }
-    // __asm__ volatile(
-    //     "mcr p15, 0, %0, c12, c0, 0 \n"  /* Write VBAR */
-    //     "dsb \n"
-    //     "isb \n"
-    //     :
-    //     : "r" (vbar_addr)
-    // );
 
     // setup CSPR for IRQ mode
-    // __asm__ volatile(
-    //     "mrs r0, cpsr \n"
-    //     "bic r0, r0, #0x80 \n"
-    //     "msr cpsr_c, r0 \n"
-    // );
-
-    // zero out the interrupt handlers table
-    // memset(irq_handlers, 0, sizeof(irq_handlers));
+    __asm__ volatile(
+        "mrs r0, cpsr \n"
+        "bic r0, r0, #0x80 \n"
+        "msr cpsr_c, r0 \n"
+    );
 }
 
 extern void reset_handler_asm(void);             
@@ -64,6 +54,23 @@ static unsigned int const vector_table[] = {
     (unsigned int)irq_handler_asm,
     (unsigned int)fiq_handler_asm
 };
+
+void handle_irq_c(uint32_t process_stack) {
+    uint32_t pending, irq;
+    int reg;
+
+    for(reg = 0; reg < 3; reg++) {
+        pending = INTC->IRQ_PEND[reg];
+        while(pending) {
+            irq = 32 * reg + __builtin_ctz(pending);
+            if(intc_vector_table[irq]) {
+                intc_vector_table[irq]();
+            }
+            pending &= pending - 1;
+        }
+    }
+}
+
 
 void system_interrupt_init(void) {
     setup_vector_table();

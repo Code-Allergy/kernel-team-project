@@ -87,7 +87,9 @@ void uart0_interrupt_init(void) {
 
 
 void handle_uart0_irq(void) {
-    uart_handler(UART0_INT_NUM, NULL);
+    char c = UART0->RBR_THR_DLL;  // Read the character (clears interrupt)
+    INTC->IRQ_PEND[0] = (UART0_INT_NUM << 1);
+    circular_char_buffer_push(&uart0_rx_buffer, c);
 }
 
 unsigned int uart0_getchar(char *c) {
