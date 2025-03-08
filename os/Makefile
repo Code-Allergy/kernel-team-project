@@ -70,7 +70,7 @@ interrupts_build_dir:
 $(INTERRUPTS_DIR)/build/%.o: $(INTERRUPTS_DIR)/%.c
 	$(CC) $(IFLAGS) $(CFLAGS) -c $< -o $@
 $(INTERRUPTS_DIR)/build/%.o: $(INTERRUPTS_DIR)/%.S
-
+	$(CC) $(IFLAGS) $(CFLAGS) $(ASFLAGS) -c $< -o $@
 #----------- FS
 FS_OBJS := $(patsubst $(FS_DIR)/%.c, $(FS_DIR)/build/%.o, $(wildcard $(FS_DIR)/*.c))
 
