@@ -74,7 +74,7 @@ $(INTERRUPTS_DIR)/build/%.o: $(INTERRUPTS_DIR)/%.S
 #----------- FS
 FS_OBJS := $(patsubst $(FS_DIR)/%.c, $(FS_DIR)/build/%.o, $(wildcard $(FS_DIR)/*.c))
 
-fs: fs_build_dir $(FS_DIR)
+fs: fs_build_dir $(FS_OBJS)
 
 fs_build_dir:
 	mkdir -p $(FS_DIR)/build

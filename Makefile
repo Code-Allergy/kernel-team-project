@@ -8,6 +8,7 @@ DRIVERS_DIR 	= $(OS_DIR)/drivers
 BUILD_DIR 		= $(TOP_DIR)/build
 OUTPUT_SDIMG 	= $(BUILD_DIR)/sd.img
 export INTERRUPTS_DIR = $(OS_DIR)/interrupts
+export FS_DIR 		  = $(OS_DIR)/fs
 
 export ToolPrefix ?= arm-none-eabi
 
