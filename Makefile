@@ -44,12 +44,12 @@ boot: utils drivers fs interrupts
 	mkdir -p $(BUILD_DIR)
 	cp $(BOOT_DIR)/build/MLO $(BOOT_DIR)/build/boot_disassembly.txt $(BUILD_DIR)/
 
-# kernel: | $(BUILD_DIR)
-# 	make -f $(OS_DIR)/Makefile \
-# 		TOP_DIR=$(TOP_DIR) \
-# 		PLATFORM=$(PLATFORM) \
-# 		kernel
-# 	cp $(OS_DIR)/build/kernel.bin $(OS_DIR)/build/kernel_disassembly.txt $(BUILD_DIR)/
+kernel: | $(BUILD_DIR)
+	make -f $(OS_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM) \
+		kernel
+	cp $(OS_DIR)/build/kernel.bin $(OS_DIR)/build/kernel_disassembly.txt $(BUILD_DIR)/
 
 # TODO: This will be compiled with the rest of the OS when interrupts are moved to the OS
 interrupts:

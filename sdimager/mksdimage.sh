@@ -59,6 +59,7 @@ fi
 mkdir -p ./tmp
 sudo mount -o uid=$(id -u),gid=$(id -g) ${LOOPDEV}p1 ./tmp
 cp $MLO ./tmp/MLO
+echo "Copying kernel..."
 mkdir -p ./tmp/boot
 cp $KERNEL ./tmp/boot/kernel.bin
 sync
