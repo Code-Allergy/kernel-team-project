@@ -1,7 +1,10 @@
 # Default platform is QEMU
 PLATFORM ?=BBB
-
 TOP_DIR 		= .
+ifeq ($(PLATFORM),QEMU)
+    TOP_DIR = ./qemu
+endif
+
 BOOT_DIR 		= $(TOP_DIR)/boot
 DRIVERS_DIR 	= $(OS_DIR)/drivers
 BUILD_DIR 		= $(TOP_DIR)/build
@@ -73,7 +76,6 @@ clean:
 		PLATFORM=$(PLATFORM) \
 		clean
 
-
 sdimg: boot kernel
 	$(TOP_DIR)/sdimager/mksdimage.sh $(BUILD_DIR)/MLO $(BUILD_DIR)/kernel.bin $(OUTPUT_SDIMG)
 
@@ -85,7 +87,10 @@ endif
 
 # TODO: Fix these
 # Run QEMU with the binary output
-qemu-gdb: $(OUTPUT_BIN)
-	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(OUTPUT_BIN) -S -gdb tcp::1234
-qemu-run: $(OUTPUT_BIN)
-	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(OUTPUT_BIN)
+qemu-gdb: $(OUTPUT_SDIMG)
+	qemu-img resize $(OUTPUT_SDIMG) 128M
+	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(BOOT_DIR)/build/bootloader.bin -sd $(OUTPUT_SDIMG) -d guest_errors,unimp,int \
+	 -S -gdb tcp::1234
+qemu-run: $(OUTPUT_SDIMG)
+	qemu-img resize $(OUTPUT_SDIMG) 128M
+	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(BOOT_DIR)/build/bootloader.bin -sd $(OUTPUT_SDIMG) -d guest_errors,unimp,int -D qemu.log

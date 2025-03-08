@@ -34,6 +34,7 @@ CFLAGS =	-Wall \
 			-marm \
 			-MMD \
 			-MP \
+			-g \
 			$(CCDEFINES)
 
 OUTPUT_ELF = $(OS_DIR)/build/kernel.elf

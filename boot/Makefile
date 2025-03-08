@@ -11,7 +11,7 @@ UTILS_DIR = $(TOP_DIR)/common
 ifeq ($(PLATFORM), BBB)
     LDSCRIPT = $(BOOT_DIR)/bbb_memory.ld
 else
-    LDSCRIPT = qemu_memory.ld
+    LDSCRIPT = $(BOOT_DIR)/qemu_memory.ld
 endif
 
 # Compiler and assembler flags
@@ -48,6 +48,7 @@ CFLAGS = 	-Wall \
 			-marm \
 			-MMD \
 			-MP \
+			-g \
 			$(CCDEFINES)
 
 OUTPUT_ELF = $(BOOT_DIR)/build/bootloader.elf

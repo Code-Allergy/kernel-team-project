@@ -1,4 +1,4 @@
-ENTRY(_start)
+ENTRY(__init)
 
 MEMORY
 {
@@ -16,6 +16,7 @@ SECTIONS
     .bss : { *(.bss COMMON) }
     . = ALIGN(8);
     . = . + 0x1000; /* 4kB of stack memory */
-    _stack_start = .;
+    __StackStart = .;
+    __BBB_DRAM_BEGIN = .; /* dummy */
 }
 
