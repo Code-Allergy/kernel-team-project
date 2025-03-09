@@ -257,4 +257,16 @@ enum ClockModuleWakeUp
     CM_DIV_M6_DPLL_CORE          = 0xD8,
 };
 
+
+/* Clock selects*/
+enum ClockSelect
+{
+    CM_CLKSEL_TIMER2_CLK        = 0x08,
+    CM_CLKSEL_TIMER3_CLK        = 0x0C,
+    CM_CLKSEL_TIMER4_CLK        = 0x10,
+    CM_CLKSEL_TIMER5_CLK        = 0x18,
+    CM_CLKSEL_TIMER6_CLK        = 0x1C,
+    CM_CLKSEL_TIMER7_CLK        = 0x04,
+};
+
 #endif /*CLOCK_MODULE_H*/

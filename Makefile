@@ -15,6 +15,26 @@ export AS 		= ${ToolPrefix}-as
 export LD 		= ${ToolPrefix}-ld
 export OBJCOPY  = ${ToolPrefix}-objcopy
 export CC 		= ${ToolPrefix}-gcc
+export CFLAGS 	= 	-Wall \
+					-Wextra \
+					-mcpu=cortex-a8  \
+					-mtune=cortex-a8 \
+					-march=armv7-a \
+					-mfloat-abi=hard \
+					-mfpu=neon \
+					-static \
+					-std=gnu90 \
+					-pedantic \
+					-ffreestanding \
+					-fbuiltin \
+					-marm \
+					-MMD \
+					-MP \
+					$(CCDEFINES)
+
+AEABI_GCC_PATH =$(subst libgcc.a,,$(shell $(CC) -mfloat-abi=hard -print-libgcc-file-name))
+export GLOBAL_LD_FLAGS = -L$(AEABI_GCC_PATH)
+
 
 all: boot sdimg
 

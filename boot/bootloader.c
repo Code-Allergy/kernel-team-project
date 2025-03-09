@@ -2,6 +2,7 @@
 #include <uart.h>
 #include <stdint.h>
 #include <interrupt.h>
+#include <timer.h>
 
 extern void setup_vbar();
 #define LED_PINS (0x8 << 21)
@@ -19,11 +20,19 @@ void dumb_delay()
         ;
 }
 
+uint32_t tick_secs = 0;
+void timer_tick()
+{
+    uart_puts("Tick!!\n");
+    tick_secs++;
+}
+
 static inline void gpio_test()
 {
     char uart_buffer[100];
     int read = 0;
     unsigned int gpio_base = GPIO1_BASE;
+    uint32_t timer_val = 0;
 
     delay(0xFFFF);
     GPIO_init(); // Currently only configures GPIO1
@@ -42,13 +51,16 @@ static inline void gpio_test()
               8       // Character length
     );
 
-    /* uart_puts("Sup bro\n"); */
+    timer_init(TIMER2, 1000, timer_tick);
+    timer_start(TIMER2);
 
     while (1)
     {
         GPIO_set(gpio_base, LED_PINS);
         uart_puts("LEDs on!\n");
         delay(0x1FFFFFF);
+        timer_val = timer_value(TIMER2);
+        uart_printf("Timer value: %d\n", timer_val);
         /*readline is not yet fully implemented */
         read = uart0_readline(uart_buffer, 100);
         if(read > 0)

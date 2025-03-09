@@ -261,3 +261,86 @@ unsigned int uart0_readline(char *buffer, unsigned int buffer_size) {
     buffer[i] = '\0';
     return i;
 }
+
+
+void print_number(int32_t num, char base) {
+    char buffer[32];        /* Buffer to hold the number string */
+    char *ptr = buffer;     /* Pointer to traverse the buffer */
+    char *ptr1 = buffer;    /* Pointer for reversing the string */
+    char tmp_char;
+    uint32_t temp_num;  /* Use unsigned int to handle negatives in hex */
+    int is_negative = 0;
+    
+    if (num == 0) {
+        uart_putc('0');
+        return;
+    }
+
+    /* Handle negative numbers for base 10 */
+    if (num < 0 && base == 10) {
+        is_negative = 1;
+        temp_num = -num; /* Convert to positive for processing */
+    } else {
+        temp_num = (uint32_t) num;
+    }
+
+    /* Convert number to string */
+    while (temp_num > 0) {
+        *ptr++ = "0123456789abcdef"[temp_num % base];
+        temp_num /= base;
+    }
+
+    if (is_negative) {
+        *ptr++ = '-';  /* Add negative sign for decimal numbers */
+    }
+
+    *ptr-- = '\0'; /* Null-terminate */
+
+    /* Reverse the string */
+    while (ptr1 < ptr) {
+        tmp_char = *ptr;
+        *ptr-- = *ptr1;
+        *ptr1++ = tmp_char;
+    }
+
+    uart_puts(buffer); /* Output the number string */
+}
+
+
+void uart_printf(const char *format, ...) {
+    va_list ap;
+    va_start(ap, format);
+
+    while (*format) {
+        if (*format == '%') {
+            format++;
+            switch (*format) {
+                case 'd': {
+                    print_number(va_arg(ap, int), 10);
+                    break;
+                }
+                case 'x': {
+                    print_number(va_arg(ap, int), 16);
+                    break;
+                }
+                case 's': {
+                    uart_puts(va_arg(ap, char *));
+                    break;
+                }
+                case 'c': {
+                    uart_putc(va_arg(ap, int));
+                    break;
+                }
+                default: {
+                    uart_putc(*format);
+                    break;
+                }
+            }
+        } else {
+            uart_putc(*format);
+        }
+        format++;
+    }
+
+    va_end(ap);
+}
