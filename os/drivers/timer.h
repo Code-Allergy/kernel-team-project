@@ -3,6 +3,8 @@
 
 #include <types.h>
 
+#define TIMER_MAX_COUNT 0xFFFFFFFFu
+
 /* Timer indexes*/
 #define TIMER2 2
 #define TIMER3 3

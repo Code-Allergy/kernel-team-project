@@ -2,7 +2,6 @@
 #include <types.h>
 #include <clock_module.h>
 #include <interrupt.h>
-#include <uart.h>
 
 
 void handle_timer2_irq();
@@ -102,12 +101,9 @@ bool timer_init(uint16_t timer_index,
         return false;
     }
 
-    uart_puts("Timer init\n");
-    uart_puts("DPLL select\n");
     /*CM_DPLL clock select if required. using CLK_32KHZ clk*/
     REG32_write(CM_DPLL_BASE, timer_pll_clksel_off[timer_index], 0x2);
     while((REG32_read(CM_DPLL_BASE, timer_pll_clksel_off[timer_index]) & 0x3)!= 0x2);
-    uart_puts("CM_PER clk enable\n");
     /*Clock enable*/
     REG32_write_masked(CM_PER_BASE, timer_module_clk_off[timer_index], 0x3, 0x2);
     while(
@@ -115,16 +111,13 @@ bool timer_init(uint16_t timer_index,
     );
 
     /* OCP interface software reset*/
-    uart_puts("OCP reset\n");
     REG32_write_masked(timer_base[timer_index], TIOCP_CFG_OFF, 0x1, 0x1);
     while((REG32_read_masked(timer_base[timer_index], TIOCP_CFG_OFF, 0x1) & 0x1));
     
-    uart_puts("Timer disable\n");    
     /*****Timer setup ******/
     /*stop the time*/
     REG32_write_masked(timer_base[timer_index], TCLR_OFF, 0x1, 0x0);
     TIMER_REG_WRITE_WAIT_DONE();
-    uart_puts("Timer setup\n");
     /*Timer control setup*/
     REG32_write_masked(timer_base[timer_index], TCLR_OFF, 
         0x7FFE, 
@@ -142,15 +135,22 @@ bool timer_init(uint16_t timer_index,
     );
     TIMER_REG_WRITE_WAIT_DONE();
     
-    uart_puts("load value\n");
-    /*Load the timer with the tick value*/
-    REG32_write(timer_base[timer_index], TLDR_OFF, timer_tick_ms * 32);
+    /*set timer value for the tick value*/
+    REG32_write(
+        timer_base[timer_index], 
+        TLDR_OFF, 
+        (TIMER_MAX_COUNT - (timer_tick_ms * 32))
+    );
+    REG32_write(
+        timer_base[timer_index], 
+        TCRR_OFF, 
+        (TIMER_MAX_COUNT - (timer_tick_ms * 32))
+    );
     TIMER_REG_WRITE_WAIT_DONE();
-    uart_puts("irq enable\n");
+
     /*overflow irq en. Disable the other irq types*/
     REG32_write(timer_base[timer_index], IRQENABLE_SET_OFF, 0x2);
     TIMER_REG_WRITE_WAIT_DONE();
-    uart_puts("irq register\n");
     timer_tick_funcs[timer_index] = timer_tick_func;
     INTC_register_irq(timer_irq_num[timer_index], timer_irq_handlers[timer_index]);
 

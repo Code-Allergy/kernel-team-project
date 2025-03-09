@@ -176,7 +176,7 @@ void handle_uart0_irq(void);
 #define va_end(ap)          __builtin_va_end(ap)
 #define va_arg(ap, type)    __builtin_va_arg(ap, type)
 typedef __builtin_va_list va_list;
-void print_number(int32_t num, char base);
+void print_number(int32_t num, char base, bool is_signed);
 void uart_printf(const char *format, ...);
 
 /* Both non blocking*/

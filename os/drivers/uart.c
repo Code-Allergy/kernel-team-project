@@ -263,7 +263,7 @@ unsigned int uart0_readline(char *buffer, unsigned int buffer_size) {
 }
 
 
-void print_number(int32_t num, char base) {
+void print_number(int32_t num, char base, bool is_signed) {
     char buffer[32];        /* Buffer to hold the number string */
     char *ptr = buffer;     /* Pointer to traverse the buffer */
     char *ptr1 = buffer;    /* Pointer for reversing the string */
@@ -277,7 +277,7 @@ void print_number(int32_t num, char base) {
     }
 
     /* Handle negative numbers for base 10 */
-    if (num < 0 && base == 10) {
+    if (num < 0 && base == 10 && is_signed) {
         is_negative = 1;
         temp_num = -num; /* Convert to positive for processing */
     } else {
@@ -316,11 +316,15 @@ void uart_printf(const char *format, ...) {
             format++;
             switch (*format) {
                 case 'd': {
-                    print_number(va_arg(ap, int), 10);
+                    print_number(va_arg(ap, int), 10 , true);
+                    break;
+                }
+                case 'u': {
+                    print_number(va_arg(ap, uint32_t), 10, false);
                     break;
                 }
                 case 'x': {
-                    print_number(va_arg(ap, int), 16);
+                    print_number(va_arg(ap, int), 16, true);
                     break;
                 }
                 case 's': {
