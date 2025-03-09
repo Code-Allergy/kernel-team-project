@@ -4,10 +4,10 @@ PLATFORM ?=BBB
 TOP_DIR 		= .
 BOOT_DIR 		= $(TOP_DIR)/boot
 OS_DIR 			= $(TOP_DIR)/os
-DRIVERS_DIR 	= $(OS_DIR)/drivers
+DRIVERS_DIR 		= $(OS_DIR)/drivers
 BUILD_DIR 		= $(TOP_DIR)/build
-OUTPUT_SDIMG 	= $(BUILD_DIR)/sd.img
-export INTERRUPTS_DIR = $(OS_DIR)/interrupts
+OUTPUT_SDIMG 		= $(BUILD_DIR)/sd.img
+export INTERRUPTS_DIR 	= $(OS_DIR)/interrupts
 
 export ToolPrefix ?= arm-none-eabi
 

@@ -2,21 +2,20 @@
 #include <uart.h>
 #include <stdint.h>
 #include <interrupt.h>
+#include <ddr.h>
 
 extern void setup_vbar();
 #define LED_PINS (0x8 << 21)
 
 static inline void delay(volatile unsigned int count)
 {
-    while (count--)
-        ;
+    while (count--);
 }
 
 void dumb_delay()
 {
     volatile unsigned int count = 0x3FFFFFF;
-    while (count--)
-        ;
+    while (count--);
 }
 
 static inline void gpio_test()
@@ -43,13 +42,12 @@ static inline void gpio_test()
     );
 
     /* uart_puts("Sup bro\n"); */
-
+    /*
     while (1)
     {
         GPIO_set(gpio_base, LED_PINS);
         uart_puts("LEDs on!\n");
         delay(0x1FFFFFF);
-        /*readline is not yet fully implemented */
         read = uart0_readline(uart_buffer, 100);
         if(read > 0)
         {
@@ -62,6 +60,7 @@ static inline void gpio_test()
         uart_puts("LEDs off!\n");
         delay(0x1FFFFFF);
     }
+    */
 }
 
 int min(int a, int b, int c)
@@ -99,7 +98,7 @@ int levenshtein(const char* str1, const char* str2, int len1, int len2)
 extern uintptr_t __BBB_DRAM_BEGIN;
 
 void __BootloaderEntry()
-{
+{	
     const char* str1  = "kien";
     const char* str2  = "sittineiwog";
     volatile int len1 = 4;
@@ -112,6 +111,23 @@ void __BootloaderEntry()
         gpio_test(); /* setup_vbar();  // Set the interrupt vector table */
     }
 
+
+    uart_puts("Init ddr start\n");
+
+    setup_memory();  /*  Initialize DDR3 */
+
+    int result = test_ddr3_memory();
+    if (result == 0) {
+        /*  Success - Memory is functioning correctly */
+    	uart_puts("DDR Memory test SUCCESS\n");
+    } else {
+        /*  Failure - Memory test failed */ 
+    	uart_puts("DDR Memory test FAILED\n");
+	while(1);
+    }
+
+
+    uart_puts("Init ddr end\n");
     // mem copy the kernel to dram
 
     // jump to kernel
