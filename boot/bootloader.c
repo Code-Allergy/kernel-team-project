@@ -98,7 +98,7 @@ int levenshtein(const char* str1, const char* str2, int len1, int len2)
 extern uintptr_t __BBB_DRAM_BEGIN;
 
 void __BootloaderEntry()
-{	
+{
     const char* str1  = "kien";
     const char* str2  = "sittineiwog";
     volatile int len1 = 4;
@@ -121,13 +121,16 @@ void __BootloaderEntry()
         /*  Success - Memory is functioning correctly */
     	uart_puts("DDR Memory test SUCCESS\n");
     } else {
-        /*  Failure - Memory test failed */ 
+        /*  Failure - Memory test failed */
     	uart_puts("DDR Memory test FAILED\n");
+
+     uart_puts("Init ddr end\n");
+
 	while(1);
+	__asm__ ("wfi");
     }
 
 
-    uart_puts("Init ddr end\n");
     // mem copy the kernel to dram
 
     // jump to kernel

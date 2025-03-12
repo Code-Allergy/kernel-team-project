@@ -12,4 +12,6 @@
 [Bb]uild/
 .idea/
 .vs/
+.cache/
+.direnv/
 compile_commands.json

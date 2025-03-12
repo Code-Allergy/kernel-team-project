@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 MLO=$1
 IMG=$2
@@ -61,4 +61,3 @@ rmdir ./tmp
 
 sudo losetup -d $LOOPDEV
 echo "Done creating $IMG"
-
