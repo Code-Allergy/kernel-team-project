@@ -20,6 +20,13 @@ export LD 		= ${ToolPrefix}-ld
 export OBJCOPY  = ${ToolPrefix}-objcopy
 export CC 		= ${ToolPrefix}-gcc
 
+# check if mtools is available, otherwise use root script
+ifeq (, $(shell which mcopy))
+	export MAKE_SDIMG_SCRIPT = sudo $(TOP_DIR)/sdimager/mksdimage.sh
+else
+	export MAKE_SDIMG_SCRIPT = $(TOP_DIR)/sdimager/mksdimage-rootless.sh
+endif
+
 all: boot sdimg
 
 utils:
@@ -77,7 +84,7 @@ clean:
 		clean
 
 sdimg: boot kernel
-	$(TOP_DIR)/sdimager/mksdimage.sh $(BUILD_DIR)/MLO $(BUILD_DIR)/kernel.bin $(OUTPUT_SDIMG)
+	$(MAKE_SDIMG_SCRIPT) $(BUILD_DIR)/MLO $(BUILD_DIR)/kernel.bin $(OUTPUT_SDIMG)
 
 flash: sdimg
 ifndef DEV
