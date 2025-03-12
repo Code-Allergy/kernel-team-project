@@ -133,6 +133,16 @@ void __BootloaderEntry()
 
     // mem copy the kernel to dram
 
-    // jump to kernel
+    // read header
+    // verify magic value
+    // clear bss section
+    // map initial kernel pages
+    // enable MMU
+    // enable caches
+    // setup whatever info the kernel needs from bl
+    // jump to kernel entry (from header)
+
+
+    // jump to kernel (address read from header instead)
     ((void (*)()) __BBB_DRAM_BEGIN)();
 }

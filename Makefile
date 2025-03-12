@@ -1,13 +1,17 @@
 # Default platform is QEMU
 PLATFORM ?=BBB
-
 TOP_DIR 		= .
+ifeq ($(PLATFORM),QEMU)
+    TOP_DIR = ./qemu
+endif
+
 BOOT_DIR 		= $(TOP_DIR)/boot
-OS_DIR 			= $(TOP_DIR)/os
-DRIVERS_DIR 		= $(OS_DIR)/drivers
+DRIVERS_DIR 	= $(OS_DIR)/drivers
 BUILD_DIR 		= $(TOP_DIR)/build
-OUTPUT_SDIMG 		= $(BUILD_DIR)/sd.img
-export INTERRUPTS_DIR 	= $(OS_DIR)/interrupts
+OUTPUT_SDIMG 	= $(BUILD_DIR)/sd.img
+export OS_DIR 	= $(TOP_DIR)/os
+export INTERRUPTS_DIR = $(OS_DIR)/interrupts
+export FS_DIR 		  = $(OS_DIR)/fs
 
 export ToolPrefix ?= arm-none-eabi
 
@@ -30,12 +34,25 @@ drivers: utils
 		PLATFORM=$(PLATFORM) \
 		drivers
 
-boot: utils drivers interrupts
+fs: utils
+	make -f $(OS_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM) \
+		fs
+
+boot: utils drivers fs interrupts
 	make -f $(BOOT_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM)
 	mkdir -p $(BUILD_DIR)
 	cp $(BOOT_DIR)/build/MLO $(BOOT_DIR)/build/boot_disassembly.txt $(BUILD_DIR)/
+
+kernel: | $(BUILD_DIR)
+	make -f $(OS_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM) \
+		kernel
+	cp $(OS_DIR)/build/kernel.bin $(OS_DIR)/build/kernel_disassembly.txt $(BUILD_DIR)/
 
 # TODO: This will be compiled with the rest of the OS when interrupts are moved to the OS
 interrupts:
@@ -59,9 +76,8 @@ clean:
 		PLATFORM=$(PLATFORM) \
 		clean
 
-
-sdimg: boot
-	$(TOP_DIR)/sdimager/mksdimage.sh $(BUILD_DIR)/MLO $(OUTPUT_SDIMG)
+sdimg: boot kernel
+	$(TOP_DIR)/sdimager/mksdimage.sh $(BUILD_DIR)/MLO $(BUILD_DIR)/kernel.bin $(OUTPUT_SDIMG)
 
 flash: sdimg
 ifndef DEV
@@ -71,7 +87,10 @@ endif
 
 # TODO: Fix these
 # Run QEMU with the binary output
-qemu-gdb: $(OUTPUT_BIN)
-	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(OUTPUT_BIN) -S -gdb tcp::1234
-qemu-run: $(OUTPUT_BIN)
-	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(OUTPUT_BIN)
+qemu-gdb: $(OUTPUT_SDIMG)
+	qemu-img resize $(OUTPUT_SDIMG) 128M
+	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(BOOT_DIR)/build/bootloader.bin -sd $(OUTPUT_SDIMG) -d guest_errors,unimp,int \
+	 -S -gdb tcp::1234
+qemu-run: $(OUTPUT_SDIMG)
+	qemu-img resize $(OUTPUT_SDIMG) 128M
+	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(BOOT_DIR)/build/bootloader.bin -sd $(OUTPUT_SDIMG) -d guest_errors,unimp,int -D qemu.log
