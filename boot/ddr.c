@@ -35,7 +35,6 @@
 #define CM_IDLEST_DPLL_DDR 0x34
 #define CM_CLKMODE_DPLL_DDR 0x94
 #define DPLL_LOCK 0x07
-#define CM_DIV_M2_DPLL_DDR 0xA0
 
 // SOC_EMIF_0_REGS
 #define EMIF_MOD_ID_REV 0x00U
@@ -69,7 +68,6 @@
 
 static inline void enable_emif_clocks(void)
 {
-    uint32_t timeout = TIMEOUT;
     // L3 clock
     REG32_write_masked(CM_PER_BASE,
                        0xe0,
@@ -79,7 +77,7 @@ static inline void enable_emif_clocks(void)
                    0xe0,
                    CLKCTRL_MODULEMODE,
                    CLKCTRL_MODULEMODE_ENABLE,
-                   timeout);
+                   TIMEOUT);
 
     // L4LS
     REG32_write_masked(CM_PER_BASE,
@@ -90,7 +88,7 @@ static inline void enable_emif_clocks(void)
                    0x60,
                    CLKCTRL_MODULEMODE,
                    CLKCTRL_MODULEMODE_ENABLE,
-                   timeout);
+                   TIMEOUT);
 
     // L4FW
     REG32_write_masked(CM_PER_BASE,
@@ -101,7 +99,7 @@ static inline void enable_emif_clocks(void)
                    0x64,
                    CLKCTRL_MODULEMODE,
                    CLKCTRL_MODULEMODE_ENABLE,
-                   timeout);
+                   TIMEOUT);
 
     // L4WKUP
     REG32_write_masked(CM_WKUP_BASE,
@@ -112,7 +110,7 @@ static inline void enable_emif_clocks(void)
                    0xc,
                    CLKCTRL_MODULEMODE,
                    CLKCTRL_MODULEMODE_ENABLE,
-                   timeout);
+                   TIMEOUT);
 
     // L3 instr
     REG32_write_masked(CM_PER_BASE,
@@ -123,7 +121,7 @@ static inline void enable_emif_clocks(void)
                    0xdc,
                    CLKCTRL_MODULEMODE,
                    CLKCTRL_MODULEMODE_ENABLE,
-                   timeout);
+                   TIMEOUT);
 
     // L4HS
     REG32_write_masked(CM_PER_BASE,
@@ -134,7 +132,7 @@ static inline void enable_emif_clocks(void)
                    0x120,
                    CLKCTRL_MODULEMODE,
                    CLKCTRL_MODULEMODE_ENABLE,
-                   timeout);
+                   TIMEOUT);
 }
 
 #define CONTROL_VTP_CTRL_ENABLE 0x40
@@ -143,7 +141,6 @@ static inline void enable_emif_clocks(void)
 
 static inline void configure_ddr_phy(void)
 {
-    uart_puts("Configuring DDR PHY...\n");
     /* Enable VTP and perform CLRZ sequence for calibration */
     REG32_write_masked(CONTROL_MODULE_BASE,
                        0xe0c,
@@ -152,64 +149,35 @@ static inline void configure_ddr_phy(void)
 
     REG32_write_masked(CONTROL_MODULE_BASE, 0xe0c, 0x01, 0x01);
 
-    while ((REG32_read_masked(
-               CONTROL_MODULE_BASE, 0xe0c, CONTROL_VTP_CTRL_READY)) !=
-           CONTROL_VTP_CTRL_READY)
-    {
-    }
-    uart_puts("Done init DDR_PHY");
+    WAIT_FOR_REG32(
+               CONTROL_MODULE_BASE, 0xe0c, CONTROL_VTP_CTRL_READY, CONTROL_VTP_CTRL_READY, TIMEOUT);
 }
 
 static inline void configure_ddr_phy_cmd_data(void)
 {
-    uart_puts("Configuring DDR PHY CMD and Data registers...\n");
     /* DDR PHY CMD0 configuration */
-    // *(volatile uint32_t *)CMD0_REG_PHY_CTRL_SLAVE_RATIO_0 = 0x80;
-    // *(volatile uint32_t *)CMD0_REG_PHY_DLL_LOCK_DIFF_0    = 0x1;
-    // *(volatile uint32_t *)CMD0_REG_PHY_INVERT_CLKOUT_0      = 0x0;
     REG32_write(DDR_PHY_CTRL_BASE, 0x1C, 0x80);
     REG32_write(DDR_PHY_CTRL_BASE, 0x2C, DDR3_CMD0_INVERT_CLKOUT_0);
 
     /* DDR PHY CMD1 configuration */
-    // *(volatile uint32_t *)CMD1_REG_PHY_CTRL_SLAVE_RATIO_0 = 0x80;
-    // *(volatile uint32_t *)CMD1_REG_PHY_DLL_LOCK_DIFF_0    = 0x1;
-    // *(volatile uint32_t *)CMD1_REG_PHY_INVERT_CLKOUT_0      = 0x0;
     REG32_write(DDR_PHY_CTRL_BASE, 0x50, 0x80);
     REG32_write(DDR_PHY_CTRL_BASE, 0x60, DDR3_CMD1_INVERT_CLKOUT_0);
 
     /* DDR PHY CMD2 configuration */
-    // *(volatile uint32_t *)CMD2_REG_PHY_CTRL_SLAVE_RATIO_0 = 0x80;
-    // *(volatile uint32_t *)CMD2_REG_PHY_DLL_LOCK_DIFF_0    = 0x1;
-    // *(volatile uint32_t *)CMD2_REG_PHY_INVERT_CLKOUT_0      = 0x0;
     REG32_write(DDR_PHY_CTRL_BASE, 0x84, 0x80);
     REG32_write(DDR_PHY_CTRL_BASE, 0x94, DDR3_CMD2_INVERT_CLKOUT_0);
 
     /* DDR PHY Data Macro 0 configuration */
-    // *(volatile uint32_t *)DATA0_REG_PHY_RD_DQS_SLAVE_RATIO_0   = 0x40;
-    // *(volatile uint32_t *)DATA0_REG_PHY_WR_DQS_SLAVE_RATIO_0   = 0x00;
-    // *(volatile uint32_t *)DATA0_REG_PHY_WRLVL_INIT_RATIO_0     = 0x0;
-    // *(volatile uint32_t *)DATA0_REG_PHY_GATELVL_INIT_RATIO_0     = 0x0;
-    // *(volatile uint32_t *)DATA0_REG_PHY_FIFO_WE_SLAVE_RATIO_0    = 0x7B;
-    // *(volatile uint32_t *)DATA0_REG_PHY_WR_DATA_SLAVE_RATIO_0    = 0x80;
-    // *(volatile uint32_t *)DATA0_REG_PHY_DLL_LOCK_DIFF_0        = 1;
     REG32_write(DDR_PHY_CTRL_BASE, 0xC8, DDR3_DATA0_RD_DQS_SLAVE_RATIO_0);
     REG32_write(DDR_PHY_CTRL_BASE, 0xDC, 0x44);
     REG32_write(DDR_PHY_CTRL_BASE, 0x108, 0x94);
     REG32_write(DDR_PHY_CTRL_BASE, 0x120, 0x7D);
 
     /* DDR PHY Data Macro 1 configuration */
-    // *(volatile uint32_t *)DATA1_REG_PHY_RD_DQS_SLAVE_RATIO_0   = 0x40;
-    // *(volatile uint32_t *)DATA1_REG_PHY_WR_DQS_SLAVE_RATIO_0   = 0x00;
-    // *(volatile uint32_t *)DATA1_REG_PHY_WRLVL_INIT_RATIO_0     = 0x0;
-    // *(volatile uint32_t *)DATA1_REG_PHY_GATELVL_INIT_RATIO_0     = 0x0;
-    // *(volatile uint32_t *)DATA1_REG_PHY_FIFO_WE_SLAVE_RATIO_0    = 0x7B;
-    // *(volatile uint32_t *)DATA1_REG_PHY_WR_DATA_SLAVE_RATIO_0    = 0x80;
-    // *(volatile uint32_t *)DATA1_REG_PHY_DLL_LOCK_DIFF_0        = 1;
     REG32_write(DDR_PHY_CTRL_BASE, 0x170, 0x38);
     REG32_write(DDR_PHY_CTRL_BASE, 0x184, 0x44);
     REG32_write(DDR_PHY_CTRL_BASE, 0x1B0, 0x94);
     REG32_write(DDR_PHY_CTRL_BASE, 0x1C8, 0x7D);
-    uart_puts("DDR PHY CMD and Data registers configured.\n");
 }
 
 static inline void configure_ddr_io(void)
@@ -241,7 +209,7 @@ static inline void configure_ddr_io(void)
 static inline void enable_core_pll(void)
 {
     REG32_write_masked(CM_WKUP_BASE, 0x90, 0x00000007, 0x4);
-    while (REG32_read_masked(CM_WKUP_BASE, 0x5c, 0x00000100) != 0x00000100) {}
+    WAIT_FOR_REG32(CM_WKUP_BASE, 0x5c, 0x00000100, 0x00000100, TIMEOUT);
 
     // set the multiplier and divider
     REG32_write(CM_WKUP_BASE, 0x68, (1000 << 0x00000008) | (23 << 0x00000000));
@@ -253,7 +221,7 @@ static inline void enable_core_pll(void)
 
     // LOCK the PLL
     REG32_write_masked(CM_WKUP_BASE, 0x90, DPLL_LOCK, DPLL_LOCK);
-    while (REG32_read_masked(CM_WKUP_BASE, 0x5c, 0x00000001) != 0x00000001) {}
+    WAIT_FOR_REG32(CM_WKUP_BASE, 0x5c, 0x00000001, 0x00000001, TIMEOUT);
 }
 
 static inline void enable_ddr_pll(void)
@@ -365,72 +333,3 @@ int test_ddr3_memory(void)
 
     return 0;
 }
-
-// void itoa(int num, char* str, int base)
-// {
-//     int i          = 0;
-//     int isNegative = 0;
-
-//     /* Handle 0 explicitly */
-//     if (num == 0)
-//     {
-//         str[i++] = '0';
-//         str[i]   = '\0';
-//         return;
-//     }
-
-//     /* Handle negative numbers for base 10 */
-//     if (num < 0 && base == 10)
-//     {
-//         isNegative = 1;
-//         num        = -num;
-//     }
-
-//     /* Manually convert number to string (without / or %) */
-//     while (num > 0)
-//     {
-//         int quotient = 0, remainder = num;
-
-//         /* Manual division (bitwise shifting for powers of 2) */
-//         while (remainder >= base)
-//         {
-//             remainder -= base;
-//             quotient++;
-//         }
-
-//         str[i++] = (remainder > 9) ? (remainder - 10) + 'A' : remainder + '0';
-//         num      = quotient; /* Move to next digit */
-//     }
-
-//     /* Add '-' sign if negative */
-//     if (isNegative)
-//         str[i++] = '-';
-
-//     str[i] = '\0';
-
-//     /* Reverse the string */
-//     int start = 0, end = i - 1;
-//     while (start < end)
-//     {
-//         char temp  = str[start];
-//         str[start] = str[end];
-//         str[end]   = temp;
-//         start++;
-//         end--;
-//     }
-// }
-
-// void uart_print_hex(uint32_t value)
-// {
-//     char
-//         buffer[12]; /* Enough space for "0x" + 8 hex digits + null terminator */
-//     buffer[0] = '0';
-//     buffer[1] = 'x';
-//     buffer[2] = '\0';
-
-//     itoa(
-//         value, buffer + 2, 16); /* Convert value to hex starting at buffer[2] */
-
-//     uart_puts(buffer); /* Send hex string over UART */
-//     uart_puts("\n");
-// }
