@@ -19,19 +19,6 @@ IFLAGS = 	-I$(OS_DIR)/ \
 			-I$(UTILS_DIR) \
 			-I$(INTERRUPTS_DIR)
 
-CFLAGS =	-Wall \
-			-Wextra \
-			-mcpu=cortex-a8  \
-			-mfloat-abi=soft \
-			-std=gnu90 \
-			-pedantic \
-			-static \
-			-ffreestanding \
-			-fbuiltin \
-			-marm \
-			-MMD \
-			-MP \
-			$(CCDEFINES) 
 
 #----------- COMMON
 # Utils
@@ -75,3 +62,4 @@ clean:
 	rm -f \
 		$(UTILS_DIR)/build/*.o $(UTILS_DIR)/build/*.d \
 		$(DRIVERS_DIR)/build/*.o $(DRIVERS_DIR)/build/*.d \
+		$(INTERRUPTS_DIR)/build/*.o $(INTERRUPTS_DIR)/build/*.d

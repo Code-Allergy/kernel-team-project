@@ -217,6 +217,9 @@ void handle_uart0_irq(void) {
 
     /* Echo the character back */
     char c = uart_getc();
+    if(c == '\r'){
+        c = '\n';
+    }
     uart_putc(c);
 
     /* Push the character to the buffer */
@@ -241,18 +244,107 @@ unsigned int uart0_readline(char *buffer, unsigned int buffer_size) {
     char c;
     unsigned int i = 0;
 
-    while (i < buffer_size) {
+    if(uart0_rx_buffer.lines == 0){
+        return 0;
+    }
+
+    while (i < buffer_size - 1) {
         if (uart0_getchar(&c)) {
-            if (c == '\r') {
-                buffer[i] = '\0';
-                return i+1;
-            } else {
-                buffer[i] = c;
-                i++;
+            buffer[i++] = c;
+            if (c == '\n') {
+                break;
             }
-        }else{
-            return i;
+        } else {
+            break;
         }
     }
+    buffer[i] = '\0';
     return i;
+}
+
+
+void print_number(int32_t num, char base, bool is_signed) {
+    char buffer[32];        /* Buffer to hold the number string */
+    char *ptr = buffer;     /* Pointer to traverse the buffer */
+    char *ptr1 = buffer;    /* Pointer for reversing the string */
+    char tmp_char;
+    uint32_t temp_num;  /* Use unsigned int to handle negatives in hex */
+    int is_negative = 0;
+    
+    if (num == 0) {
+        uart_putc('0');
+        return;
+    }
+
+    /* Handle negative numbers for base 10 */
+    if (num < 0 && base == 10 && is_signed) {
+        is_negative = 1;
+        temp_num = -num; /* Convert to positive for processing */
+    } else {
+        temp_num = (uint32_t) num;
+    }
+
+    /* Convert number to string */
+    while (temp_num > 0) {
+        *ptr++ = "0123456789abcdef"[temp_num % base];
+        temp_num /= base;
+    }
+
+    if (is_negative) {
+        *ptr++ = '-';  /* Add negative sign for decimal numbers */
+    }
+
+    *ptr-- = '\0'; /* Null-terminate */
+
+    /* Reverse the string */
+    while (ptr1 < ptr) {
+        tmp_char = *ptr;
+        *ptr-- = *ptr1;
+        *ptr1++ = tmp_char;
+    }
+
+    uart_puts(buffer); /* Output the number string */
+}
+
+
+void uart_printf(const char *format, ...) {
+    va_list ap;
+    va_start(ap, format);
+
+    while (*format) {
+        if (*format == '%') {
+            format++;
+            switch (*format) {
+                case 'd': {
+                    print_number(va_arg(ap, int), 10 , true);
+                    break;
+                }
+                case 'u': {
+                    print_number(va_arg(ap, uint32_t), 10, false);
+                    break;
+                }
+                case 'x': {
+                    print_number(va_arg(ap, int), 16, true);
+                    break;
+                }
+                case 's': {
+                    uart_puts(va_arg(ap, char *));
+                    break;
+                }
+                case 'c': {
+                    uart_putc(va_arg(ap, int));
+                    break;
+                }
+                default: {
+                    uart_putc(*format);
+                    break;
+                }
+            }
+        } else {
+            uart_putc(*format);
+        }
+        format++;
+    }
+
+    va_end(ap);
 }

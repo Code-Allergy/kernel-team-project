@@ -5,6 +5,7 @@ void circular_char_buffer_init(circular_char_buffer_t* buffer) {
     buffer->head = 0;
     buffer->tail = 0;
     buffer->size = 0;
+    buffer->lines = 0;
 }
 
 bool circular_char_buffer_push(circular_char_buffer_t* buffer, char c){
@@ -15,6 +16,9 @@ bool circular_char_buffer_push(circular_char_buffer_t* buffer, char c){
     buffer->buffer[buffer->tail] = c;
     buffer->tail = (buffer->tail + 1)%CHAR_BUFFER_SIZE;
     buffer->size++;
+    if(c == '\n'){
+        buffer->lines++;
+    }
     return true;
 }
 
@@ -26,6 +30,9 @@ bool circular_char_buffer_pop(circular_char_buffer_t* buffer, char* c){
     *c = buffer->buffer[buffer->head];
     buffer->head = (buffer->head + 1)%CHAR_BUFFER_SIZE;
     buffer->size--;
+    if(*c == '\n'){
+        buffer->lines--;
+    }
     return true;
 }
 
