@@ -77,7 +77,6 @@ static inline void gpio_test()
             uart_printf("Received: %s", uart_buffer);
         }
     }
-    */
 }
 
 int min(int a, int b, int c)

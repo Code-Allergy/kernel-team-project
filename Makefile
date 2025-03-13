@@ -17,11 +17,7 @@ export OBJCOPY  = ${ToolPrefix}-objcopy
 export CC 		= ${ToolPrefix}-gcc
 export CFLAGS 	= 	-Wall \
 					-Wextra \
-					-mcpu=cortex-a8  \
-					-mtune=cortex-a8 \
 					-march=armv7-a \
-					-mfloat-abi=hard \
-					-mfpu=neon \
 					-static \
 					-std=gnu90 \
 					-pedantic \
