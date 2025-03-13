@@ -134,7 +134,7 @@ void mmc_controller_init(void)
       • Set module's hardware capabilities 
       • Set module's Idle and Wake-Up modes*/
     
-    unsigned int timeout;
+    volatile unsigned int timeout;
     unsigned int divider;
 
     /*enable clocks*/ 
@@ -228,7 +228,7 @@ void mmc_controller_init(void)
     uart_puts("trying to power on SD bus\n");
 
     timeout = 100000000;
-    while(REG32_read_masked(MMCHS0_BASE, SD_HCTL, (0b1 << 8)) != 0x1)
+    while(REG32_read_masked(MMCHS0_BASE, SD_HCTL, (0b1 << 8)) != (0x1 << 8))
     {
         if (--timeout == 0)
         {
@@ -253,7 +253,7 @@ void mmc_controller_init(void)
 
     /*wait for clock to stabilize by reading ICS bit of SD_SYSCTL*/
     timeout = 100000;
-    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 1)) != 0x1)
+    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 1)) != (0x1 << 1))
     {
         if (--timeout == 0)
         {
@@ -276,7 +276,7 @@ void mmc_controller_init(void)
     /*set autoidle*/
     REG32_write_masked(MMCHS0_BASE, SD_SYSCONFIG, (0b1), (0x1));
 
-    uart_puts("MMC init complete\n");
+    uart_puts("MMC module init complete\n");
 
     /*Card Detection, Identification, and Selection*/
 
@@ -285,14 +285,26 @@ void mmc_controller_init(void)
 
     /*write 0x00000000 in the SD_CMD register*/
     REG32_write(MMCHS0_BASE, SD_CMD, 0x00000000);
+    
+    uart_puts("waiting 1ms\n");
 
     /*wait 1 ms*/
-    timeout = 1000000;  /*CPU frequency is 1GHz = 1 billion instructions per 
-                          second = 1 million instructions per milisecond*/
-    while(--timeout >= 0);  /*this should take approximately 1ms*/
+    timeout = 0;  /*CPU frequency is 1GHz = 1 billion instructions per 
+                          second = 1 million instructions per milisecond
+                          we have 1 mil / 2 because we sould have ~ 3 
+                          instructions in this loop*/
+    while(timeout <= 1000000)
+    {
+        uart_puts("waiting\n");
+        timeout++;
+    }  /*this should take approximately 1ms+*/
+
+    uart_puts("wait complete\n");
 
     /*Set SD_STAT[0] CC bit to 0x1 to clear the flag*/
     REG32_write_masked(MMCHS0_BASE, SD_STAT, 0b1, 0);
+
+    uart_puts("ending initializing sequence\n");
 
     /*Set SD_CON[1] INIT bit to 0x0 to end the initialization sequence*/
     REG32_write_masked(MMCHS0_BASE, SD_CON, (0b1 << 1), (0x0 << 1));
@@ -300,13 +312,16 @@ void mmc_controller_init(void)
     /*Clear SD_STAT register (write 0xFFFFFFFF)*/
     REG32_write(MMCHS0_BASE, SD_STAT, 0xFFFFFFFF);
     
+    uart_puts("setting clock high\n");
+    
     /*Change clock frequency to fit protocol*/
     /*CLKD bits 6-15 set divider to 1 to set clock freq to default 48000KHz*/
     divider = 1;    /*or 2*/
 
     REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1111111111 << 6), 
             (divider << 6));
-
+    
+    uart_puts("now need to send commands\n");
     /*Send a CMD0 command*/
 
 }

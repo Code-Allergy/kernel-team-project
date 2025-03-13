@@ -20,12 +20,11 @@ void dumb_delay()
         ;
 }
 
-static inline void gpio_test()
+static inline void gpio_test(int i)
 {
     char uart_buffer[100];
     int read = 0;
     unsigned int gpio_base = GPIO1_BASE;
-    int i = 3;
 
     delay(0xFFFF);
     GPIO_init(); // Currently only configures GPIO1
@@ -46,7 +45,7 @@ static inline void gpio_test()
 
     /* uart_puts("Sup bro\n"); */
 
-    while (i >= 0)
+    while (i)
     {
         GPIO_set(gpio_base, LED_PINS);
         uart_puts("LEDs on!\n");
@@ -63,7 +62,7 @@ static inline void gpio_test()
         GPIO_clear(gpio_base, LED_PINS);
         uart_puts("LEDs off!\n");
         delay(0x1FFFFFF);
-        i--;
+
     }
 }
 
@@ -112,11 +111,12 @@ void __BootloaderEntry()
     {
         len2 = 8;
         len1 = 20;
-        gpio_test(); /* setup_vbar();  // Set the interrupt vector table */
+        gpio_test(0); /* setup_vbar();  // Set the interrupt vector table */
     }
 
     // mem copy the kernel to dram
-    mmc_controller_init();    
+    mmc_controller_init();
+    gpio_test(1);
 
     // jump to kernel
     ((void (*)()) __BBB_DRAM_BEGIN)();
