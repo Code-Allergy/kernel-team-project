@@ -1,25 +1,42 @@
-// we do not need this, not ELF
-// ENTRY(main)
+SECTIONS {
+    /* . = 0xA0000000; */
 
-MEMORY
-{
-    SRAM (rwx)  : ORIGIN = 0x402F0400, LENGTH = __BBB_LD_SRAM_END - ORIGIN(SRAM)
-    L3_OCMCO_RAM (rwx)  : ORIGIN = 0x40300000, LENGTH = __BBB_LD_L3_OCMC0_END - ORIGIN(L3_OCMCO_RAM)     /* 64KB */
-    DRAM (rwx)  : ORIGIN = 0x80000000, LENGTH = 512M    /* 512MB */
-}
+    /* for now, we can just start the kernel in physical memory */
+    . = 0x80000000;
 
-__BBB_LD_SRAM_END = 0x402FFFFF;
-__BBB_LD_L3_OCMC0_END = 0x4030FFFF;
-__BBB_DRAM_BEGIN = ORIGIN(DRAM);
-__BBB_DRAM_END = __BBB_DRAM_BEGIN + 512M;
 
-SECTIONS
-{
-    /* .text section */
+    .header ALIGN(4K) : {
+        PROVIDE(kernel_header = .); /* Define a global label */
+        LONG(0x1B1B1B1B)   /* Magic number */
+        LONG(ADDR(.text))  /* Pointer to .text section */
+        LONG(ADDR(.data))  /* Pointer to .data section */
+        LONG(ADDR(.bss))   /* Pointer to .bss section */
+        LONG(SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.bss)) /* Kernel size */
+        LONG(ADDR(.text))  /* Entry point (same as .text) */
+        LONG(0x0)          /* Reserved */
+        LONG(0x0)          /* Reserved */
+
+        /* pad the rest out to 64 bytes */
+        QUAD(0x0)
+        QUAD(0x0)
+        QUAD(0x0)
+        QUAD(0x0)
+    }
+
     .text : {
-        // first thing we reach when bootloader jumps
-		KEEP( *( .text.main) )
-		*( .text* )
-	} > DRAM
-    . = ALIGN(4);  /* Ensure proper alignment for the next section */
+        KEEP( *( .text.kmain ) )
+        *(.text)
+    }
+
+    .rodata ALIGN(4K) : {
+        *(.rodata)
+    }
+
+    .data ALIGN(4K) : {
+        *(.data)
+    }
+
+    .bss ALIGN(4K) : {
+        *(.bss)
+    }
 }

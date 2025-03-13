@@ -1,4 +1,5 @@
-#include <types.h> 
+#include <types.h>
+#include <utils.h>
 #include <ddr.h>
 #include <uart.h>
 #include <utils.h>
@@ -283,7 +284,7 @@ int test_ddr3_memory() {
     uint32_t *mem_addr;
     uint32_t read_back;
     uint32_t patterns[] = {0xAAAAAAAA, 0x55555555, 0x00000000, 0xFFFFFFFF};
-    int errors = 0;
+    int errors          = 0;
     int p;
 
 
@@ -299,11 +300,11 @@ int test_ddr3_memory() {
             *mem_addr = test_pattern;
             read_back = *mem_addr;
 
-            if (read_back != test_pattern) {
-                errors++; 
-	    }
+            if (read_back != test_pattern)
+            {
+                errors++;
+            }
         }
-	
 
 
     }

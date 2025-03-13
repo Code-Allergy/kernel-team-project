@@ -13,4 +13,3 @@ static inline void configure_ddr_phy_cmd_data(void);
 
 
 #endif /* DDR_H */
-

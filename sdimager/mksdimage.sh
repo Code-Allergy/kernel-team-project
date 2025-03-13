@@ -1,7 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 MLO=$1
-IMG=$2
+KERNEL=$2
+IMG=$3
 IMG_SIZE_MB=100
 BOOT_PART_SIZE_MB=50
 LOOPDEV=""
@@ -9,16 +10,25 @@ LOOPDEV=""
 set -e
 
 if [ -z "$MLO" ]; then
-    echo "Usage: $0 <mlo_file> <output_file>"
+    echo "Usage: $0 <mlo_file> <kernel_file> <output_file>"
     exit 1
 fi
 if [ -z "$IMG" ]; then
-    echo "Usage: $0 <mlo_file> <output_file>"
+    echo "Usage: $0 <mlo_file> <kernel_file> <output_file>"
+    exit 1
+fi
+if [ -z "$KERNEL" ]; then
+    echo "Usage: $0 <mlo_file> <kernel_file> <output_file>"
     exit 1
 fi
 
 if [ ! -f "$MLO" ]; then
     echo "Error: $MLO not found"
+    exit 1
+fi
+
+if [ ! -f "$KERNEL" ]; then
+    echo "Error: $KERNEL not found"
     exit 1
 fi
 
@@ -53,12 +63,14 @@ if mountpoint -q ./tmp ; then
     sudo umount ./tmp
 fi
 mkdir -p ./tmp
-sudo mount ${LOOPDEV}p1 ./tmp
-cp "$MLO" ./tmp/MLO
+sudo mount -o uid=$(id -u),gid=$(id -g) ${LOOPDEV}p1 ./tmp
+cp $MLO ./tmp/MLO
+echo "Copying kernel..."
+mkdir -p ./tmp/boot
+cp $KERNEL ./tmp/boot/kernel.bin
 sync
 sudo umount ./tmp
 rmdir ./tmp
 
 sudo losetup -d $LOOPDEV
 echo "Done creating $IMG"
-
