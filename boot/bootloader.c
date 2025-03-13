@@ -18,27 +18,19 @@ bool tick_led_on = false;
 uint32_t tick_secs = 0;
 static inline void delay(unsigned int secs)
 {
-<<<<<<< boot/bootloader.c
-    while (count--);
-=======
     uint32_t wait = tick_secs + secs;
     while (tick_secs < wait)
         ;
->>>>>>> boot/bootloader.c
 }
 
 void timer_tick()
 {
-<<<<<<< boot/bootloader.c
-    volatile unsigned int count = 0x3FFFFFF;
-    while (count--);
-=======
+
     if (tick_led_on) GPIO_clear(GPIO1_BASE, LED0);
     else GPIO_set(GPIO1_BASE, LED0);
     tick_led_on = !tick_led_on;
     tick_secs++;
     uart_printf("Tick: %u\n", tick_secs);
->>>>>>> boot/bootloader.c
 }
 
 static inline void gpio_test()
@@ -64,15 +56,7 @@ static inline void gpio_test()
               8       // Character length
     );
 
-<<<<<<< boot/bootloader.c
-    /* uart_puts("Sup bro\n"); */
-    /*
-    while (1)
-    {
-        GPIO_set(gpio_base, LED_PINS);
-        uart_puts("LEDs on!\n");
-        delay(0x1FFFFFF);
-=======
+
     timer_init(TIMER2, 1000, timer_tick);
     timer_val = timer_value(TIMER2);
     uart_printf("Timer init value: %u\n", timer_val);
@@ -87,7 +71,6 @@ static inline void gpio_test()
         timer_val = timer_value(TIMER2);
         uart_printf("Timer value: %u\n", timer_val);
         */
->>>>>>> boot/bootloader.c
         read = uart0_readline(uart_buffer, 100);
         if(read > 0)
         {
