@@ -221,8 +221,13 @@ void mmc_controller_init(void)
     
     /*SDBP bit 8 1h = bus power on*/
     REG32_write_masked(MMCHS0_BASE, SD_HCTL, (0b1 << 8), (0x1 << 8));
-    
-    timeout = 100000;
+
+    /*set bus width to 1- bit*/
+    REG32_write_masked(MMCHS0_BASE, SD_HCTL, (0b1 << 1), 0);
+
+    uart_puts("trying to power on SD bus\n");
+
+    timeout = 100000000;
     while(REG32_read_masked(MMCHS0_BASE, SD_HCTL, (0b1 << 8)) != 0x1)
     {
         if (--timeout == 0)

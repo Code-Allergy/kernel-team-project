@@ -2,6 +2,7 @@
 #include <uart.h>
 #include <stdint.h>
 #include <interrupt.h>
+#include <mmc.h>
 
 extern void setup_vbar();
 #define LED_PINS (0x8 << 21)
@@ -24,6 +25,7 @@ static inline void gpio_test()
     char uart_buffer[100];
     int read = 0;
     unsigned int gpio_base = GPIO1_BASE;
+    int i = 3;
 
     delay(0xFFFF);
     GPIO_init(); // Currently only configures GPIO1
@@ -44,7 +46,7 @@ static inline void gpio_test()
 
     /* uart_puts("Sup bro\n"); */
 
-    while (1)
+    while (i >= 0)
     {
         GPIO_set(gpio_base, LED_PINS);
         uart_puts("LEDs on!\n");
@@ -61,6 +63,7 @@ static inline void gpio_test()
         GPIO_clear(gpio_base, LED_PINS);
         uart_puts("LEDs off!\n");
         delay(0x1FFFFFF);
+        i--;
     }
 }
 
@@ -113,6 +116,7 @@ void __BootloaderEntry()
     }
 
     // mem copy the kernel to dram
+    mmc_controller_init();    
 
     // jump to kernel
     ((void (*)()) __BBB_DRAM_BEGIN)();
