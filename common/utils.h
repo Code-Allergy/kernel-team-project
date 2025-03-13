@@ -82,55 +82,12 @@ static inline unsigned int REG32_read_masked(unsigned int base, unsigned int off
 #endif
 
 
-
-static inline void uart_vprintf( const char* fmt, va_list ap ) {
-        while (*fmt) {
-            if (*fmt == '%') {
-                fmt++;
-                switch (*fmt) {
-                    case 'd': {
-                        print_number(va_arg(ap, int), 10, true);
-                        break;
-                    }
-                    case 'u': {
-                        print_number(va_arg(ap, uint32_t), 10, false);
-                        break;
-                    }
-                    case 'x': {
-                        print_number(va_arg(ap, int), 16, true);
-                        break;
-                    }
-                    case 's': {
-                        uart_puts(va_arg(ap, char *));
-                        break;
-                    }
-                    case 'c': {
-                        uart_putc(va_arg(ap, int));
-                        break;
-                    }
-                    default: {
-                        uart_putc(*fmt);
-                        break;
-                    }
-                }
-            } else {
-                uart_putc(*fmt);
-            }
-            fmt++;
-        }
-
-       
-
-}
-
-
-
 static inline void log_message(int level, const char *fmt, ...) {
     if (level <= LOG_LEVEL) { // Only log if within the allowed threshold
         va_list ap;
-	va_start(ap, fmt);
-	uart_vprintf(fmt, ap);	
-	va_end(ap);		
+    	va_start(ap, fmt);
+    	uart_vprintf(fmt, ap);
+    	va_end(ap);
     }
 }
 

@@ -11,11 +11,11 @@
 circular_char_buffer_t uart0_rx_buffer;
 
 void uart_init( unsigned short uart_index,
-                unsigned int    baud_rate, 
+                unsigned int    baud_rate,
                 unsigned short  stop_bit_en,
                 unsigned short  num_stop_bits,
-                unsigned short  parity_en, 
-                unsigned short  parity_type, 
+                unsigned short  parity_en,
+                unsigned short  parity_type,
                 unsigned short  char_length
             ) {
     unsigned int lcr, efr_bit4, mcr_bit6;
@@ -34,10 +34,10 @@ void uart_init( unsigned short uart_index,
 
             // 1. Pin muxing. This is required because many pins have multiple functions (e.g. UART, GPIO, SPI, etc.)
             // Control module pin muxing
-            REG32_write(CONTROL_MODULE_BASE, CONTROL_MODULE_UART0_RXD_OFF, 0x30); // [3] = 0 for pull-up/pull-down enable, 
-                                                                                  // [4] = 1 for pull-up select, 
+            REG32_write(CONTROL_MODULE_BASE, CONTROL_MODULE_UART0_RXD_OFF, 0x30); // [3] = 0 for pull-up/pull-down enable,
+                                                                                  // [4] = 1 for pull-up select,
                                                                                   // [5] = 1 for receiver enable
-            REG32_write(CONTROL_MODULE_BASE, CONTROL_MODULE_UART0_TXD_OFF, 0x10); // [3] = 0 for pull-up/pull-down enable, 
+            REG32_write(CONTROL_MODULE_BASE, CONTROL_MODULE_UART0_TXD_OFF, 0x10); // [3] = 0 for pull-up/pull-down enable,
                                                                                   // [4] = 1 for pull-up select,
                                                                                   // [5] = 0 for receiver disable (this is a TX pin)
 
@@ -70,7 +70,7 @@ void uart_init( unsigned short uart_index,
                                                             // [3] DMA_MODE = 0 (DMA mode disabled)
                                                             // [5-4] TX_FIFO_TRIG = 0x0 (8 characters)
                                                             // [7-6] RX_FIFO_TRIG = 0x0 (8 characters)
-            
+
             // 6. Switch to register configuration mode B to access the UARTi.UART_EFR register
             REG32_write(UART0_BASE, UART_LCR_OFF, 0xBF);
 
@@ -79,7 +79,7 @@ void uart_init( unsigned short uart_index,
             // For RX SCR[7] = 0, and TLR[7] to TLR[4]=0, then: Defined by FCR[7] and FCR[6] (either 8, 16, 56, 60 characters).
             REG32_write(UART0_BASE, UART_TLR_OFF, 0x00);    // [3-0] RX_FIFO_TRIG_DMA = 0x00, use setting from FCR register
                                                             // [7-4] TX_FIFO_TRIG_DMA = 0x00, use setting from FCR register
-            
+
             // 8. Load the new FIFO triggers (part 3 of 3) and the new DMA mode (part 2 of 2)
             REG32_write(UART0_BASE, UART_SCR_OFF, 0x00);    // [0] DMA_MODE_CTL = 0 (DMA set with FCR register)
                                                             // [2-1] DMAMODE2 = 0x0 (Has no effect when DMA_MODE_CTL = 0)
@@ -140,7 +140,7 @@ void uart_init( unsigned short uart_index,
                                                                 // [5] XOFFIT = 0 (XOFF interrupt)
                                                                 // [6] RTSIT = 0 (RTS (active-low) interrup)
                                                                 // [7] CTSIT = 0 (CTS (active-low) interrupt)
-            
+
             // 10. Switch to register configuration mode B to access the UARTi.UART_EFR register
             REG32_write(UART0_BASE, UART_LCR_OFF, 0xBF);
 
@@ -148,7 +148,7 @@ void uart_init( unsigned short uart_index,
             REG32_write_masked(UART0_BASE, UART_EFR_OFF, 0x10, efr_bit4);
 
             // 12. Load the new protocol formatting (parity, stop-bit, character length) and switch to register operational mode
-            REG32_write(UART0_BASE, UART_LCR_OFF, 
+            REG32_write(UART0_BASE, UART_LCR_OFF,
                 (0 << 7) |                      // [7] DIV_EN = 0 (disable divisor latch access)
                 (0 << 6) |                      // [6] BREAK_EN = 0 (disable break condition)
                 (0 << 5) |                      // [5] PARITY_TYPE_2
@@ -179,7 +179,7 @@ void uart_putc(char c) {
     if (c == '\n'){
         uart_putc('\r');
     }
-    
+
     // Only support UART0 for now
     // Wait for the THR empty bit to be set
     while (!(REG32_read(UART0_BASE, UART_LSR_UART_OFF) & 0x20));
@@ -270,7 +270,7 @@ void print_number(int32_t num, char base, bool is_signed) {
     char tmp_char;
     uint32_t temp_num;  /* Use unsigned int to handle negatives in hex */
     int is_negative = 0;
-    
+
     if (num == 0) {
         uart_putc('0');
         return;
@@ -306,17 +306,13 @@ void print_number(int32_t num, char base, bool is_signed) {
     uart_puts(buffer); /* Output the number string */
 }
 
-
-void uart_printf(const char *format, ...) {
-    va_list ap;
-    va_start(ap, format);
-
-    while (*format) {
-        if (*format == '%') {
-            format++;
-            switch (*format) {
+void uart_vprintf(const char* fmt, va_list ap) {
+    while (*fmt) {
+        if (*fmt == '%') {
+            fmt++;
+            switch (*fmt) {
                 case 'd': {
-                    print_number(va_arg(ap, int), 10 , true);
+                    print_number(va_arg(ap, int), 10, true);
                     break;
                 }
                 case 'u': {
@@ -336,15 +332,21 @@ void uart_printf(const char *format, ...) {
                     break;
                 }
                 default: {
-                    uart_putc(*format);
+                    uart_putc(*fmt);
                     break;
                 }
             }
         } else {
-            uart_putc(*format);
+            uart_putc(*fmt);
         }
-        format++;
+        fmt++;
     }
+}
 
-    va_end(ap);
+
+void uart_printf(const char *format, ...) {
+    va_list ap;
+	va_start(ap, format);
+	uart_vprintf(format, ap);
+	va_end(ap);
 }

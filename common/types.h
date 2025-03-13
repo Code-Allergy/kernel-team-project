@@ -2,6 +2,13 @@
 #define TYPES_H
 
 #include <stdint.h>
+#include <stdbool.h>
+
+#define va_start(ap, param) __builtin_va_start(ap, param)
+#define va_start(ap, param) __builtin_va_start(ap, param)
+#define va_end(ap)          __builtin_va_end(ap)
+#define va_arg(ap, type)    __builtin_va_arg(ap, type)
+typedef __builtin_va_list va_list;
 
 /* Define exact-width integer types */
 /*  typedef unsigned char uint8_t; */
@@ -20,8 +27,6 @@
 /*      false = 0, */
 /*      true  = ~0 */
 /*  } bool; */
-
-#include <stdbool.h>
 
 typedef volatile uint32_t* RegIO;
 

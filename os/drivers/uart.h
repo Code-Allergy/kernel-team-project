@@ -171,13 +171,9 @@ char uart_getc(void);
 void uart0_interrupt_init(void);
 void handle_uart0_irq(void);
 
-#define va_start(ap, param) __builtin_va_start(ap, param)
-#define va_start(ap, param) __builtin_va_start(ap, param)
-#define va_end(ap)          __builtin_va_end(ap)
-#define va_arg(ap, type)    __builtin_va_arg(ap, type)
-typedef __builtin_va_list va_list;
 void print_number(int32_t num, char base, bool is_signed);
 void uart_printf(const char *format, ...);
+void uart_vprintf(const char* fmt, va_list ap);
 
 /* Both non blocking*/
 /**
@@ -187,7 +183,7 @@ void uart_printf(const char *format, ...);
  * @return Returns 1 if a character is present and 0 otherwise.
  */
 unsigned int uart0_getchar(char *c);
- 
+
 /**
  * @brief Reads a line of text from UART0's buffer.
  *
@@ -195,7 +191,7 @@ unsigned int uart0_getchar(char *c);
  * including the newline character and the null terminator. The function will
  * read characters from the buffer until a newline character is reached
  * or the destination buffer is full (in which case the destination buffer
- * will not have a newline and null terminator!!). 
+ * will not have a newline and null terminator!!).
  *
  * @param buffer Pointer to a character array where the received line will be stored.
  * @param buffer_size The size of the buffer.
