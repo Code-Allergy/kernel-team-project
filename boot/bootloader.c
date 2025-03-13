@@ -64,19 +64,22 @@ static inline void gpio_test()
     timer_val = timer_value(TIMER2);
     uart_printf("Timer counting?. value: %u\n", timer_val);
 
+
+    /*
     while (1)
     {
         delay(5);
-        /*
+        
         timer_val = timer_value(TIMER2);
         uart_printf("Timer value: %u\n", timer_val);
-        */
+        
         read = uart0_readline(uart_buffer, 100);
         if(read > 0)
         {
             uart_printf("Received: %s", uart_buffer);
         }
     }
+    */
 }
 
 int min(int a, int b, int c)
@@ -143,9 +146,13 @@ void __BootloaderEntry()
     }
 
 
+
+
     uart_puts("Init ddr end\n");
     // mem copy the kernel to dram
 
     // jump to kernel
+
+    while(1);	
     ((void (*)()) __BBB_DRAM_BEGIN)();
-}
+	}

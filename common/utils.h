@@ -83,11 +83,7 @@ static inline unsigned int REG32_read_masked(unsigned int base, unsigned int off
 
 
 
-static inline void log_message(int level, const char *fmt, ...) {
-    if (level <= LOG_LEVEL) { // Only log if within the allowed threshold
-        va_list ap;
-        va_start(ap, fmt);
-
+static inline void uart_vprintf( const char* fmt, va_list ap ) {
         while (*fmt) {
             if (*fmt == '%') {
                 fmt++;
@@ -123,7 +119,18 @@ static inline void log_message(int level, const char *fmt, ...) {
             fmt++;
         }
 
-        va_end(ap);
+       
+
+}
+
+
+
+static inline void log_message(int level, const char *fmt, ...) {
+    if (level <= LOG_LEVEL) { // Only log if within the allowed threshold
+        va_list ap;
+	va_start(ap, fmt);
+	uart_vprintf(fmt, ap);	
+	va_end(ap);		
     }
 }
 
