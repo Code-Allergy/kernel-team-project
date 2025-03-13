@@ -20,7 +20,7 @@ export CFLAGS 	= 	-Wall \
 					-march=armv7-a \
 					-static \
 					-std=gnu90 \
-					-mfloat-abi=soft \					
+					-mfloat-abi=soft \
 					-pedantic \
 					-ffreestanding \
 					-fbuiltin \
