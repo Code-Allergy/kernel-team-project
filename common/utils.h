@@ -91,6 +91,16 @@ static inline void log_message(int level, const char *fmt, ...) {
     }
 }
 
+static inline void panic(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    uart_vprintf(fmt, ap);
+    va_end(ap);
+    while (1) {
+        __asm__ volatile("wfi");
+    }
+}
+
 
 
 

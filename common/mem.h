@@ -20,14 +20,6 @@
  * We probably also want a header section of the kernel, that will contain some basic info.
  */
 
-/* Hardware and device mapping region (256MB) */
-#define MEM_DEVICE_BASE    0xC0000000  /* 0xC0000000-0xCFFFFFFF */
-/* Remap physical addresses from lower memory to here, so we can access with ttbr1 page.
- * This region needs to specifically be uncached.
- * We can also slice up some of this extra space for DMA buffers.
- * Might also remap our other memory here, if we want to access it.
- */
-
 /* Kernel dynamic memory region (512MB) */
 #define MEM_HEAP_BASE      0xD0000000  /* 0xD0000000-0xEFFFFFFF */
 /* Kernel heap space, can split into multiple regions if needed. */

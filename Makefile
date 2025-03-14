@@ -75,14 +75,13 @@ mmu: utils
 		PLATFORM=$(PLATFORM) \
 		mmu
 
-boot: utils drivers fs interrupts mmu
+boot: utils drivers fs interrupts mmu | $(BUILD_DIR)
 	make -f $(BOOT_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM)
-	mkdir -p $(BUILD_DIR)
 	cp $(BOOT_DIR)/build/MLO $(BOOT_DIR)/build/boot_disassembly.txt $(BUILD_DIR)/
 
-kernel: | $(BUILD_DIR)
+kernel: utils drivers fs interrupts mmu | $(BUILD_DIR)
 	make -f $(OS_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM) \
@@ -137,3 +136,7 @@ _qemu: $(OUTPUT_SDIMG)
 qemu-run: $(OUTPUT_SDIMG)
 	qemu-img resize $(OUTPUT_SDIMG) 128M
 	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(BOOT_DIR)/build/bootloader.bin -sd $(OUTPUT_SDIMG) -d guest_errors,unimp,int -D qemu.log
+
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)

@@ -4,6 +4,11 @@
 #include <uart.h>
 #include <utils.h>
 
+/* Static helpers */
+static inline void configure_ddr_io(void);
+static inline void configure_ddr_phy(void);
+static inline void configure_ddr_phy_cmd_data(void);
+
 #define TIMEOUT 1000000  /* Prevent infinite loops */
 
 
@@ -82,26 +87,26 @@
 void init_ddr3() {
 
     log_message(LOG_LEVEL_DEBUG, "Initializing DDR...\n");
-    
+
     configure_ddr_phy();
     configure_ddr_phy_cmd_data();
     configure_ddr_io();
- 
-    
+
+
     log_message(LOG_LEVEL_DEBUG, "PHY Config successfull.\n");
 
     *(volatile uint32_t *)EMIF_SDRAM_TIM_1 =         0x0AAAD4DB;
     *(volatile uint32_t *)EMIF_SDRAM_TIM_1_SHDW =    0x0AAAD4DB;
-   
 
 
- 
+
+
     *(volatile uint32_t *)EMIF_SDRAM_TIM_2 =         0x266B7FDA;
     *(volatile uint32_t *)EMIF_SDRAM_TIM_2_SHDW =    0x266B7FDA;
-    
+
     *(volatile uint32_t *)EMIF_SDRAM_TIM_3 =         0x50074BE4;
     *(volatile uint32_t *)EMIF_SDRAM_TIM_3_SHDW =    0x50074BE4;
-    
+
     *(volatile uint32_t *)EMIF_SDRAM_REF_CTRL =      0x00000C30;
     *(volatile uint32_t *)EMIF_SDRAM_REF_CTRL_SHDW = 0x00000C30;
 
@@ -119,7 +124,7 @@ void init_ddr3() {
 
 
 static inline void enable_emif_clocks(void)
-{    
+{
 
     /* L3 clock */
     *(volatile unsigned int *)(CM_PER_BASE + 0xe0)  |= 0x2U;
@@ -142,7 +147,7 @@ static inline void enable_emif_clocks(void)
 
 
     /* Wait for the clocks to stabalise */
-    WAIT_FOR_REG32(CM_PER_BASE,  0xe0,  0x3U, 0x2U, TIMEOUT); 
+    WAIT_FOR_REG32(CM_PER_BASE,  0xe0,  0x3U, 0x2U, TIMEOUT);
     WAIT_FOR_REG32(CM_PER_BASE,  0x60,  0x3U, 0x2U, TIMEOUT);
     WAIT_FOR_REG32(CM_PER_BASE,  0x64,  0x3U, 0x2U, TIMEOUT);
     WAIT_FOR_REG32(CM_PER_BASE,  0xdc,  0x3U, 0x2U, TIMEOUT);
@@ -162,7 +167,7 @@ static inline void configure_ddr_phy(void)
     WAIT_FOR_REG32(CONTROL_MODULE_BASE, 0xe0c, 0x20, 0x20, TIMEOUT);
 }
 
-static inline void configure_ddr_phy_cmd_data(void) 
+static inline void configure_ddr_phy_cmd_data(void)
 {
     /* DDR PHY CMD0 configuration */
     *(volatile unsigned int *)(DDR_PHY_CTRL_BASE + 0x1C)  = 0x80U;
@@ -174,7 +179,7 @@ static inline void configure_ddr_phy_cmd_data(void)
 
     /* DDR PHY CMD2 configuration */
     *(volatile unsigned int *)(DDR_PHY_CTRL_BASE + 0x84)  = 0x80U;
-    *(volatile unsigned int *)(DDR_PHY_CTRL_BASE + 0x94)  = 0x00U; 
+    *(volatile unsigned int *)(DDR_PHY_CTRL_BASE + 0x94)  = 0x00U;
 
     /* DDR PHY Data Macro 0 configuration */
     *(volatile unsigned int *)(DDR_PHY_CTRL_BASE + 0xC8)  = 0x38U;
@@ -232,7 +237,7 @@ static inline void enable_core_pll(void)
 
     /* LOCK the PLL */
 
-   *(volatile unsigned int *)(CM_WKUP_BASE + 0x90) |= DPLL_LOCK; 
+   *(volatile unsigned int *)(CM_WKUP_BASE + 0x90) |= DPLL_LOCK;
     WAIT_FOR_REG32(CM_WKUP_BASE, 0x5c, 0x1, 0x1, TIMEOUT);
 }
 
@@ -247,7 +252,7 @@ static inline void enable_ddr_pll(void)
     REG32_write_masked(CM_WKUP_BASE, 0x40, 0x0000007F, 23);
 
     /* Lock the PLL and wait for it */
-   *(volatile unsigned int *)(CM_WKUP_BASE + CM_CLKMODE_DPLL_DDR) |= DPLL_LOCK; 
+   *(volatile unsigned int *)(CM_WKUP_BASE + CM_CLKMODE_DPLL_DDR) |= DPLL_LOCK;
 
 
     WAIT_FOR_REG32(CM_WKUP_BASE, 0x34, 0x1, 0x1, TIMEOUT);
@@ -261,18 +266,18 @@ static inline void init_emif(void)
 
     expected = CM_PER_L3_CLKSTCTRL_CLKACTIVITY_EMIF_GCLK |
                CM_PER_L3_CLKSTCTRL_CLKACTIVITY_L3_GCLK;
-    
+
     WAIT_FOR_REG32(CM_PER_BASE, 0x0C, expected, expected, TIMEOUT);
 }
 
 
 
-void setup_memory() { 
-    
+void setup_memory(void) {
+
     enable_core_pll();
-    
+
     enable_ddr_pll();
-   
+
     enable_emif_clocks();
     init_emif();
 
@@ -317,4 +322,3 @@ int test_ddr3_memory() {
 
     return errors;
 }
-

@@ -385,6 +385,31 @@ int fat32_readlabel(fat32_fs_t* fs, char* label_out)
     return FAT32_ERROR_NO_LABEL;
 }
 
+char* fat32_geterror(int32_t err) {
+    switch (err) {
+        case FAT32_SUCCESS:
+            return "Success";
+        case FAT32_ERROR_BAD_PARAMETER:
+            return "Bad parameter";
+        case FAT32_ERROR_IO:
+            return "I/O error";
+        case FAT32_ERROR_NO_PATH:
+            return "Path not found";
+        case FAT32_ERROR_NO_FILE:
+            return "File not found";
+        case FAT32_ERROR_IS_DIR:
+            return "Path is a directory";
+        case FAT32_ERROR_CORRUPTED_FS:
+            return "Corrupted filesystem";
+        case FAT32_ERROR_INVALID_BOOT_SECTOR:
+            return "Invalid boot sector";
+        case FAT32_ERROR_NO_LABEL:
+            return "No volume label found";
+        default:
+            return "Unknown error";
+    }
+}
+
 int fat32_tell(fat32_file_t* file)
 {
     if (!file)

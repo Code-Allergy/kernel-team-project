@@ -81,20 +81,23 @@
 
 
 /* Main activation */
-void mmu_init(void);
+void MMU_init(void);
 
 /* Enable the MMU, ensure that the MMU has been initialized and TTBR0 is valid. */
-void mmu_enable(void);
+void MMU_enable(void);
+
+/* Map VADDR -> PADDR with flags as a section. vaddr and paddr should be 1MB aligned */
+void MMU_map_section(uint32_t *l1_base, uint32_t vaddr,
+    uint32_t paddr, uint32_t flags);
 
 /* Be VERY careful when calling this. Make sure the PC (or else prefetch abort)
 and all other accessable registers don't contain an address
 that will be accessed later (or else data fault) */
-void mmu_disable(void);
+void MMU_disable(void);
 
 void set_ttbr0(uint32_t *l1_base);
 uint32_t read_ttbr0(void);
-void mmu_set_domains(void);
-void mmu_enable(void);
+void MMU_set_domains(void);
 uint32_t read_dacr(void);
 
 void i_cache_enable(void);
@@ -107,3 +110,7 @@ void flush_tlb_entry(uint32_t vaddr);
 void flush_tlb_asid(uint32_t asid);
 void flush_d_cache(void);
 void flush_i_cache(void);
+
+
+/* debug logging */
+void log_vaddr_mappings(uint32_t* vaddr);

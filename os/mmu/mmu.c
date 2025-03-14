@@ -20,13 +20,19 @@ static inline void clear_boot_tables(void) {
     }
 }
 
-/* Just use domain 0 for kernel, enable memory protection (client mode) */
-void mmu_set_domains(void) {
+/* Just use domain 0 for kernel, enable memory protection */
+void MMU_set_domains(void) {
     uint32_t dacr = 0x1;
     __asm__ volatile("mcr p15, 0, %0, c3, c0, 0" : : "r"(dacr));
 }
 
-void map_section(volatile uint32_t *l1_base, uint32_t vaddr, uint32_t paddr, uint32_t flags) {
+void MMU_map_section(uint32_t *l1_base, uint32_t vaddr, uint32_t paddr, uint32_t flags) {
+    /* verify vaddr and paddr allignment */
+    if (vaddr & ~L1_SECTION_MASK || paddr & ~L1_SECTION_MASK) {
+        log_message(LOG_LEVEL_ERROR, "MMU_map_section: vaddr and paddr must be 1MB aligned\n");
+        return;
+    }
+
     l1_base[GET_L1_INDEX(vaddr)] = (paddr & L1_SECTION_MASK) | L1_SECTION_DESCRIPTOR | flags;
 }
 
@@ -95,26 +101,37 @@ static void _mmu_enable(void) {
     __asm__ volatile("mcr p15, 0, %0, c1, c0, 0" : : "r"(control));
 }
 
+static void _mmu_disable(void) {
+    uint32_t control;
+    __asm__ volatile("mrc p15, 0, %0, c1, c0, 0" : "=r"(control));
+    control &= ~0x1;                            /* Disable MMU */
+    __asm__ volatile("mcr p15, 0, %0, c1, c0, 0" : : "r"(control));
+}
+
+// TODO, map hardware pages
+static void mmu_map_hardware_pages(void) {
+
+}
+
 void MMU_init(void) {
     uint32_t* l1_tables = (uint32_t*)MEM_BOOT_PAGE_TABLE_BASE;
-    uint32_t vaddr, entry;
+    uint32_t vaddr;
     uint32_t step = MEM_SECTION_SIZE;
     clear_boot_tables();
-    mmu_set_domains();
+    MMU_set_domains();
 
     /* for now, just map everything 1:1, worry about enabling caching on DRAM later. */
-    for (vaddr = 0; vaddr < 0xFFFFFFFF - step; vaddr += step) {
-        map_section(l1_tables, vaddr, vaddr, L1_ACCESS_RW_RW);
-        // log_l1_pte(l1_tables[GET_L1_INDEX(vaddr)]);
+    for (vaddr = 0; vaddr < 0xFFFFFFFF; vaddr += step) {
+        if (vaddr + step < vaddr) break; // Handle 32-bit overflow
+        MMU_map_section(l1_tables, vaddr, vaddr, L1_ACCESS_RW_NO);
     }
-    log_message(LOG_LEVEL_INFO, "Wrote section entries\n");
+    log_message(LOG_LEVEL_INFO, "Mapped all section entries\n");
+
+    /* Later we will map hardware pages 1:1 (and in user memory map) */
+    /* We can also enable caching on memory */
+    /* mmu_map_hardware_pages(void) */
 
     /* Also remap only the first 1MB of kernel to first 1MB of DRAM */
-    /* We can decide how to determine if we need more static kernel mem */
-    /* CAN'T use code pages (RO) unless we split up by L2 page (4K) and
-       align code and data sections on a page boundary */
-    /* We could align code/data sections to 1MB if we want code write security and NX on data easily */
-    map_section(l1_tables, MEM_KERNEL_BASE, MEM_PHYS_BASE, L1_KERNEL_DATA_EXEC_FLAGS);
     set_ttbr0(l1_tables);
     log_message(LOG_LEVEL_INFO, "Loaded L1 tables located at %x into TTBR0\n");
 }
@@ -129,7 +146,7 @@ void MMU_enable(void) {
 }
 
 void MMU_disable(void) {
-    mmu_disable();
+    _mmu_disable();
     d_cache_disable();
     i_cache_disable();
 }
@@ -157,6 +174,12 @@ uint32_t read_ttbr0(void) {
         : "=r" (ttbr0)
     );
     return ttbr0;
+}
+
+void log_vaddr_mappings(uint32_t* vaddr) {
+    uint32_t* l1_tables = (uint32_t*)MEM_BOOT_PAGE_TABLE_BASE;
+    uart_printf("VADDR: 0x%x\n", vaddr);
+    log_l1_pte(l1_tables[GET_L1_INDEX((uint32_t)vaddr)]);
 }
 
 /* debug log l1 entry */

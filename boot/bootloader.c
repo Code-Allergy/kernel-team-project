@@ -1,11 +1,16 @@
 #include <gpio.h>
 #include <uart.h>
-#include <stdint.h>
 #include <interrupt.h>
 #include <ddr.h>
 #include <timer.h>
 #include <mmu.h>
 #include <mem.h>
+#include <boot.h>
+#include <utils.h>
+#include <fat32.h>
+
+#define KERNEL_MAGIC 0x1B1B1B1B
+#define BOOTLOADER_MAGIC 0x2B2B2B2B
 
 
 extern void setup_vbar(void);
@@ -24,7 +29,6 @@ static inline void delay(unsigned int secs)
     while (tick_secs < wait)
         ;
 }
-
 void timer_tick(void)
 {
 
@@ -116,17 +120,22 @@ int levenshtein(const char* str1, const char* str2, int len1, int len2)
     return 1 + min(insert, remove, replace);
 }
 
-typedef struct bootloader_header {
-    /* magic value to verify header */
-    uint32_t magic;
-
-    /* whatever we need to pass to kernel */
-    uint32_t boot_table_entry_addr;
-} bootloader_header_t;
+fat32_fs_t fs;
+fat32_diskio_t diskio;
+fat32_file_t file;
+bootloader_header_t boot_header;
+kernel_header_t kernel_header;
 
 void __BootloaderEntry(void)
 {
-    int32_t i;
+    int32_t i, res;
+    int32_t current_frame;
+    int32_t text_section_size, data_section_size, bss_section_size;
+    int32_t text_sections;
+    int32_t data_sections;
+    int32_t bss_section_offset;
+    int32_t bss_section_paddr;
+    uint32_t* l1_tables;
     const char* str1  = "kien";
     const char* str2  = "sittineiwog";
     volatile int len1 = 4;
@@ -138,7 +147,6 @@ void __BootloaderEntry(void)
         len1 = 20;
         gpio_test(); /* setup_vbar();  // Set the interrupt vector table */
     }
-
 
     uart_puts("Init ddr start\n");
 
@@ -153,43 +161,99 @@ void __BootloaderEntry(void)
     	uart_puts("DDR Memory test FAILED\n");
     }
 
-    // uart_puts("Init ddr end\n");
+    /* Copy entire kernel image into memory at MEM_PHYS_BASE */
+#ifdef MMC_READY
+    // diskio.read_sector = &mmc_read_sector;
+    if ((res = fat32_mount(&fs, &diskio)) != 0) {
+        panic("Failed to mount FAT32 filesystem: %s\n", fat32_geterror(res));
+    }
+    log_message(LOG_LEVEL_INFO, "Mounted FAT32 filesystem\n");
+    if ((res = fat32_open(&fs, "/boot/kernel.bin", &file)) != 0) {
+        panic("Failed to open kernel.bin: %s\n", fat32_geterror(res));
+    };
+    log_message(LOG_LEVEL_INFO, "Opened kernel.bin\n");
+
+    /* Copy the kernel directly into memory */
+    uint32_t kernel_size = fat32_size(&file);
+    if ((res = fat32_read(&file, (void*)MEM_PHYS_BASE, kernel_size)) != kernel_size) {
+        panic("Failed to read kernel.bin: %s (%d bytes)\n", fat32_geterror(res), res);
+    }
+    log_message(LOG_LEVEL_INFO, "Copied kernel into memory at %x", MEM_PHYS_BASE);
+    kernel_header = *(kernel_header_t*)MEM_PHYS_BASE;
+#else
+    /* Mock header until MMC reads */
+    /* From kernel.bin with basic while loop and array for static allocation */
+    /* 1MB data section alignment, so we can place code and data/bss in own section */
+    kernel_header.magic = KERNEL_MAGIC;
+    kernel_header.text_start = 0xa0000040;
+    kernel_header.data_start = 0xa0100000;
+    kernel_header.bss_start = 0xa0101000;
+    kernel_header.kernel_size = 0x2010;        /* Actual used space, ignoring padding */
+    kernel_header.kernel_entry = 0xa0000040;
+    kernel_header.kernel_end = 0xa0102000;
+#endif
+
+    /* Verify the kernel has the expected header */
+    if (kernel_header.magic != KERNEL_MAGIC)
+    {
+        panic("Invalid kernel magic value: %x\n", kernel_header.magic);
+    }
+
+    /* Verify the kernel data page is 1MB aligned */
+    if (kernel_header.data_start % MEM_SECTION_SIZE != 0)
+    {
+        panic("Kernel data section is not 1MB aligned: %x\n", kernel_header.data_start);
+    }
+
+    /* Set some values from the header */
+    text_section_size = kernel_header.data_start - kernel_header.text_start;
+    data_section_size = kernel_header.bss_start - kernel_header.data_start;
+    bss_section_size = kernel_header.kernel_size - data_section_size;
+    text_sections = (text_section_size / MEM_SECTION_SIZE) + 1;
+    data_sections = ((data_section_size + bss_section_size) / MEM_SECTION_SIZE) + 1;
+    bss_section_offset = kernel_header.bss_start - MEM_KERNEL_BASE;
+    bss_section_paddr = (MEM_PHYS_BASE + bss_section_offset);
+
+    /* Create kernel code page mappings */
+    current_frame = 0;
+    l1_tables = (uint32_t*)MEM_BOOT_PAGE_TABLE_BASE;
+    for (current_frame = 0; current_frame < text_sections; current_frame++)
+    {
+        MMU_map_section(l1_tables, MEM_KERNEL_BASE + (current_frame * MEM_SECTION_SIZE),
+            MEM_PHYS_BASE + (current_frame * MEM_SECTION_SIZE), L1_KERNEL_CODE_FLAGS);
+        log_vaddr_mappings((uint32_t*)(kernel_header.text_start + (current_frame * MEM_SECTION_SIZE)));
+    }
+    uart_printf("Done mapping kernel data pages!");
+
+    /* Create kernel data page mappings */
+    for (; current_frame < data_sections + text_sections; current_frame++)
+    {
+        MMU_map_section(l1_tables, kernel_header.data_start + (current_frame * MEM_SECTION_SIZE),
+            MEM_PHYS_BASE + (current_frame * MEM_SECTION_SIZE), L1_KERNEL_DATA_FLAGS);
+        log_vaddr_mappings((uint32_t*)(kernel_header.data_start + (current_frame * MEM_SECTION_SIZE)));
+    }
+    uart_printf("Done mapping kernel data pages!");
+
+    /* clear bss section */
+    for (i = 0; i < bss_section_size; i += 4)
+    {
+        *((uint32_t*)(bss_section_paddr + i)) = 0;
+    }
+
+    /* Initialize and enable the MMU */
     MMU_init();
-
     MMU_enable();
-    // mem copy the kernel to dram
 
+    /* Setup whatever info is needed from bootloader */
+    boot_header.magic = BOOTLOADER_MAGIC;
+    boot_header.mapped_sections = text_sections + data_sections;
+    boot_header.boot_table_entry_addr = MEM_BOOT_PAGE_TABLE_BASE;
 
-    // try and write to virt mem MEM_KERNEL_BASE
-    int32_t* kernel = (int32_t*) MEM_KERNEL_BASE;
-    for (i = 0; i < 32; i++)
-    {
-        kernel[i] = i;
-    }
+    /* for now, copy the instruction to jump to the kernel entry to the kernel entry point */
+    *((uint32_t*)kernel_header.kernel_entry) = 0xEA000000 | (kernel_header.kernel_entry - MEM_KERNEL_BASE);
+    log_message(LOG_LEVEL_INFO, "Jumping to kernel entry at %x\n", kernel_header.kernel_entry);
+    log_message(LOG_LEVEL_INFO, "Hanging at kernel stub\n", &boot_header);
+    ((void (*)(bootloader_header_t*)) kernel_header.kernel_entry)(&boot_header);
 
-    // read it back
-    for (i = 0; i < 100; i++)
-    {
-        if (kernel[i] != i)
-        {
-            uart_printf("Error at %d, got %d\n", i, kernel[i]);
-        }
-    }
-
-    // read header
-    // verify magic value
-    // clear bss section (header has addresses of sections)
-    // map initial kernel pages (more pages needed and proper attributes on physical memory.)
-    // enable MMU (DONE)
-    // enable caches (DONE with mmu_enable)
-    // setup whatever info the kernel needs from bl
-    // jump to kernel entry (from header)
-
-
-    // jump to kernel (address read from header instead)
-    // jump to kernel
-    // ((void (*)(bootloader_header_t*)) __BBB_DRAM_BEGIN)(NULL);
-
-    while(1);
-    // ((void (*)()) __BBB_DRAM_BEGIN)();
+    panic("Reached end of bootloader main without jumping!\n");
 }

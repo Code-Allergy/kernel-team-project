@@ -6,6 +6,7 @@ BOOT_DIR = $(TOP_DIR)/boot
 DRIVERS_DIR = $(TOP_DIR)/os/drivers
 MMU_DIR = $(TOP_DIR)/os/mmu
 UTILS_DIR = $(TOP_DIR)/common
+FS_DIR = $(TOP_DIR)/os/fs
 
 
 # Set platform-specific include
@@ -36,7 +37,8 @@ IFLAGS = 	-I$(BOOT_DIR) \
 			-I$(TOP_DIR)/os/drivers \
 			-I$(TOP_DIR)/os/mmu \
 			-I$(TOP_DIR)/common \
-			-I$(INTERRUPTS_DIR)
+			-I$(INTERRUPTS_DIR) \
+			-I$(FS_DIR)
 
 
 OUTPUT_ELF = $(BOOT_DIR)/build/bootloader.elf

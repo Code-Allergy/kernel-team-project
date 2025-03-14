@@ -8,6 +8,7 @@ UTILS_DIR := $(TOP_DIR)/common
 DRIVERS_DIR := $(TOP_DIR)/os/drivers
 FS_DIR      := $(TOP_DIR)/os/fs
 MMU_DIR     := $(TOP_DIR)/os/mmu
+BOOT_DIR    := $(TOP_DIR)/boot
 
 CCDEFINES = -DPLATFORM=$(PLATFORM)
 
@@ -23,7 +24,8 @@ IFLAGS = 	-I$(OS_DIR)/ \
 			-I$(UTILS_DIR) \
 			-I$(INTERRUPTS_DIR) \
 			-I$(FS_DIR) \
-			-I$(MMU_DIR)
+			-I$(MMU_DIR) \
+			-I$(BOOT_DIR)
 
 
 OUTPUT_ELF = $(OS_DIR)/build/kernel.elf
@@ -113,6 +115,8 @@ disassemble: $(OUTPUT_ELF)
 #----------- CLEAN
 clean:
 	rm -f \
+	    $(OUTPUT_ELF) $(OUTPUT_BIN) $(OS_DIR)/build/kernel_disassembly.txt \
+		$(OS_DIR)/build/*.o $(OS_DIR)/build/*.d \
 		$(UTILS_DIR)/build/*.o $(UTILS_DIR)/build/*.d \
 		$(DRIVERS_DIR)/build/*.o $(DRIVERS_DIR)/build/*.d \
 		$(INTERRUPTS_DIR)/build/*.o $(INTERRUPTS_DIR)/build/*.d \
