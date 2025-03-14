@@ -7,6 +7,9 @@
 /*move this 2*/
 #define CONTROL_MODULE_BASE 0x44E10000
 #define CLK32KDIVRATIO_CTRL 0x444
+/*SD card command timeout error*/
+#define CTO_ERROR -16
+#define CC 0
 
 /*Pin Muxing*/
 void configure_mmc_pins(void) {
@@ -58,9 +61,10 @@ void configure_mmc_pins(void) {
 int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int flags, 
         unsigned int response[])
 {
+    uart_puts("send command called\n");
     /*wait until issuing a command is allowed*/
-    while(REG32_read_masked(MMCHS0_BASE, SD_PSTATE, (0b11)) != 0);
-    
+    while(REG32_read_masked(MMCHS0_BASE, SD_PSTATE, (0b1)) != 0);
+
     /*clear status register*/
     REG32_write(MMCHS0_BASE, SD_STAT, 0xFFFFFFFF);
 
@@ -68,7 +72,9 @@ int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int flags,
     REG32_write(MMCHS0_BASE, SD_ARG, args);
  
     /*write flags*/
+    /*
     REG32_write(MMCHS0_BASE, SD_CMD, flags);
+    */
 
     /*write command*/
     REG32_write_masked(MMCHS0_BASE, SD_CMD, (0b111111 << 24),
@@ -80,47 +86,87 @@ int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int flags,
     while(REG32_read_masked(MMCHS0_BASE, SD_STAT, (0b1)) != 0x1)
     {
         /*check for error bits*/
-        
+
         /*check for command timeout error*/
-        if(REG32_read_masked(MMCHS0_BASE, SD_STAT, (0b1 << 16)) == 0x1)
+        if(REG32_read_masked(MMCHS0_BASE, SD_STAT, (0b1 << 16)) == (0x1 << 16))
         {
             uart_puts("Command Timeout error\n");
             
-            return -1;
+            return CTO_ERROR;
         }
 
+        /*can add other error checks*/
     }
-/*
+    uart_puts("command complete\n");
+    
     switch(cmdNum)
     {
-        case :
-
-            break;
-
-        case R1b:
+        /*commands that have response R1*/
+        case CMD0:
+        case CMD1:
+        case CMD6: 
+        case CMD9:
+        case CMD10:
+        case CMD16:
+        case CMD17:
+        case CMD18:
+        case CMD24:
+        case CMD25:
+        case CMD27:
+        case CMD30:
+        case CMD32:
+        case CMD33:
+        case CMD42:
+        case CMD55:
+        case CMD56:
+        case CMD59:
+            response[0] = REG32_read(MMCHS0_BASE, SD_RSP10);
             break;
         
-        case R2:
+        /*case R1b*/
+        case CMD12:
+        case CMD28:
+        case CMD29:
+        case CMD38:
+            response[0] = REG32_read(MMCHS0_BASE, SD_RSP10);
             break;
 
-        case R3:
+        /*case R2*/
+        case CMD13:
+            response[0] = REG32_read(MMCHS0_BASE, SD_RSP10);
+            response[1] = REG32_read(MMCHS0_BASE, SD_RSP32);
+            response[2] = REG32_read(MMCHS0_BASE, SD_RSP54);
+            response[3] = REG32_read(MMCHS0_BASE, SD_RSP76);
+            break;
+        /*case R3*/
+        case CMD58:
+            response[0] = REG32_read(MMCHS0_BASE, SD_RSP10);
             break;
 
-        case R7:
+        /*case R7*/
+        case CMD8:
+            /*not specified which register to read R7 type of response from so
+             * assuming from SD_RSP10*/
+            response[0] = REG32_read(MMCHS0_BASE, SD_RSP10);
             break;
 
         default:
-            uart_puts("response type should be specified\n");
+            uart_puts("command type not listed\n");
             return -1;
     }
 
-*/
-    return 0;
+    return CC;
 }
 
 
 void mmc_controller_init(void)
 {
+    /*TRM: to initialize the MMC/SD/SDIO controller:
+      • Initialize Clocks 
+      • Software reset of the controller 
+      • Set module's hardware capabilities 
+      • Set module's Idle and Wake-Up modes*/
+    
     uart_puts("mmc init!\n");
 
     /*pin muxing*/
@@ -128,11 +174,6 @@ void mmc_controller_init(void)
 
     uart_puts("mmc pins configured\n");
 
-    /*TRM: to initialize the MMC/SD/SDIO controller:
-      • Initialize Clocks 
-      • Software reset of the controller 
-      • Set module's hardware capabilities 
-      • Set module's Idle and Wake-Up modes*/
     
     volatile unsigned int timeout;
     unsigned int divider;
@@ -187,7 +228,14 @@ void mmc_controller_init(void)
             return;
         }
     }
+    uart_puts("waiting for lines reset\n");
+
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 24), (0b1 << 24));
     
+    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 24)) != 0);
+
+    uart_puts("lines reset complete\n");
+
     uart_puts("SOFTRESET complete\n");
 
     /*Set modules hardware capabilitites*/
@@ -244,8 +292,8 @@ void mmc_controller_init(void)
     /*enable the internal clock*/
     REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1), (0x1));
 
-    /*CLKD bits 6-15 set divider to set clock freq to 80KHz from 48000KHz*/
-    divider = 48000 / 80;   /*we want to set to 80 from 48MHz = 48000KHz = 
+    /*CLKD bits 6-15 set divider to set clock freq to 80KHz from 96000KHz*/
+    divider = 48000 / 80;   /*we want to set to 80 from 96MHz = 96000KHz = 
                               600*/
 
     REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1111111111 << 6), 
@@ -289,15 +337,18 @@ void mmc_controller_init(void)
     uart_puts("waiting 1ms\n");
 
     /*wait 1 ms*/
-    timeout = 0;  /*CPU frequency is 1GHz = 1 billion instructions per 
-                          second = 1 million instructions per milisecond
-                          we have 1 mil / 2 because we sould have ~ 3 
+    timeout = 1000000;  /*CPU frequency is set to 80KHz = 80 000 instructions 
+                          per 
+                          second = 80 instructions per milisecond
+                          we have 1 mil / 2 because we sould have ~ 4 
                           instructions in this loop*/
-    while(timeout <= 1000000)
+    while(timeout > 0)
     {
-        uart_puts("waiting\n");
-        timeout++;
-    }  /*this should take approximately 1ms+*/
+        timeout--;
+        /*
+        uart_puts("waiting?\n");
+        */
+    }  /*this should take approximately 4ms+*/
 
     uart_puts("wait complete\n");
 
@@ -314,14 +365,173 @@ void mmc_controller_init(void)
     
     uart_puts("setting clock high\n");
     
+    /*disable the internal clock*/
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, 0b1, 0x0);
+ 
     /*Change clock frequency to fit protocol*/
-    /*CLKD bits 6-15 set divider to 1 to set clock freq to default 48000KHz*/
-    divider = 1;    /*or 2*/
+    /*CLKD bits 6-15 set divider to 1 to set clock freq to 24MHz from 
+     * default 48000KHz*/
+    
+    divider = 2;    /*or 2*/
 
+    
     REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1111111111 << 6), 
             (divider << 6));
+
+    /*enable the internal clock*/
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, 0b1, 0x1);
+    
+    uart_puts("waiting for clock to be stable\n");
+    
+    /*wait for clock to stabilize by reading ICS bit of SD_SYSCTL*/
+    timeout = 100000;
+    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 1)) != (0x1 << 1))
+    {
+        uart_puts("internal clock was not stable\n");
+        if (--timeout == 0)
+        {
+            uart_puts("Timeout waiting for MMC clock to be stable\n");
+            return;
+        }
+    }
     
     uart_puts("now need to send commands\n");
     /*Send a CMD0 command*/
 
+    uart_puts("trying to send CMD0\n");
+
+    unsigned int responses[4];
+
+    if(sendCommand(CMD0, 0x0, 0x0 , responses) != CC)
+    {
+        return;
+    }
+
+    uart_puts("sent CMD0\n");
+
+    uart_puts("trying to send CMD5\n");
+   
+    /*checks for SDIO card since we have a SD card it should return CTO_ERROR*/
+    if(sendCommand(CMD5, 0x0, 0x0 , responses) != CTO_ERROR)
+    {
+        uart_puts("SDIO card?\n");
+        return;
+    }
+
+    uart_puts("CMD5 sent\n");
+    
+    /*Set SD_SYSCTL[25] SRC bit to 0x1 and wait until it returns to 0x0*/
+    uart_puts("waiting for Software reset for mmc_cmd line\n");
+
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 25), (0x1 << 25));
+
+    timeout = 10000;
+    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 25)) != 
+            (0x0 << 25))
+    {
+        if (--timeout == 0)
+        {
+            uart_puts("Timeout waiting for mmc_cmd lines reset\n");
+            return;
+        }
+    }
+
+    uart_puts("lines reset complete\n");
+
+    uart_puts("sending CMD8\n");
+
+    if(sendCommand(CMD8, 0x0, 0x0, responses) != CTO_ERROR)
+    {
+        uart_puts("Card compliant with standard 2.0 or later\n");
+        return;
+    }
+
+    /*Set SD_SYSCTL[25] SRC bit to 0x1 and wait until it returns to 0x0*/
+    uart_puts("again waiting for Software reset for mmc_cmd line\n");
+
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 25), (0x1 << 25));
+
+    timeout = 10000;
+    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 25)) != 
+            (0x0 << 25))
+    {
+        if (--timeout == 0)
+        {
+            uart_puts("Timeout waiting for mmc_cmd lines reset\n");
+            return;
+        }
+    }
+
+    uart_puts("lines reset complete\n");
+    
+
+    /*clear responses*/
+    responses[0] = 0;
+
+    uart_puts("trying to see if it is SD compliant with standard 1.x\n");
+
+    timeout = 100000;
+
+    while(REG32_read_masked(0x0, responses[0], (0b1 << 31)) != (0x1 << 31))
+    {
+        uart_puts("trying to send CMD55\n");
+
+        if(sendCommand(CMD55, 0x0, 0x0 , responses) != CC)
+        {
+            return;
+        }
+
+        uart_puts("sent CMD55\n");
+
+        uart_puts("sending ACMD41\n");
+
+        if(sendCommand(ACMD41, 0x0, 0x0, responses) != CC)
+        {
+            uart_puts("handle MMC card case\n");
+            return;
+        }
+
+        if (--timeout == 0)
+        {
+            uart_puts("Timeout waiting for SD card standard compliant\n");
+            return;
+        }
+
+
+    }
+
+    uart_puts("it is SD compliant with standard 1.x\n");
+
+
+    /*B*/
+    uart_puts("trying to send CMD2\n");
+   
+    if(sendCommand(CMD2, 0x0, 0x0 , responses) != CC)
+    {
+        return;
+    }
+
+    uart_puts("CMD2 sent\n");
+    
+    uart_puts("trying to send CMD3\n");
+   
+    if(sendCommand(CMD3, 0x0, 0x0 , responses) != CC)
+    {
+        return;
+    }
+
+    uart_puts("CMD3 sent\n");
+
+    uart_puts("assuming SD card because we know SD card\n");
+
+    uart_puts("trying to send CMD7\n");
+   
+    if(sendCommand(CMD7, 0x0, 0x0 , responses) != CC)
+    {
+        return;
+    }
+
+    uart_puts("CMD7 sent\n");
+
+    uart_puts("MMC init complete\n");
 }
