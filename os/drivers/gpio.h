@@ -6,7 +6,7 @@ enum GpioIOBase
 {
     GPIO0_BASE = 0x44e07000,
     GPIO1_BASE = 0x4804c000,
-    GPIO2_BASE = 0x481ac000,
+    GPIO2_BASE = 0x481ac000
 };
 
 // GPIO offsets
@@ -69,9 +69,9 @@ enum GpioIORegister
     GPIO_SETDATAOUT_OFF      = 0x194,
 
     CLK_L4LS_OFF  = 0x000,
-    MOD_GPIO1_OFF = 0x0ac, // debounce clock enable in bit 18
-    MOD_GPIO2_OFF = 0x0b0, // debounce clock enable in bit 18
-    MOD_GPIO3_OFF = 0x0b4, // debounce clock enable in bit 18
+    MOD_GPIO1_OFF = 0x0ac, /* debounce clock enable in bit 18 */
+    MOD_GPIO2_OFF = 0x0b0, /* debounce clock enable in bit 18 */
+    MOD_GPIO3_OFF = 0x0b4  /* debounce clock enable in bit 18 */
 };
 
 enum GpioPinDirection
@@ -84,5 +84,7 @@ void dumb_delay(void);
 void GPIO_init(void); // Only configures GPIO1 for now
 void GPIO_set(unsigned int gpio_base, unsigned int pins);
 void GPIO_clear(unsigned int gpio_base, unsigned int pins);
-void GpioSetPinMode(const enum GpioIOBase Gpio, const unsigned int PinMask, const enum GpioPinDirection Dir);
+void GpioSetPinMode(const enum GpioIOBase Gpio,
+                    const unsigned int PinMask,
+                    const enum GpioPinDirection Dir);
 #endif
