@@ -1,43 +1,12 @@
 #ifndef GPIO_H
 #define GPIO_H
 
-// GPIO Base addresses
 enum GpioIOBase
 {
-    GPIO0_BASE = 0x44e07000,
-    GPIO1_BASE = 0x4804c000,
-    GPIO2_BASE = 0x481ac000
+    GPIO0_BASE = 0x00000000,
+    GPIO1_BASE = 0x00000000,
+    GPIO2_BASE = 0x00000000
 };
-
-// GPIO offsets
-/*----------------------------------------------------
-0h GPIO_REVISION Section 25.4.1.1
-10h GPIO_SYSCONFIG Section 25.4.1.2
-20h GPIO_EOI Section 25.4.1.3
-24h GPIO_IRQSTATUS_RAW_0 Section 25.4.1.4
-28h GPIO_IRQSTATUS_RAW_1 Section 25.4.1.5
-2Ch GPIO_IRQSTATUS_0 Section 25.4.1.6
-30h GPIO_IRQSTATUS_1 Section 25.4.1.7
-34h GPIO_IRQSTATUS_SET_0 Section 25.4.1.8
-38h GPIO_IRQSTATUS_SET_1 Section 25.4.1.9
-3Ch GPIO_IRQSTATUS_CLR_0 Section 25.4.1.10
-40h GPIO_IRQSTATUS_CLR_1 Section 25.4.1.11
-44h GPIO_IRQWAKEN_0 Section 25.4.1.12
-48h GPIO_IRQWAKEN_1 Section 25.4.1.13
-114h GPIO_SYSSTATUS Section 25.4.1.14
-130h GPIO_CTRL Section 25.4.1.15
-134h GPIO_OE Section 25.4.1.16
-138h GPIO_DATAIN Section 25.4.1.17
-13Ch GPIO_DATAOUT Section 25.4.1.18
-140h GPIO_LEVELDETECT0 Section 25.4.1.19
-144h GPIO_LEVELDETECT1 Section 25.4.1.20
-148h GPIO_RISINGDETECT Section 25.4.1.21
-14Ch GPIO_FALLINGDETECT Section 25.4.1.22
-150h GPIO_DEBOUNCENABLE Section 25.4.1.23
-154h GPIO_DEBOUNCINGTIME Section 25.4.1.24
-190h GPIO_CLEARDATAOUT Section 25.4.1.25
-194h GPIO_SETDATAOUT Section 25.4.1.26
-------------------------------------------------------*/
 
 enum GpioIORegister
 {
@@ -80,11 +49,11 @@ enum GpioPinDirection
     GpioPinIn  = 1
 };
 
-void dumb_delay(void);
 void GPIO_init(void); // Only configures GPIO1 for now
 void GPIO_set(unsigned int gpio_base, unsigned int pins);
 void GPIO_clear(unsigned int gpio_base, unsigned int pins);
 void GpioSetPinMode(const enum GpioIOBase Gpio,
                     const unsigned int PinMask,
                     const enum GpioPinDirection Dir);
-#endif
+
+#endif /* GPIO_H */

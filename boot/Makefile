@@ -11,11 +11,12 @@ UTILS_DIR = $(TOP_DIR)/common
 ifeq ($(PLATFORM), BBB)
     LDSCRIPT = $(BOOT_DIR)/bbb_memory.ld
 else
-    LDSCRIPT = qemu_memory.ld
+    LDSCRIPT = $(BOOT_DIR)/qemu_memory.ld
 endif
 
 # Compiler and assembler flags
-
+LIBGCC = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
+LIBGCC_DIR = $(dir $(LIBGCC))
 ASFLAGS = -mcpu=cortex-a8 -g
 
 CCDEFINES = -DPLATFORM=$(PLATFORM)
@@ -25,26 +26,16 @@ LDFLAGS = 	-T $(LDSCRIPT) \
 			-nostdlib \
 			-static \
 			-L$(DRIVERS_DIR) \
-			-L$(TOP_DIR)/common
+			-L$(TOP_DIR)/common \
+			$(GLOBAL_LD_FLAGS)
+
+LDLIBS = $(GLOBAL_LD_LIBS)
 
 IFLAGS = 	-I$(BOOT_DIR) \
 			-I$(TOP_DIR)/os/drivers \
 			-I$(TOP_DIR)/common \
 			-I$(INTERRUPTS_DIR)
 
-CFLAGS = 	-Wall \
-			-Wextra \
-			-mcpu=cortex-a8  \
-			-mfloat-abi=soft \
-			-static \
-			-std=gnu90 \
-			-pedantic \
-			-ffreestanding \
-			-fbuiltin \
-			-marm \
-			-MMD \
-			-MP \
-			$(CCDEFINES) 
 
 OUTPUT_ELF = $(BOOT_DIR)/build/bootloader.elf
 OUTPUT_BIN = $(BOOT_DIR)/build/bootloader.bin
@@ -62,10 +53,12 @@ OBJFILES := $(patsubst $(BOOT_DIR)/%.S,$(BOOT_DIR)/build/%.o,$(S_FILES)) \
 			$(patsubst $(BOOT_DIR)/%.c,$(BOOT_DIR)/build/%.o,$(C_FILES)) \
 			$(DRIVERS_DIR)/build/uart.o \
 			$(DRIVERS_DIR)/build/gpio.o \
+			$(DRIVERS_DIR)/build/timer.o \
 			$(UTILS_DIR)/build/utils.o \
 			$(UTILS_DIR)/build/circular_buffer.o \
 			$(INTERRUPTS_DIR)/build/interrupt.o \
-			$(INTERRUPTS_DIR)/build/interrupt_handlers.o
+			$(INTERRUPTS_DIR)/build/interrupt_handlers.o \
+			$(FS_DIR)/build/fat32.o
 
 
 all: boot_build_dir $(OUTPUT_ELF) $(OUTPUT_BIN) $(OUTPUT_MLO) disassemble
@@ -75,7 +68,7 @@ boot_build_dir:
 
 # Link to ELF
 $(OUTPUT_ELF): $(OBJFILES)
-	$(LD) $(LDFLAGS) -o $(OUTPUT_ELF) $(OBJFILES) -Map $(BOOT_DIR)/build/bootloader.map
+	$(LD) $(LDFLAGS) -o $(OUTPUT_ELF) $(OBJFILES) -Map $(BOOT_DIR)/build/bootloader.map $(LDLIBS)
 
 # create binary file
 $(OUTPUT_BIN): $(OUTPUT_ELF)

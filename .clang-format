@@ -17,7 +17,7 @@ BreakBeforeConceptDeclarations: true
 BreakConstructorInitializers: AfterColon
 BreakInheritanceList: AfterComma
 Cpp11BracedListStyle: true
-ColumnLimit: 120
+ColumnLimit: 80
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
 AccessModifierOffset: -4

@@ -3,18 +3,19 @@
 
 enum ClockModuleBase
 {
-    CM_PER_BASE  = 0x44E00000, // Clock Module Peripheral Registers
-    CM_WKUP_BASE = 0x44E00400, // Clock Module Wakeup Registers
-    CM_DPLL_BASE = 0x44E00500, // Clock Module DPLL Registers
-    CM_MPU_BASE  = 0x44E00600, // Clock Module MPU Registers
-    CM_RTC_BASE  = 0x44E00800, // Clock Module RTC Registers
-    CM_GFX_BASE  = 0x44E00900, // Clock Module Graphics Registers
+    CM_PER_BASE  = 0x44E00000, /* Clock Module Peripheral Registers */
+    CM_WKUP_BASE = 0x44E00400, /* Clock Module Wakeup Registers     */
+    CM_DPLL_BASE = 0x44E00500, /* Clock Module DPLL Registers       */
+    CM_MPU_BASE  = 0x44E00600, /* Clock Module MPU Registers        */
+    CM_RTC_BASE  = 0x44E00800, /* Clock Module RTC Registers        */
+    CM_GFX_BASE  = 0x44E00900  /* Clock Module Graphics Registers   */
 };
 
 /*
 8.1.12.1 CM_PER Registers
-Table 8-30 lists the memory-mapped registers for the CM_PER. All register offset addresses not listed in
-Table 8-30 should be considered as reserved locations and the register contents should not be modified.
+Table 8-30 lists the memory-mapped registers for the CM_PER. All register offset
+addresses not listed in Table 8-30 should be considered as reserved locations
+and the register contents should not be modified.
 */
 /*-----------------------------------------------------------
 0h CM_PER_L4LS_CLKSTCTRL Section 8.1.12.1.1
@@ -135,13 +136,13 @@ enum ClockModulePeripheral
     CM_PER_CPSW_CLKSTCTRL      = 0x144,
     CM_PER_LCDC_CLKSTCTRL      = 0x148,
     CM_PER_CLKDIV32K_CLKCTRL   = 0x14C,
-    CM_PER_CLK_24MHZ_CLKSTCTRL = 0x150,
+    CM_PER_CLK_24MHZ_CLKSTCTRL = 0x150
 };
 /*
 8.1.12.2 CM_WKUP Registers
-Table 8-89 lists the memory-mapped registers for the CM_WKUP. All register offset addresses not listed
-in Table 8-89 should be considered as reserved locations and the register contents should not be
-modified.
+Table 8-89 lists the memory-mapped registers for the CM_WKUP. All register
+offset addresses not listed in Table 8-89 should be considered as reserved
+locations and the register contents should not be modified.
 */
 /*-----------------------------------------------------------
 0h CM_WKUP_CLKSTCTRL Section 8.1.12.2.1
@@ -254,7 +255,18 @@ enum ClockModuleWakeUp
     CM_WKUP_SMARTREFLEX1_CLKCTRL = 0xC8,
     CM_L4_WKUP_AON_CLKSTCTRL     = 0xCC,
     CM_WKUP_WDT1_CLKCTRL         = 0xD4,
-    CM_DIV_M6_DPLL_CORE          = 0xD8,
+    CM_DIV_M6_DPLL_CORE          = 0xD8
+};
+
+/* Clock selects*/
+enum ClockSelect
+{
+    CM_CLKSEL_TIMER2_CLK = 0x08,
+    CM_CLKSEL_TIMER3_CLK = 0x0C,
+    CM_CLKSEL_TIMER4_CLK = 0x10,
+    CM_CLKSEL_TIMER5_CLK = 0x18,
+    CM_CLKSEL_TIMER6_CLK = 0x1C,
+    CM_CLKSEL_TIMER7_CLK = 0x04
 };
 
 #endif /*CLOCK_MODULE_H*/

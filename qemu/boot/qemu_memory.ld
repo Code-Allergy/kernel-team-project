@@ -1,0 +1,1 @@
+../../boot/qemu_memory.ld

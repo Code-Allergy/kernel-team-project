@@ -2,31 +2,45 @@
 #include <uart.h>
 #include <stdint.h>
 #include <interrupt.h>
+#include <ddr.h>
+#include <timer.h>
 #include <mmc.h>
 
+
 extern void setup_vbar();
-#define LED_PINS (0x8 << 21)
+#define LED_PINS    (0xF << 21)
+#define LED0        (0x1 << 21)
+#define LED1        (0x2 << 21)
+#define LED2        (0x4 << 21)
+#define LED3        (0x6 << 21)
 
-static inline void delay(volatile unsigned int count)
+bool tick_led_on = false;
+
+uint32_t tick_secs = 0;
+static inline void delay(unsigned int secs)
 {
-    while (count--)
+    uint32_t wait = tick_secs + secs;
+    while (tick_secs < wait)
         ;
 }
 
-void dumb_delay()
+void timer_tick()
 {
-    volatile unsigned int count = 0x3FFFFFF;
-    while (count--)
-        ;
+
+    if (tick_led_on) GPIO_clear(GPIO1_BASE, LED0);
+    else GPIO_set(GPIO1_BASE, LED0);
+    tick_led_on = !tick_led_on;
+    tick_secs++;
+    uart_printf("Tick: %u\n", tick_secs);
 }
 
-static inline void gpio_test(int i)
+static inline void gpio_test()
 {
     char uart_buffer[100];
     int read = 0;
     unsigned int gpio_base = GPIO1_BASE;
+    uint32_t timer_val = 0;
 
-    delay(0xFFFF);
     GPIO_init(); // Currently only configures GPIO1
     GpioSetPinMode(GPIO1_BASE, 0xf << 21, GpioPinOut);
     GPIO_set(GPIO1_BASE, 1 << 21);
@@ -43,27 +57,30 @@ static inline void gpio_test(int i)
               8       // Character length
     );
 
-    /* uart_puts("Sup bro\n"); */
 
-    while (i)
+    timer_init(TIMER2, 1000, timer_tick);
+    timer_val = timer_value(TIMER2);
+    uart_printf("Timer init value: %u\n", timer_val);
+    timer_start(TIMER2);
+    timer_val = timer_value(TIMER2);
+    uart_printf("Timer counting?. value: %u\n", timer_val);
+
+
+    /*
+    while (1)
     {
-        GPIO_set(gpio_base, LED_PINS);
-        uart_puts("LEDs on!\n");
-        delay(0x1FFFFFF);
-        /*readline is not yet fully implemented */
+        delay(5);
+        
+        timer_val = timer_value(TIMER2);
+        uart_printf("Timer value: %u\n", timer_val);
+        
         read = uart0_readline(uart_buffer, 100);
         if(read > 0)
         {
-            uart_buffer[read] = '\n';
-            uart_buffer[read + 1] = '\0';
-            uart_puts("Received: ");
-            uart_puts(uart_buffer);
+            uart_printf("Received: %s", uart_buffer);
         }
-        GPIO_clear(gpio_base, LED_PINS);
-        uart_puts("LEDs off!\n");
-        delay(0x1FFFFFF);
-
     }
+    */
 }
 
 int min(int a, int b, int c)
@@ -114,10 +131,46 @@ void __BootloaderEntry()
         gpio_test(0); /* setup_vbar();  // Set the interrupt vector table */
     }
 
+
+    uart_puts("Init ddr start\n");
+
+    setup_memory();  /*  Initialize DDR3 */
+
+    int result = test_ddr3_memory();
+    if (result == 0) {
+        /*  Success - Memory is functioning correctly */
+    	uart_puts("DDR Memory test SUCCESS\n");
+    } else {
+        /*  Failure - Memory test failed */
+    	uart_puts("DDR Memory test FAILED\n");
+
+     uart_puts("Init ddr end\n");
+
+	while(1);
+	__asm__ ("wfi");
+    }
+
+
+
+
+    uart_puts("Init ddr end\n");
     // mem copy the kernel to dram
     mmc_controller_init();
-    gpio_test(1);
+    while(1);
 
+    // read header
+    // verify magic value
+    // clear bss section
+    // map initial kernel pages
+    // enable MMU
+    // enable caches
+    // setup whatever info the kernel needs from bl
+    // jump to kernel entry (from header)
+
+
+    // jump to kernel (address read from header instead)
     // jump to kernel
+
+    while(1);	
     ((void (*)()) __BBB_DRAM_BEGIN)();
-}
+	}

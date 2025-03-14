@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 IMAGE_FILE="$1"
 SD_DEVICE="$2"
@@ -26,5 +26,5 @@ if (( DEVICE_SIZE <= 7400000000 || DEVICE_SIZE >= 8000000000 )); then
 fi
 
 # Copy the image to the SD card
-dd if="$IMAGE_FILE" of="$SD_DEVICE"
+dd if="$IMAGE_FILE" of="$SD_DEVICE" bs=4M status=progress
 sync
