@@ -4,6 +4,7 @@ PLATFORM ?=BBB
 
 BOOT_DIR = $(TOP_DIR)/boot
 DRIVERS_DIR = $(TOP_DIR)/os/drivers
+MMU_DIR = $(TOP_DIR)/os/mmu
 UTILS_DIR = $(TOP_DIR)/common
 
 
@@ -33,6 +34,7 @@ LDLIBS = $(GLOBAL_LD_LIBS)
 
 IFLAGS = 	-I$(BOOT_DIR) \
 			-I$(TOP_DIR)/os/drivers \
+			-I$(TOP_DIR)/os/mmu \
 			-I$(TOP_DIR)/common \
 			-I$(INTERRUPTS_DIR)
 
@@ -58,7 +60,8 @@ OBJFILES := $(patsubst $(BOOT_DIR)/%.S,$(BOOT_DIR)/build/%.o,$(S_FILES)) \
 			$(UTILS_DIR)/build/circular_buffer.o \
 			$(INTERRUPTS_DIR)/build/interrupt.o \
 			$(INTERRUPTS_DIR)/build/interrupt_handlers.o \
-			$(FS_DIR)/build/fat32.o
+			$(FS_DIR)/build/fat32.o \
+			$(MMU_DIR)/build/mmu.o
 
 
 all: boot_build_dir $(OUTPUT_ELF) $(OUTPUT_BIN) $(OUTPUT_MLO) disassemble

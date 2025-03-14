@@ -4,9 +4,11 @@
 #include <interrupt.h>
 #include <ddr.h>
 #include <timer.h>
+#include <mmu.h>
+#include <mem.h>
 
 
-extern void setup_vbar();
+extern void setup_vbar(void);
 #define LED_PINS    (0xF << 21)
 #define LED0        (0x1 << 21)
 #define LED1        (0x2 << 21)
@@ -23,7 +25,7 @@ static inline void delay(unsigned int secs)
         ;
 }
 
-void timer_tick()
+void timer_tick(void)
 {
 
     if (tick_led_on) GPIO_clear(GPIO1_BASE, LED0);
@@ -33,7 +35,7 @@ void timer_tick()
     uart_printf("Tick: %u\n", tick_secs);
 }
 
-static inline void gpio_test()
+static inline void gpio_test(void)
 {
     char uart_buffer[100];
     int read = 0;
@@ -69,10 +71,10 @@ static inline void gpio_test()
     while (1)
     {
         delay(5);
-        
+
         timer_val = timer_value(TIMER2);
         uart_printf("Timer value: %u\n", timer_val);
-        
+
         read = uart0_readline(uart_buffer, 100);
         if(read > 0)
         {
@@ -114,10 +116,17 @@ int levenshtein(const char* str1, const char* str2, int len1, int len2)
     return 1 + min(insert, remove, replace);
 }
 
-extern uintptr_t __BBB_DRAM_BEGIN;
+typedef struct bootloader_header {
+    /* magic value to verify header */
+    uint32_t magic;
 
-void __BootloaderEntry()
+    /* whatever we need to pass to kernel */
+    uint32_t boot_table_entry_addr;
+} bootloader_header_t;
+
+void __BootloaderEntry(void)
 {
+    int32_t i;
     const char* str1  = "kien";
     const char* str2  = "sittineiwog";
     volatile int len1 = 4;
@@ -134,7 +143,7 @@ void __BootloaderEntry()
     uart_puts("Init ddr start\n");
 
     setup_memory();  /*  Initialize DDR3 */
-
+    uart_puts("Done DRAM!\n");
     int result = test_ddr3_memory();
     if (result == 0) {
         /*  Success - Memory is functioning correctly */
@@ -142,32 +151,45 @@ void __BootloaderEntry()
     } else {
         /*  Failure - Memory test failed */
     	uart_puts("DDR Memory test FAILED\n");
-
-     uart_puts("Init ddr end\n");
-
-	while(1);
-	__asm__ ("wfi");
     }
 
+    // uart_puts("Init ddr end\n");
+    MMU_init();
 
-
-
-    uart_puts("Init ddr end\n");
+    MMU_enable();
     // mem copy the kernel to dram
+
+
+    // try and write to virt mem MEM_KERNEL_BASE
+    int32_t* kernel = (int32_t*) MEM_KERNEL_BASE;
+    for (i = 0; i < 32; i++)
+    {
+        kernel[i] = i;
+    }
+
+    // read it back
+    for (i = 0; i < 100; i++)
+    {
+        if (kernel[i] != i)
+        {
+            uart_printf("Error at %d, got %d\n", i, kernel[i]);
+        }
+    }
 
     // read header
     // verify magic value
-    // clear bss section
-    // map initial kernel pages
-    // enable MMU
-    // enable caches
+    // clear bss section (header has addresses of sections)
+    // map initial kernel pages (more pages needed and proper attributes on physical memory.)
+    // enable MMU (DONE)
+    // enable caches (DONE with mmu_enable)
     // setup whatever info the kernel needs from bl
     // jump to kernel entry (from header)
 
 
     // jump to kernel (address read from header instead)
     // jump to kernel
+    // ((void (*)(bootloader_header_t*)) __BBB_DRAM_BEGIN)(NULL);
 
-    while(1);	
-    ((void (*)()) __BBB_DRAM_BEGIN)();
-	}
+    while(1);
+    // ((void (*)()) __BBB_DRAM_BEGIN)();
+}

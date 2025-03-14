@@ -33,7 +33,7 @@ void uart_init(unsigned short uart_index,
 
     /* Configure 8N1 (8 data bits, no parity, 1 stop bit) */
     /* LCR[1:0] = 11 (8 bits), LCR[3] = 0 (no parity)*/
-    UART0->LCR = 0x03;  
+    UART0->LCR = 0x03;
 
     /* Enable FIFO (FCR[0] = 1) */
     UART0->IIR_FCR = 0x01;
@@ -117,4 +117,93 @@ unsigned int uart0_readline(char *buffer, unsigned int buffer_size) {
         }
     }
     return i;
+}
+
+
+void print_number(int32_t num, char base, bool is_signed) {
+    char buffer[32];        /* Buffer to hold the number string */
+    char *ptr = buffer;     /* Pointer to traverse the buffer */
+    char *ptr1 = buffer;    /* Pointer for reversing the string */
+    char tmp_char;
+    uint32_t temp_num;  /* Use unsigned int to handle negatives in hex */
+    int is_negative = 0;
+
+    if (num == 0) {
+        uart_putc('0');
+        return;
+    }
+
+    /* Handle negative numbers for base 10 */
+    if (num < 0 && base == 10 && is_signed) {
+        is_negative = 1;
+        temp_num = -num; /* Convert to positive for processing */
+    } else {
+        temp_num = (uint32_t) num;
+    }
+
+    /* Convert number to string */
+    while (temp_num > 0) {
+        *ptr++ = "0123456789abcdef"[temp_num % base];
+        temp_num /= base;
+    }
+
+    if (is_negative) {
+        *ptr++ = '-';  /* Add negative sign for decimal numbers */
+    }
+
+    *ptr-- = '\0'; /* Null-terminate */
+
+    /* Reverse the string */
+    while (ptr1 < ptr) {
+        tmp_char = *ptr;
+        *ptr-- = *ptr1;
+        *ptr1++ = tmp_char;
+    }
+
+    uart_puts(buffer); /* Output the number string */
+}
+
+void uart_vprintf(const char* fmt, va_list ap) {
+    while (*fmt) {
+        if (*fmt == '%') {
+            fmt++;
+            switch (*fmt) {
+                case 'd': {
+                    print_number(va_arg(ap, int), 10, true);
+                    break;
+                }
+                case 'u': {
+                    print_number(va_arg(ap, uint32_t), 10, false);
+                    break;
+                }
+                case 'x': {
+                    print_number(va_arg(ap, int), 16, true);
+                    break;
+                }
+                case 's': {
+                    uart_puts(va_arg(ap, char *));
+                    break;
+                }
+                case 'c': {
+                    uart_putc(va_arg(ap, int));
+                    break;
+                }
+                default: {
+                    uart_putc(*fmt);
+                    break;
+                }
+            }
+        } else {
+            uart_putc(*fmt);
+        }
+        fmt++;
+    }
+}
+
+
+void uart_printf(const char *format, ...) {
+    va_list ap;
+	va_start(ap, format);
+	uart_vprintf(format, ap);
+	va_end(ap);
 }

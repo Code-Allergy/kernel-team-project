@@ -9,8 +9,14 @@
 #define MEM_USER_BASE      0x0         /* 0x0-0x7FFFFFFF */
 
 /* Physical memory identity mapping (512MB) */
-#define MEM_PHYS_BASE      0x80000000  /* 0x80000000-0x9FFFFFFF */
-/* We will identity map the entire physical memory here, so we can access it with ttbr0 page. */
+#define MEM_PHYS_BASE      0x40000000  /* 0x40000000-0x5FFFFFFF */
+/* For now identity map the entire physical memory here, so we can access it with ttbr0 page. */
+
+/* Physical memory virtual address start */
+#define MEM_VIRT_BASE      0x80000000  /* 0x80000000-0xFFFFFFFF */
+
+/* Physical memory in kernel virt space */
+#define MEM_PHYS_KERN_BASE 0x80000000  /* 0x80000000-0x9FFFFFFF */
 
 /* Kernel code and data region (512MB) */
 #define MEM_KERNEL_BASE    0xA0000000  /* 0xA0000000-0xBFFFFFFF */
@@ -37,7 +43,8 @@
 /* We can decide on how to split up this 256MB later. */
 
 
-#define MEM_BOOT_PAGE_TABLE_BASE 0x90000000
+#define MEM_BOOT_PAGE_TABLE_BASE 0x50000000
+
 /*
  * The regions are larger than we will ever need, but it makes it easier to understand
  * the type of pointer we are working with.
