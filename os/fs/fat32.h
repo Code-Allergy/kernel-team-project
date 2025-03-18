@@ -212,6 +212,10 @@ int fat32_size(fat32_file_t* file);
  */
 int fat32_close(fat32_file_t* file);
 
+
+/* Get a string describing a return code */
+char* fat32_geterror(int32_t err);
+
 /*                                */
 /* parsing structs, do not modify */
 /*                                */
