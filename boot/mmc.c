@@ -2,207 +2,6 @@
 #include <utils.h>
 #include <clock_module.h>
 #include <mmc.h>
-#include <gpio.h>
-#include <hw_cm_wkup.h>
-
-#define LED_PINS (0xF << 21)
-
-/*PLL*/
-#define SOC_PRCM_REGS                        (0x44E00000)
-
-#define SOC_CM_WKUP_REGS                     (SOC_PRCM_REGS + 0x400)
-
-/**Setting the CORE PLL values at OPP100:
-** OSCIN = 24MHz, Fdpll = 2GHz
-** HSDM4 = 200MHz, HSDM5 = 250MHz
-** HSDM6 = 500MHz
-*/
-#define COREPLL_M                          1000
-#define COREPLL_N                          23
-#define COREPLL_HSD_M4                     10
-#define COREPLL_HSD_M5                     8
-#define COREPLL_HSD_M6                     4
-
-/* Setting the  PER PLL values at OPP100:
-** OSCIN = 24MHz, Fdpll = 960MHz
-** CLKLDO = 960MHz, CLKOUT = 192MHz
-*/
-#define PERPLL_M                           960
-#define PERPLL_N                           23
-#define PERPLL_M2                          5
-
-
-
-/*move this 2*/
-#define CONTROL_MODULE_BASE 0x44E10000
-#define CLK32KDIVRATIO_CTRL 0x444
-/*SD card command timeout error*/
-#define CTO_ERROR -16
-#define CC 0
-
-
-/* \brief This function initializes the CORE PLL 
- * 
- * \param none
- *
- * \return none
- *
- */
-void CorePLLInit(void)
-{
-    volatile unsigned int regVal = 0;
-
-    /* Enable the Core PLL */
-
-    /* Put the PLL in bypass mode */
-    regVal = REG32_read(SOC_CM_WKUP_REGS,  CM_WKUP_CM_CLKMODE_DPLL_CORE) &
-                ~CM_WKUP_CM_CLKMODE_DPLL_CORE_DPLL_EN;
-
-    regVal |= CM_WKUP_CM_CLKMODE_DPLL_CORE_DPLL_EN_DPLL_MN_BYP_MODE;
-
-    REG32_write(SOC_CM_WKUP_REGS, CM_WKUP_CM_CLKMODE_DPLL_CORE, regVal);
-
-    while(!(REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_IDLEST_DPLL_CORE) &
-                      CM_WKUP_CM_IDLEST_DPLL_CORE_ST_MN_BYPASS));
-
-    /* Set the multipler and divider values for the PLL */
-    REG32_write(SOC_CM_WKUP_REGS, CM_WKUP_CM_CLKSEL_DPLL_CORE,
-        ((COREPLL_M << CM_WKUP_CM_CLKSEL_DPLL_CORE_DPLL_MULT_SHIFT) |
-         (COREPLL_N << CM_WKUP_CM_CLKSEL_DPLL_CORE_DPLL_DIV_SHIFT)));
-
-    /* Configure the High speed dividers */
-    /* Set M4 divider */    
-    regVal = REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_DIV_M4_DPLL_CORE);
-    regVal = regVal & ~CM_WKUP_CM_DIV_M4_DPLL_CORE_HSDIVIDER_CLKOUT1_DIV;
-    regVal = regVal | (COREPLL_HSD_M4 << 
-                CM_WKUP_CM_DIV_M4_DPLL_CORE_HSDIVIDER_CLKOUT1_DIV_SHIFT);
-    REG32_write(SOC_CM_WKUP_REGS, CM_WKUP_CM_DIV_M4_DPLL_CORE, regVal);
-    
-    /* Set M5 divider */    
-    regVal = REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_DIV_M5_DPLL_CORE);
-    regVal = regVal & ~CM_WKUP_CM_DIV_M5_DPLL_CORE_HSDIVIDER_CLKOUT2_DIV;
-    regVal = regVal | (COREPLL_HSD_M5 << 
-                CM_WKUP_CM_DIV_M5_DPLL_CORE_HSDIVIDER_CLKOUT2_DIV_SHIFT);
-    REG32_write(SOC_CM_WKUP_REGS, CM_WKUP_CM_DIV_M5_DPLL_CORE, regVal);
-        
-    /* Set M6 divider */    
-    regVal = REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_DIV_M6_DPLL_CORE);
-    regVal = regVal & ~CM_WKUP_CM_DIV_M6_DPLL_CORE_HSDIVIDER_CLKOUT3_DIV;
-    regVal = regVal | (COREPLL_HSD_M6 << 
-                CM_WKUP_CM_DIV_M6_DPLL_CORE_HSDIVIDER_CLKOUT3_DIV_SHIFT);
-    REG32_write(SOC_CM_WKUP_REGS, CM_WKUP_CM_DIV_M6_DPLL_CORE, regVal);
-
-    /* Now LOCK the PLL by enabling it */
-    regVal = REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_CLKMODE_DPLL_CORE) &
-                ~CM_WKUP_CM_CLKMODE_DPLL_CORE_DPLL_EN;
-
-    regVal |= CM_WKUP_CM_CLKMODE_DPLL_CORE_DPLL_EN;
-
-    REG32_write(SOC_CM_WKUP_REGS, CM_WKUP_CM_CLKMODE_DPLL_CORE, regVal);
-
-    while(!(REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_IDLEST_DPLL_CORE) &
-                        CM_WKUP_CM_IDLEST_DPLL_CORE_ST_DPLL_CLK));
-}
-
-
-
-/* \brief This function initializes the PER PLL
- * 
- * \param none
- *
- * \return none
- *
- */
-void PerPLLInit(void)
-{
-    volatile unsigned int regVal = 0;
-    volatile unsigned int reg2 = 0;
-
-    /* Put the PLL in bypass mode */
-    regVal = REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_CLKMODE_DPLL_PER) &
-                ~CM_WKUP_CM_CLKMODE_DPLL_PER_DPLL_EN;
-
-    regVal |= CM_WKUP_CM_CLKMODE_DPLL_PER_DPLL_EN_DPLL_MN_BYP_MODE;
-
-    REG32_write(SOC_CM_WKUP_REGS, CM_WKUP_CM_CLKMODE_DPLL_PER, regVal);
-
-    while(!(REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_IDLEST_DPLL_PER) &
-                      CM_WKUP_CM_IDLEST_DPLL_PER_ST_MN_BYPASS));
-
-    reg2 = REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_CLKSEL_DPLL_PERIPH);
-    reg2 &= ~(CM_WKUP_CM_CLKSEL_DPLL_PERIPH_DPLL_MULT | 
-            CM_WKUP_CM_CLKSEL_DPLL_PERIPH_DPLL_DIV);
-    
-    REG32_write(SOC_CM_WKUP_REGS, CM_WKUP_CM_CLKSEL_DPLL_PERIPH, reg2);
-
-    reg2 = 0;
-
-    /* Set the multipler and divider values for the PLL */
-    reg2 = REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_CLKSEL_DPLL_PERIPH);
-    reg2 |= ((PERPLL_M << CM_WKUP_CM_CLKSEL_DPLL_PERIPH_DPLL_MULT_SHIFT) |
-         (PERPLL_N << CM_WKUP_CM_CLKSEL_DPLL_PERIPH_DPLL_DIV_SHIFT));
-
-    REG32_write(SOC_CM_WKUP_REGS, CM_WKUP_CM_CLKSEL_DPLL_PERIPH, reg2);
-
-    regVal = REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_DIV_M2_DPLL_PER);
-    regVal = regVal & ~CM_WKUP_CM_DIV_M2_DPLL_PER_DPLL_CLKOUT_DIV;
-    regVal = regVal | PERPLL_M2;
-
-    /* Set the CLKOUT2 divider */
-    REG32_write(SOC_CM_WKUP_REGS, CM_WKUP_CM_DIV_M2_DPLL_PER, regVal);
-    
-    /* Now LOCK the PLL by enabling it */
-    regVal = REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_CLKMODE_DPLL_PER) &
-                ~CM_WKUP_CM_CLKMODE_DPLL_PER_DPLL_EN;
-
-    regVal |= CM_WKUP_CM_CLKMODE_DPLL_PER_DPLL_EN;
-
-    REG32_write(SOC_CM_WKUP_REGS, CM_WKUP_CM_CLKMODE_DPLL_PER, regVal);
-
-    while(!(REG32_read(SOC_CM_WKUP_REGS, CM_WKUP_CM_IDLEST_DPLL_PER) &
-                           CM_WKUP_CM_IDLEST_DPLL_PER_ST_DPLL_CLK));
-
-}
-
-void delay(volatile unsigned int count)
-{
-    while (count--);
-}
-
-
-/*GPIO for waiting*/
-void LED_DELAY(int i)
-{
-    unsigned int gpio_base = GPIO1_BASE;
-
-    delay(0xFFFF);
-    GPIO_init(); // Currently only configures GPIO1
-    GPIO_set(GPIO1_BASE, 1 << 21);
-    // 8N1
-    /* uart_init( */
-    /*     0,         // UART index (0 = UART0, 1 = UART1, etc.) */
-    /*     115200,    // Baud rate for communication */
-    /*     1,         // Stop bit enable (1 = enabled, 0 = disabled) */
-    /*     0,         // Number of stop bits (0 = 1 stop bit, 1 = 1.5/2 stop bits) */
-    /*     0,         // Parity enable (1 = enabled, 0 = disabled) */
-    /*     0,         // Parity type (0 = even, 1 = odd; ignored if parity is disabled) */
-    /*     8          // Character length */
-    /* ); */
-
-    /* uart_puts("Sup bro\n"); */
-
-    while (i > 0)
-    {
-        GPIO_set(gpio_base, LED_PINS);
-        /* uart_puts("LEDs on!\n"); */
-        delay(0x1FFFFFF);
-        GPIO_clear(gpio_base, LED_PINS);
-        /* uart_puts("LEDs off!\n"); */
-        delay(0x1FFFFFF);
-        i--;
-    }
-}
-
 
 
 /*Pin Muxing*/
@@ -342,15 +141,10 @@ void setBusSupportedVoltage(void)
     /*support 3.3 voltage which is what beaglebone black supports according to
      *its documentation*/
     REG32_write_masked(MMCHS0_BASE, SD_CAPA, (0b111 << 24), (0b100 << 24));
-    /*mask to access 26th 25th and 24th bit and writing 0 0 1
-     *because we only support 3.3v not 1.8 or 3.0*/
-    
-    /*write max current 0 to register SD_CUR_CAPA for all 3 voltage*/
-    /*REG32_write_masked(MMCHS0_BASE, SD_CUR_CAPA, (0b111111111111111111111111),
-            0);*/
 }
 
 /*
+ * 0x5 for 1.8v
  * 0x7 for 3.3v
  * */
 void setBusVoltage(unsigned int voltage)
@@ -414,94 +208,6 @@ int changeInternalClockFreq(unsigned int divider)
     return 0;
 }
 
-void sendInitStream(void)
-{
-    volatile int i;
-    volatile unsigned int timeout;
-
-    /*enable command completed interrupt*/
-    REG32_write_masked(MMCHS0_BASE, SD_IE, 0b1, 1);
-
-    /*enable clock timeout interrupt*/
-    REG32_write_masked(MMCHS0_BASE, SD_IE, (0b1 << 16), (1 << 16));
-
-    /*send initilization stream*/
-    REG32_write_masked(MMCHS0_BASE, SD_CON, (0b1 << 1), (0x1 << 1));
-    
-    /*write 0x00000000 in the SD_CMD register*/
-    REG32_write(MMCHS0_BASE, SD_CMD, 0x00000000);
-
-
-    /*wait for init stream completion*/
-    while(REG32_read_masked(MMCHS0_BASE, SD_STAT, (0b1)) != 1)
-    {
-        uart_puts("waiting\n");
-    }
-
-
-    uart_puts("waiting\n");
-
-    /*wait*/
-    timeout = 1000000;
-    for(i = 0; i < timeout; i++);
-
-    /*blink LEDs*/
-    LED_DELAY(1);
-    
-    for(i = 0; i < timeout; i++);
-
-    /*blink LEDs*/
-    LED_DELAY(1);
-
-    for(i = 0; i < timeout; i++);
-
-    /*blink LEDs*/
-    LED_DELAY(1);
-
-    for(i = 0; i < timeout; i++);
-
-    /*blink LEDs*/
-    LED_DELAY(1);
-
-    for(i = 0; i < timeout; i++);
-
-    /*blink LEDs*/
-    LED_DELAY(1);
-
-    for(i = 0; i < timeout; i++);
-
-    /*blink LEDs*/
-    LED_DELAY(1);
-
-    for(i = 0; i < timeout; i++);
-
-    /*blink LEDs*/
-    LED_DELAY(1);
-
-    for(i = 0; i < timeout; i++);
-
-    /*blink LEDs*/
-    LED_DELAY(1);
-
-    for(i = 0; i < timeout; i++);
-
-    /*blink LEDs*/
-    LED_DELAY(1);
-    
-    uart_puts("wait complete\n");
-
-    /*Set SD_STAT[0] CC bit to 0x1 to clear the flag*/
-    REG32_write_masked(MMCHS0_BASE, SD_STAT, 0b1, 1);
-
-    uart_puts("ending initializing sequence\n");
-
-    /*Set SD_CON[1] INIT bit to 0x0 to end the initialization sequence*/
-    REG32_write_masked(MMCHS0_BASE, SD_CON, (0b1 << 1), (0x0 << 1));
-
-    /*Clear SD_STAT register (write 0xFFFFFFFF)*/
-    REG32_write(MMCHS0_BASE, SD_STAT, 0xFFFFFFFF); 
-
-}
 
 /*function to send command to the card*/
 int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType, 
@@ -526,17 +232,11 @@ int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType,
 
     if(cmdNum == CMD17)
     {
-        /*
-        uart_puts("sending CMD17\n");
-        */
-
         reg |= (0x1 << 21); /*data present*/
         reg |= (0x1 << 4);  /*Data read*/
     }
 
     /*write command*/
-    /*REG32_write_masked(MMCHS0_BASE, SD_CMD, (0b111111 << 24),
-            (cmdNum << 24));*/
     REG32_write(MMCHS0_BASE, SD_CMD, reg);
     uart_puts("waiting for command to complete\n");
 
@@ -646,403 +346,6 @@ int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType,
     return CC;
 }
 
-
-int sdInitSeq()
-{
-    int n;
-    int i;
-    int timeout;
-    int responses[4];
-    
-    n = 500;
-    while(n > 0)
-    {
-
-        uart_puts("sending CMD0\n");
-
-        /*send cmd0, no args, no response (CRC enabled by default)*/
-        if(sendCommand(CMD0, 0x0, 0x0, responses) != CC)
-        {
-            uart_puts("problem with CMD0\n");
-        }
-
-        uart_puts("delay\n");
-
-        LED_DELAY(1);
-
-        uart_puts("sending CMD8\n");
-
-        /*if(sendCommand(CMD8, (0x1 << 8) | (0x55), 0x2, responses) == CTO_ERROR)*/
-        if(sendCommand(CMD8, (0xAA) | (0x000100u), 0x2u, responses) == CTO_ERROR)
-        {
-            uart_puts("CMD8 CTO\n");
-        }
-        else
-        {
-            uart_puts("CMD8 CC?\n");
-        }
-
-        return 0;
-        
-        if(sendCommand(CMD55, 0x0 << 16, 0x2, responses) == CTO_ERROR)
-        {
-            uart_puts("CMD55 CTO\n");
-        }
-        else
-        {
-            uart_puts("CMD55 CC?");
-        }
-
-        if(sendCommand(ACMD41, 0x40000000, 0x0, responses) == CC)
-        {
-            uart_puts("ACMD41 CC\n");
-        }
-        else
-        {
-            uart_puts("ACMD41 CTO?");
-        }
-
-        n--;
-        continue;
-
-        /*send cmd8, arg: , response 1 followed by arg*/
-        /*
-        if(sendCommand(CMD8, (0x1 << 8) | (0x55), 0x2, responses) != CC)
-        {
-            uart_puts("problem with CMD8\n");
-            n--;
-            continue;
-        }
-
-        uart_puts("test print number: ");
-
-        print_number(11, 2, 0);
-
-        uart_puts("\nCMD8 response: ");
-*/
-        /*read the response in responses[0]*/
-        print_number(responses[0], 2, 0);
-        
-        uart_puts("\n");
-
-        break;
-    }
-
-    return 0;
-}
-
-void mmc_controller_init_old(void)
-{
-    /*TRM: to initialize the MMC/SD/SDIO controller:
-      • Initialize Clocks 
-      • Software reset of the controller 
-      • Set module's hardware capabilities 
-      • Set module's Idle and Wake-Up modes*/
-    
-    uart_puts("mmc init!\n");
-
-    uart_puts("PLLs init\n");
-
-    
-    CorePLLInit();
-    PerPLLInit();
-
-    /*pin muxing*/
-    configure_mmc_pins();
-
-    uart_puts("mmc pins configured\n");
-
-    
-    volatile unsigned int timeout;
-    unsigned int divider;
-
-    /*enable clocks*/ 
-    uart_puts("trying to enable interface and functional clocks\n");
-
-    if(enableClocks() != 0)
-    {
-        return;
-    }
-
-    uart_puts("Successfully enabled interface and functional clocks\n");
-   
-    /*
-    if(enableDeBounceClock() != 0)
-    {
-        return;
-    }
-    */
-
-    uart_puts("Successfully enabled debounce clock\n");
-
-    if(softwareReset() != 0)
-    {
-        return;
-    }
-
-    if(linesReset(0) != 0)
-    {
-        return;
-    }
-
-    uart_puts("lines reset complete\n");
-
-    uart_puts("SOFTRESET complete\n");
-
-    /*Set modules hardware capabilitites*/
-
-    /*MMC Host and Bus Configuration*/
-
-    /*SD_CON register:*/
-    
-    /*OD bit not useful for SD card*/
-
-    /*DW8 bit (5) must be cleared to 0 for SD/SDIO cards*/
-    REG32_write_masked(MMCHS0_BASE, SD_CON, (0b1 << 5), (0 << 5));
-
-    /*configure SD_CON to Standard MMC/SD/SDIO mode*/
-    /*REG32_write_masked(MMCHS0_BASE, SD_CON, (0b1 << 12), (0 << 12));*/
-
-
-    setBusSupportedVoltage();
-
-    /*0x7 for 3.3v*/
-    /*0x6 for 3.0v*/
-    setBusVoltage(0x7);
-    
-    uart_puts("trying to power on SD bus\n");
-    
-    if(setBusPowerOn() != 0)
-    {
-        return;
-    }
-
-    uart_puts("set voltage is supported\n");
-
-
-    if(changeInternalClockFreq(512) != 0)
-    {
-        return;
-    }
-
-    uart_puts("MMC clock stable after setting divider\n");
- 
-    /*Set module's Idle and Wake-Up modes*/
-
-    /*CLOCKACTIVITY bits 8-9 3h = Interface and Functional clocks 
-     * are maintained.*/
-    /*REG32_write_masked(MMCHS0_BASE, SD_SYSCONFIG, (0b11 << 8), (0x3 << 8));
-*/
-    /*SIDLEMODE bits 3-4 1h = ignore idle request*/
-    /*REG32_write_masked(MMCHS0_BASE, SD_SYSCONFIG, (0b11 << 3), (0x1 << 3));
-*/
-
-    /*set autoidle*/
-    unsigned int reg = REG32_read(MMCHS0_BASE, SD_SYSCONFIG);
-
-    reg |= (0x1 << 2) | (0x2 << 3) | (0x1);
-
-    REG32_write(MMCHS0_BASE, SD_SYSCONFIG, reg);
-    /*
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCONFIG, (0b1), (0x1));
-    */
-
-    uart_puts("MMC module init complete\n");
-
-    /*Card Detection, Identification, and Selection*/
-    
-    sendInitStream();
-    
-    uart_puts("setting clock high\n");
-    
-    /*disable the internal clock*/
-   /* 
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, 0b1, 0x0);
-    */
-
-    /*Change clock frequency to fit protocol*/
-    /*CLKD bits 6-15 set divider to 1 to set clock freq to 24MHz from 
-     * default 48000KHz*/
-    
-    /*divider = 96000 / 400;*/    /*or 2*/
-
-    /*
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1111111111 << 6), 
-            (divider << 6));
-    */
-    /*enable the internal clock*/
-    
-    /*
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, 0b1, 0x1);
-    
-    uart_puts("waiting for clock to be stable\n");
-    */
-
-    /*wait for clock to stabilize by reading ICS bit of SD_SYSCTL*/
-    /*
-    timeout = 100000;
-    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 1)) != (0x1 << 1))
-    {
-        if (--timeout == 0)
-        {
-            uart_puts("Timeout waiting for MMC clock to be stable\n");
-            return;
-        }
-    }
-    */
-    uart_puts("now need to send commands\n");
-
-    /*test SD card initialization sequence*/
-    if(sdInitSeq() == 0)
-    {
-        uart_puts("SD card initialized\n");
-        return;
-    }
-
-    return;
-
-    /*Send a CMD0 command*/
-
-    uart_puts("trying to send CMD0\n");
-
-    unsigned int responses[4];
-
-    if(sendCommand(CMD0, 0x0, 0x0 , responses) != CC)
-    {
-        return;
-    }
-
-    uart_puts("sent CMD0\n");
-
-    uart_puts("trying to send CMD5\n");
-   
-    /*check for SDIO card since we have a SD card it should return CTO_ERROR*/
-/*
-    if(sendCommand(CMD5, 0x0, 0x0 , responses) != CTO_ERROR)
-    {
-        uart_puts("SDIO card?\n");
-        return;
-    }
-
-    uart_puts("CMD5 sent\n");
-  */  
-    /*Set SD_SYSCTL[25] SRC bit to 0x1 and wait until it returns to 0x0*/
-    uart_puts("waiting for Software reset for mmc_cmd line\n");
-
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 25), (0x1 << 25));
-
-    timeout = 10000;
-    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 25)) != 
-            (0x0 << 25))
-    {
-        if (--timeout == 0)
-        {
-            uart_puts("Timeout waiting for mmc_cmd lines reset\n");
-            return;
-        }
-    }
-
-    uart_puts("lines reset complete\n");
-
-    uart_puts("sending CMD8\n");
-
-    if(sendCommand(CMD8, 0x0, 0b10, responses) != CTO_ERROR)
-    {
-        uart_puts("Card compliant with standard 2.0 or later\n");
-        return;
-    }
-
-    /*Set SD_SYSCTL[25] SRC bit to 0x1 and wait until it returns to 0x0*/
-    uart_puts("again waiting for Software reset for mmc_cmd line\n");
-
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 25), (0x1 << 25));
-
-    timeout = 10000;
-    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 25)) != 
-            (0x0 << 25))
-    {
-        if (--timeout == 0)
-        {
-            uart_puts("Timeout waiting for mmc_cmd lines reset\n");
-            return;
-        }
-    }
-
-    uart_puts("lines reset complete\n");
-    
-
-    /*clear responses*/
-    responses[0] = 0;
-
-    uart_puts("trying to see if it is SD compliant with standard 1.x\n");
-
-    timeout = 100000;
-
-    while(REG32_read_masked(0x0, responses[0], (0b1 << 31)) != (0x1 << 31))
-    {
-        uart_puts("trying to send CMD55\n");
-
-        if(sendCommand(CMD55, 0x0, 0x0 , responses) != CC)
-        {
-            return;
-        }
-
-        uart_puts("sent CMD55\n");
-
-        uart_puts("sending ACMD41\n");
-
-        if(sendCommand(ACMD41, 0x0, 0x0, responses) != CC)
-        {
-            uart_puts("handle MMC card case\n");
-            return;
-        }
-
-        if (--timeout == 0)
-        {
-            uart_puts("Timeout waiting for SD card standard compliant\n");
-            return;
-        }
-
-
-    }
-
-    uart_puts("it is SD compliant with standard 1.x\n");
-
-
-    /*B*/
-    uart_puts("trying to send CMD2\n");
-   
-    if(sendCommand(CMD2, 0x0, 0x0 , responses) != CC)
-    {
-        return;
-    }
-
-    uart_puts("CMD2 sent\n");
-    
-    uart_puts("trying to send CMD3\n");
-   
-    if(sendCommand(CMD3, 0x0, 0x0 , responses) != CC)
-    {
-        return;
-    }
-
-    uart_puts("CMD3 sent\n");
-
-    uart_puts("assuming SD card because we know SD card\n");
-
-    uart_puts("trying to send CMD7\n");
-   
-    if(sendCommand(CMD7, 0x0, 0x0 , responses) != CC)
-    {
-        return;
-    }
-
-    uart_puts("CMD7 sent\n");
-
-    uart_puts("MMC init complete\n");
-}
-
-
 int enableInternalClock(void)
 {
     unsigned int timeout;
@@ -1064,7 +367,7 @@ int enableInternalClock(void)
 }
 
 
-void read_sector(unsigned int sector, uint8_t buffer[512])
+int mmc_read_sector(unsigned int sector, uint8_t buffer[512])
 {
     unsigned int responses[4];
 
@@ -1084,7 +387,7 @@ void read_sector(unsigned int sector, uint8_t buffer[512])
     if(sendCommand(CMD17, sector, 0b10, responses) != CC)
     {
         uart_puts("CMD17 CTO\n");
-        return;
+        return -1;
     }
 
     timeout = 1000000;
@@ -1120,13 +423,13 @@ void read_sector(unsigned int sector, uint8_t buffer[512])
         if(stat & (1 << 20) != 0)
         {
             uart_puts("Data timeout error\n");
-            return;
+            return -1;
         }
 
         if(stat & 0x78000 != 0)
         {
             uart_puts("Data error stat\n");
-            return;
+            return -1;
         }
 
         timeout--;
@@ -1152,6 +455,8 @@ void read_sector(unsigned int sector, uint8_t buffer[512])
 
     REG32_write(MMCHS0_BASE, SD_CON, REG32_read(MMCHS0_BASE, SD_CON) 
             & !(1 << 1));
+
+    return 0;
 }
 
 
@@ -1194,7 +499,7 @@ void mmc_controller_init(void)
         if (--timeout == 0)
         {
             uart_puts("Timeout waiting to disable autoidle\n");
-            return -1;
+            return;
         }
     }
     

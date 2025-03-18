@@ -5,7 +5,14 @@
 #define MMCHS0_BASE 0x48060000
 
 void mmc_controller_init(void);
+int mmc_read_sector(unsigned int sector, uint8_t buffer[512]);
 
+/**/
+#define CONTROL_MODULE_BASE 0x44E10000
+#define CLK32KDIVRATIO_CTRL 0x444
+/*SD card command timeout error*/
+#define CTO_ERROR -16
+#define CC 0
 
 
 /*
