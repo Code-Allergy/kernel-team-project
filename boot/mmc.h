@@ -235,16 +235,16 @@ enum SDRegister
 
 
 /*SD commands*/
-#define CMD0  0x00
-#define CMD1  0x01
-#define CMD2 0x02
-#define CMD3 0x03
-#define CMD4 0x04
-#define CMD5 0x05
-#define CMD6 0x06
-#define CMD7 0x07
-#define CMD8 0x08
-#define CMD9 0x09
+#define CMD0  0x0
+#define CMD1  0x1
+#define CMD2 0x2
+#define CMD3 0x3
+#define CMD4 0x4
+#define CMD5 0x5
+#define CMD6 0x6
+#define CMD7 0x7
+#define CMD8 0x8
+#define CMD9 0x9
 #define CMD10 0x0A
 #define CMD11 0x0B
 #define CMD12 0x0C
