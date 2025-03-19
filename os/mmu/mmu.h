@@ -1,6 +1,7 @@
 // memory API
 
 #include "uart.h"
+#include <boot.h>
 
 // #ifdef PLATFORM_BBB
 #define PADDR(x) (x)
@@ -75,6 +76,13 @@
 #define L1_KERNEL_DATA_FLAGS \
     (L1_ACCESS_RW_NO | L1_ACCESS_NX | L1_SHAREABLE | L1_CACHEABLE | L1_GLOBAL)
 
+#define L1_USER_CODE_FLAGS \
+    (L1_ACCESS_RW_RO | L1_ACCESS_X | L1_SHAREABLE | L1_CACHEABLE | L1_NON_GLOBAL)
+
+#define L1_USER_DATA_FLAGS \
+    (L1_ACCESS_RW_RW | L1_ACCESS_NX | L1_SHAREABLE | L1_CACHEABLE | L1_NON_GLOBAL)
+
+
 /* Data page but with code execution. We shouldn't use this later */
 #define L1_KERNEL_DATA_EXEC_FLAGS \
     (L1_ACCESS_RW_NO | L1_SHAREABLE | L1_CACHEABLE | L1_GLOBAL)
@@ -95,6 +103,9 @@ and all other accessable registers don't contain an address
 that will be accessed later (or else data fault) */
 void MMU_disable(void);
 
+/* Copy _ALL_ entries from the bootloader tables */
+void mmu_copy_bootloader_entries(uint32_t *l1_base);
+
 void set_ttbr0(uint32_t *l1_base);
 uint32_t read_ttbr0(void);
 void MMU_set_domains(void);
@@ -114,3 +125,9 @@ void flush_i_cache(void);
 
 /* debug logging */
 void log_vaddr_mappings(uint32_t* vaddr);
+
+
+/* Allocating section size frames */
+/* Start IDX of free frames, should skip kernel pages */
+void init_frame_allocator(bootloader_header_t *header);
+uint32_t alloc_frame(void);

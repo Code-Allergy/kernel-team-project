@@ -1,4 +1,5 @@
 // Memory management
+#include "boot.h"
 #include "uart.h"
 #include <utils.h>
 #include <types.h>
@@ -224,5 +225,43 @@ void log_l1_pte(uint32_t value) {
             section_base, b, c, ap2, ap, tex, domain, n_g, s, xn, ns, type_str);
 }
 
+void mmu_copy_bootloader_entries(uint32_t *l1_base) {
+    uint32_t *boot_l1_base = (uint32_t *)MEM_BOOT_PAGE_TABLE_BASE;
+    uint32_t i;
+    for (i = 0; i < 4096; i++) {
+        l1_base[i] = boot_l1_base[i];
+    }
+}
 
-/* map vaddr addr to phys by section (1MB chunk) entry */
+
+typedef struct frame {
+    uint32_t addr;
+    struct frame* next;
+} frame_t;
+static frame_t frames[MEM_PHYS_SIZE / MEM_SECTION_SIZE];
+static frame_t *frame_list = NULL;
+
+/* Allocate frames */
+void init_frame_allocator(bootloader_header_t *header) {
+    uint32_t i;
+    for (i = header->mapped_sections; i < MEM_PHYS_SIZE / MEM_SECTION_SIZE; i++) {
+        frame_t *frame = &frames[i];
+        uint32_t paddr = MEM_PHYS_BASE + (i * MEM_SECTION_SIZE);
+        if (paddr == MEM_BOOT_PAGE_TABLE_BASE) { // preserve bootloader page tables
+            continue;
+        }
+
+        frame->addr = paddr;
+        frame->next = frame_list;
+        frame_list = frame;
+    }
+}
+
+uint32_t alloc_frame(void) {
+    frame_t *frame = frame_list;
+    if (frame) {
+        frame_list = frame->next;
+        return frame->addr;
+    }
+    return 0;
+}

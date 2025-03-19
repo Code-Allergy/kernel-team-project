@@ -1,5 +1,6 @@
 #ifndef BOOT_H
 #define BOOT_H
+#include <types.h>
 /* idk where we should put this header */
 typedef struct {
     uint32_t magic;

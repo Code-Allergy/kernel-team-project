@@ -28,7 +28,7 @@
 #define MEM_STACK_BASE     0xF0000000  /* 0xF0000000-0xFFFFFFFF */
 /* We can decide on how to split up this 256MB later. */
 
-
+#define MEM_PHYS_SIZE      0x20000000  /* 512MB */
 #define MEM_BOOT_PAGE_TABLE_BASE 0x90000000
 /*
  * The regions are larger than we will ever need, but it makes it easier to understand
