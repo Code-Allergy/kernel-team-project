@@ -109,31 +109,66 @@ static void _mmu_disable(void) {
     __asm__ volatile("mcr p15, 0, %0, c1, c0, 0" : : "r"(control));
 }
 
-// TODO, map hardware pages
 static void mmu_map_hardware_pages(void) {
+    uint32_t i;
+    uint32_t* l1_tables = (uint32_t*)MEM_BOOT_PAGE_TABLE_BASE;
 
+    /* MAP SDRAM (0x402F_0400) */
+    MMU_map_section(l1_tables, 0x40200000, 0x40200000, L1_ACCESS_RW_NO | L1_CACHEABLE | L1_SHAREABLE);
+
+    /* MAP L3 OCMC0 */
+    MMU_map_section(l1_tables, 0x40300000, 0x40300000, L1_ACCESS_RW_NO | L1_CACHEABLE | L1_SHAREABLE);
+
+    /* MAP L4 WKUP */
+    MMU_map_section(l1_tables, 0x44C00000, 0x44C00000, L1_ACCESS_RW_NO);
+    MMU_map_section(l1_tables, 0x44D00000, 0x44D00000, L1_ACCESS_RW_NO);
+    MMU_map_section(l1_tables, 0x44E00000, 0x44E00000, L1_ACCESS_RW_NO);
+    MMU_map_section(l1_tables, 0x44F00000, 0x44F00000, L1_ACCESS_RW_NO);
+
+    /* MAP L4 PER (0x4800_0000, 16MB) */
+    for (i = 0; i < 16; i++) {
+        MMU_map_section(l1_tables, 0x48000000 + (i * MEM_SECTION_SIZE), 0x48000000 + (i * MEM_SECTION_SIZE),
+            L1_ACCESS_RW_NO);
+    }
+
+    /* MAP L4 FAST (0x4A00_0000, 16MB) */
+    for (i = 0; i < 16; i++) {
+        MMU_map_section(l1_tables, 0x4A000000 + (i * MEM_SECTION_SIZE), 0x4A000000 + (i * MEM_SECTION_SIZE),
+            L1_ACCESS_RW_NO);
+    }
+
+    /* MAP EMIF0 (0x4C00_0000, 16MB) */
+    for (i = 0; i < 16; i++) {
+        MMU_map_section(l1_tables, 0x4C000000 + (i * MEM_SECTION_SIZE), 0x4C000000 + (i * MEM_SECTION_SIZE),
+            L1_ACCESS_RW_NO);
+    }
+
+    /* MAP GPMC (0x5000_0000, 16MB) */
+    for (i = 0; i < 16; i++) {
+        MMU_map_section(l1_tables, 0x50000000 + (i * MEM_SECTION_SIZE), 0x50000000 + (i * MEM_SECTION_SIZE),
+            L1_ACCESS_RW_NO);
+    }
+
+    /* MAP PHYS MEM */
+    for (i = 0; i < MEM_PHYS_SIZE / MEM_SECTION_SIZE; i++) {
+        MMU_map_section(l1_tables, MEM_PHYS_BASE + (i * MEM_SECTION_SIZE),
+            MEM_PHYS_BASE + (i * MEM_SECTION_SIZE),
+            L1_ACCESS_RW_NO | L1_CACHEABLE | L1_SHAREABLE);
+    }
 }
 
 void MMU_init(void) {
     uint32_t* l1_tables = (uint32_t*)MEM_BOOT_PAGE_TABLE_BASE;
-    uint32_t vaddr;
-    uint32_t step = MEM_SECTION_SIZE;
     clear_boot_tables();
     MMU_set_domains();
 
-    /* for now, just map everything 1:1, worry about enabling caching on DRAM later. */
-    for (vaddr = 0; vaddr < 0xFFFFFFFF; vaddr += step) {
-        if (vaddr + step < vaddr) break; // Handle 32-bit overflow
-        MMU_map_section(l1_tables, vaddr, vaddr, L1_ACCESS_RW_NO);
-    }
-    log_message(LOG_LEVEL_INFO, "Mapped all section entries\n");
-
     /* Later we will map hardware pages 1:1 (and in user memory map) */
     /* We can also enable caching on memory */
-    /* mmu_map_hardware_pages(void) */
+    mmu_map_hardware_pages();
+    log_message(LOG_LEVEL_INFO, "Mapped all hardware section entries\n");
 
     set_ttbr0(l1_tables);
-    log_message(LOG_LEVEL_INFO, "Loaded L1 tables located at %x into TTBR0\n");
+    log_message(LOG_LEVEL_INFO, "Loaded L1 tables located at 0x%x into TTBR0\n");
 }
 
 void MMU_enable(void) {

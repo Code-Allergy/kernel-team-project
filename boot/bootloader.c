@@ -183,7 +183,7 @@ void __BootloaderEntry(void)
     if ((res = fat32_read(&file, (void*)MEM_PHYS_BASE, kernel_size)) != kernel_size) {
         panic("Failed to read kernel.bin: %s (%d bytes)\n", fat32_geterror(res), res);
     }
-    log_message(LOG_LEVEL_INFO, "Copied kernel into memory at %x", MEM_PHYS_BASE);
+    log_message(LOG_LEVEL_INFO, "Copied kernel into memory at 0x%x\n", MEM_PHYS_BASE);
     kernel_header = (kernel_header_t*)MEM_PHYS_BASE;
 
     /* Verify the kernel has the expected header */
