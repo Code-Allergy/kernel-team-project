@@ -28,7 +28,7 @@ int enableClocks(void)
     return 0;
 }
 
-/*lines reset 
+/*lines reset
  * LINE_SHIFT should be
  * 24 - reset for all
  * 25 - reset mmc_cmd line
@@ -40,7 +40,7 @@ int linesReset(unsigned int LINE_SHIFT)
 
     uart_puts("waiting for lines reset\n");
 
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (SD_SYSCTL_LINES_RESET 
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (SD_SYSCTL_LINES_RESET
                 << LINE_SHIFT),
             (SD_SYSCTL_LINES_RESET << LINE_SHIFT));
 
@@ -72,7 +72,7 @@ void setBusSupportedVoltage(void)
  * */
 void setBusVoltage(unsigned int voltage)
 {
-    REG32_write_masked(MMCHS0_BASE, SD_HCTL, SD_HCTL_SDVS, 
+    REG32_write_masked(MMCHS0_BASE, SD_HCTL, SD_HCTL_SDVS,
             (voltage << SD_HCTL_SDVS_SHIFT));
 }
 
@@ -86,7 +86,7 @@ int setBusPowerOn(void)
     REG32_write_masked(MMCHS0_BASE, SD_HCTL, SD_HCTL_SDBP, SD_HCTL_SDBP_ON);
 
     timeout = 100000000;
-    while(REG32_read_masked(MMCHS0_BASE, SD_HCTL, SD_HCTL_SDBP) != 
+    while(REG32_read_masked(MMCHS0_BASE, SD_HCTL, SD_HCTL_SDBP) !=
             SD_HCTL_SDBP_ON)
     {
         if (--timeout == 0)
@@ -99,15 +99,15 @@ int setBusPowerOn(void)
 }
 
 
-/*function to send command to the card*
- * returns CC on Command Complete and CTO_ERROR for command timeout error*/
+/* function to send command to the card*
+ * returns CC on Command Complete and CTO_ERROR for command timeout error */
 int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType,
         unsigned int response[])
 {
     unsigned int reg;
 
     /*wait until issuing a command is allowed*/
-    while(REG32_read_masked(MMCHS0_BASE, SD_PSTATE, SD_PSTATE_CC) != 
+    while(REG32_read_masked(MMCHS0_BASE, SD_PSTATE, SD_PSTATE_CC) !=
             SD_PSTATE_C_ALLOWED);
 
     /*clear status register*/
@@ -140,7 +140,7 @@ int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType,
         if(REG32_read_masked(MMCHS0_BASE, SD_STAT, SD_STAT_CTO) == SD_STAT_CTO)
         {
             REG32_write(MMCHS0_BASE, SD_STAT, SD_STAT_CLEAR);
-            log_message(LOG_LEVEL_ERROR, "Command Timeout error on cmd %d\n", 
+            log_message(LOG_LEVEL_ERROR, "Command Timeout error on cmd %d\n",
                     cmdNum);
             return CTO_ERROR;
         }
@@ -151,7 +151,7 @@ int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType,
     /*clear the command complete flag*/
     if(cmdNum != CMD17)
     {
-        REG32_write_masked(MMCHS0_BASE, SD_STAT, SD_STAT_CC_CLEAR, 
+        REG32_write_masked(MMCHS0_BASE, SD_STAT, SD_STAT_CC_CLEAR,
                 SD_STAT_CC_CLEAR);
     }
 
@@ -220,8 +220,8 @@ int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType,
     return CC;
 }
 
-/*enablle internal clock and wait for it to be stable
- * returns 0 on success and -1 on error*/
+/* enable internal clock and wait for it to be stable
+ * returns 0 on success and -1 on error */
 int enableInternalClock(void)
 {
     unsigned int timeout;
@@ -231,7 +231,7 @@ int enableInternalClock(void)
 
     /*wait for clock to stabilize by reading ICS bit of SD_SYSCTL*/
     timeout = 100000;
-    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, SD_SYSCTL_ICS) != 
+    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, SD_SYSCTL_ICS) !=
             SD_SYSCTL_ICS)
     {
         if (--timeout == 0)
@@ -243,7 +243,7 @@ int enableInternalClock(void)
     return 0;
 }
 
-/* Reads physical sector `sector` and copies bytes into `buffer`, 
+/* Reads physical sector `sector` and copies bytes into `buffer`,
  * returning 0 on success. */
 int mmc_read_sector(unsigned int sector, uint8_t buffer[512])
 {
@@ -269,7 +269,7 @@ int mmc_read_sector(unsigned int sector, uint8_t buffer[512])
 
         if(stat == 0)
         {
-            log_message(LOG_LEVEL_ERROR, 
+            log_message(LOG_LEVEL_ERROR,
                     "No response from card (SD_STAT = 0 after cmd17)\n");
             break;
         }
@@ -339,12 +339,12 @@ void mmc_controller_init(void)
     log_message(LOG_LEVEL_DEBUG, "setting system config\n");
 
     /*disable autoidle*/
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCONFIG, SD_SYSCONFIG_AUTOIDLE, 
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCONFIG, SD_SYSCONFIG_AUTOIDLE,
             SD_SYSCONFIG_AUTOIDLE_DISABLE);
 
     /*check to make sure settings are applied*/
     timeout = 100000;
-    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCONFIG, SD_SYSCONFIG_AUTOIDLE) 
+    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCONFIG, SD_SYSCONFIG_AUTOIDLE)
             != SD_SYSCONFIG_AUTOIDLE_DISABLE)
     {
         if (--timeout == 0)
@@ -354,14 +354,14 @@ void mmc_controller_init(void)
         }
     }
 
-    log_message(LOG_LEVEL_DEBUG, 
+    log_message(LOG_LEVEL_DEBUG,
             "setting interface and functional clocks to remain on\n");
     REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, SD_SYSCTL_ICE, SD_SYSCTL_ICE);
 
     log_message(LOG_LEVEL_DEBUG, "setting power and clocks to remain on\n");
     REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, SD_SYSCTL_CEN, SD_SYSCTL_CEN);
 
-    log_message(LOG_LEVEL_DEBUG, 
+    log_message(LOG_LEVEL_DEBUG,
             "setting MMC to never enter low power mode\n");
     REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, SD_SYSCTL_DTO, SD_SYSCTL_DTO);
 
@@ -403,11 +403,6 @@ void mmc_controller_init(void)
 
     REG32_write_masked(MMCHS0_BASE, SD_HCTL, 0, 0);
 
-    log_message(LOG_LEVEL_DEBUG, "setting block mode\n");
-
-    /*set block size*/
-    REG32_write(MMCHS0_BASE, SD_BLK, SD_BLK_512); 
-
     /*reset data and cmd lines*/
 
     log_message(LOG_LEVEL_DEBUG, "resetting MMC_DAT line\n");
@@ -428,7 +423,7 @@ void mmc_controller_init(void)
 
     /*check that clocks are on*/
     log_message(LOG_LEVEL_DEBUG, "checking MMC0 clocks\n");
-    if(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, SD_SYSCTL_CEN) != 
+    if(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, SD_SYSCTL_CEN) !=
             SD_SYSCTL_CEN)
     {
         uart_puts("MMC clocks not on\n");
@@ -441,9 +436,9 @@ void mmc_controller_init(void)
     REG32_write(MMCHS0_BASE, SD_STAT, 0xFFFFFFFF);
 
     /*set block size to 512 bytes*/
-    log_message(LOG_LEVEL_DEBUG, 
+    log_message(LOG_LEVEL_DEBUG,
             "setting block size to 512 bytes and 1 block transfer mode\n");
-    REG32_write(MMCHS0_BASE, SD_BLK, 1 << 16 | 0x200);
+    REG32_write(MMCHS0_BASE, SD_BLK, 1 << 16 | SD_BLK_512);
 
     log_message(LOG_LEVEL_INFO, "MMC init successful\n");
 }
