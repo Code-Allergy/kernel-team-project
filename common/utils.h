@@ -93,16 +93,17 @@ static inline void log_message(int level, const char *fmt, ...) {
 
 static inline void panic(const char *fmt, ...) {
     va_list ap;
+    uart_printf("PANIC: ");
     va_start(ap, fmt);
     uart_vprintf(fmt, ap);
     va_end(ap);
+    /* disable interrupts */
+    __asm__ volatile("cpsid i");
+
+    /* can log out some registers or critical info */
     while (1) {
         __asm__ volatile("wfi");
     }
 }
-
-
-
-
 
 #endif /*UTILS_H*/

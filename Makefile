@@ -101,6 +101,7 @@ os: utils
 		PLATFORM=$(PLATFORM)
 
 clean:
+	rm -rf $(BUILD_DIR)
 	make -f $(OS_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM) \
