@@ -43,34 +43,29 @@ void timer_tick(void)
 
 static inline void gpio_test(void)
 {
-    char uart_buffer[100];
-    int read = 0;
-    unsigned int gpio_base = GPIO1_BASE;
-    uint32_t timer_val = 0;
-
-    GPIO_init(); // Currently only configures GPIO1
+    GPIO_init(); /* Currently only configures GPIO1*/
     GpioSetPinMode(GPIO1_BASE, 0xf << 21, GpioPinOut);
     GPIO_set(GPIO1_BASE, 1 << 21);
 
-    // system_interrupt_init();
+    /* system_interrupt_init();*/
 
-    // 8N1
-    uart_init(0,      // UART index (0 = UART0, 1 = UART1, etc.)
-              115200, // Baud rate for communication
-              1,      // Stop bit enable (1 = enabled, 0 = disabled)
-              0,      // Number of stop bits (0 = 1 stop bit, 1 = 1.5/2 stop bits)
-              0,      // Parity enable (1 = enabled, 0 = disabled)
-              0,      // Parity type (0 = even, 1 = odd; ignored if parity is disabled)
-              8       // Character length
+    /* 8N1*/
+    uart_init(0,      /* UART index (0 = UART0, 1 = UART1, etc.)*/
+              115200, /* Baud rate for communication*/
+              1,      /* Stop bit enable (1 = enabled, 0 = disabled)*/
+              0,      /* Number of stop bits (0 = 1 stop bit, 1 = 1.5/2 stop bits)*/
+              0,      /* Parity enable (1 = enabled, 0 = disabled)*/
+              0,      /* Parity type (0 = even, 1 = odd; ignored if parity is disabled)*/
+              8       /* Character length*/
     );
 
 
-    // timer_init(TIMER2, 1000, timer_tick);
+    /* timer_init(TIMER2, 1000, timer_tick);
     // timer_val = timer_value(TIMER2);
     // uart_printf("Timer init value: %u\n", timer_val);
     // timer_start(TIMER2);
     // timer_val = timer_value(TIMER2);
-    // uart_printf("Timer counting?. value: %u\n", timer_val);
+    // uart_printf("Timer counting?. value: %u\n", timer_val);*/
 
 
     /*
@@ -99,25 +94,25 @@ int min(int a, int b, int c)
     return c;
 }
 
-// Recursive function to compute Levenshtein distance
+/* Recursive function to compute Levenshtein distance*/
 int levenshtein(const char* str1, const char* str2, int len1, int len2)
 {
-    // If one of the strings is empty, the distance is the length of the other string
+    /* If one of the strings is empty, the distance is the length of the other string*/
     if (len1 == 0)
         return len2;
     if (len2 == 0)
         return len1;
 
-    // If the characters are the same, no operation is needed
+    /* If the characters are the same, no operation is needed*/
     if (str1[len1 - 1] == str2[len2 - 1])
     {
         return levenshtein(str1, str2, len1 - 1, len2 - 1);
     }
 
-    // Otherwise, consider all possibilities and take the minimum
-    volatile int insert  = levenshtein(str1, str2, len1, len2 - 1);     // Insertion
-    volatile int remove  = levenshtein(str1, str2, len1 - 1, len2);     // Deletion
-    volatile int replace = levenshtein(str1, str2, len1 - 1, len2 - 1); // Substitution
+    /* Otherwise, consider all possibilities and take the minimum*/
+    volatile int insert  = levenshtein(str1, str2, len1, len2 - 1);     /* Insertion*/
+    volatile int remove  = levenshtein(str1, str2, len1 - 1, len2);     /* Deletion*/
+    volatile int replace = levenshtein(str1, str2, len1 - 1, len2 - 1); /* Substitution*/
 
     return 1 + min(insert, remove, replace);
 }

@@ -4,6 +4,7 @@
 /*base for mmc0*/
 #define MMCHS0_BASE 0x48060000
 
+/*mmc functions*/
 void mmc_controller_init(void);
 int mmc_read_sector(unsigned int sector, uint8_t buffer[512]);
 
@@ -14,6 +15,48 @@ int mmc_read_sector(unsigned int sector, uint8_t buffer[512]);
 #define CTO_ERROR -16
 #define CC 0
 
+
+#define SD_CAPA_VS (0x7 << 24)
+#define SD_CAPA_VS_1P8 (0x4 << 24)
+
+#define SD_SYSCTL_LINES_RESET 0x1
+#define SD_SYSCTL_SRD 26
+#define SD_SYSCTL_SRC 25
+#define SD_SYSCTL_SRA 24
+#define SD_SYSCTL_ICE (0x1)
+#define SD_SYSCTL_ICS (0x1 << 1)
+#define SD_SYSCTL_CEN (0x1 << 2)
+#define SD_SYSCTL_DTO (0x000F0000)
+
+#define SD_HCTL_SDVS (0x7 << 9)
+#define SD_HCTL_SDVS_SHIFT 9
+#define SD_HCTL_SDBP (0x1 << 8)
+#define SD_HCTL_SDBP_ON (0x1 << 8)
+#define SD_HCTL_SDBV_1P8 0x5
+
+#define SD_PSTATE_CC 0x1
+#define SD_PSTATE_C_ALLOWED 0
+
+#define SD_STAT_CLEAR 0xFFFFFFFF
+#define SD_STAT_CC 0x1
+#define SD_STAT_CTO (0x1 << 16)
+#define SD_STAT_CC_CLEAR 0x1
+
+#define SD_CMD_RSPTYPE_SHIFT 16
+#define SD_CMD_CCCE_CICE_ENABLE (0x3 << 19)
+#define SD_CMD_INDX_SHIFT 24
+#define SD_CMD_CMDTYPE_NORMAL (0x0 << 22)
+#define SD_CMD_DP (0x1 << 21)
+#define SD_CMD_DDIR_READ (0x1 << 4)
+#define SD_CMD_48BITRSP 0x2
+
+#define SD_SYSCONFIG_AUTOIDLE 0x1
+#define SD_SYSCONFIG_AUTOIDLE_DISABLE 0x0
+
+#define SD_CON_DDR (0 << 19)
+#define SD_CON_DDR_DISABLE 0
+
+#define SD_BLK_512 0x200
 
 /*
 110hSD_SYSCONFIGSystem ConfigurationSection 18.5.1.1
@@ -47,40 +90,37 @@ int mmc_read_sector(unsigned int sector, uint8_t buffer[512]);
 2FChSD_REVVersionsSection 18.5.1.29
 */
 
-enum SDRegister
-{
-    SD_SYSCONFIG    = 0x110,  // System Configuration
-    SD_SYSSTATUS    = 0x114,  // System Status
-    SD_CSRE         = 0x124,  // Card Status Response Error
-    SD_SYSTEST      = 0x128,  // System Test
-    SD_CON          = 0x12C,  // Configuration
-    SD_PWCNT        = 0x130,  // Power Counter
-    SD_SDMASA       = 0x200,  // SDMA System Address
-    SD_BLK          = 0x204,  // Transfer Length Configuration
-    SD_ARG          = 0x208,  // Command Argument
-    SD_CMD          = 0x20C,  // Command and Transfer Mode
-    SD_RSP10        = 0x210,  // Command Response 0 and 1
-    SD_RSP32        = 0x214,  // Command Response 2 and 3
-    SD_RSP54        = 0x218,  // Command Response 4 and 5
-    SD_RSP76        = 0x21C,  // Command Response 6 and 7
-    SD_DATA         = 0x220,  // Data
-    SD_PSTATE       = 0x224,  // Present State
-    SD_HCTL         = 0x228,  // Host Control
-    SD_SYSCTL       = 0x22C,  // SD System Control
-    SD_STAT         = 0x230,  // Interrupt Status
-    SD_IE           = 0x234,  // Interrupt Enable
-    SD_ISE          = 0x238,  // Interrupt Enable Set
-    SD_AC12         = 0x23C,  // Auto CMD12 Error Status
-    SD_CAPA         = 0x240,  // Capabilities
-    SD_CUR_CAPA     = 0x248,  // Maximum Current Capabilities
-    SD_FE           = 0x250,  // Force Event
-    SD_ADMAES       = 0x254,  // ADMA Error Status
-    SD_ADMASAL      = 0x258,  // ADMA System Address Low bits
-    SD_ADMASAH      = 0x25C,  // ADMA System Address High bits
-    SD_REV          = 0x2FC   // Versions
-};
+#define SD_SYSCONFIG    0x110  /* System Configuration */
+#define SD_SYSSTATUS    0x114  /* System Status */
+#define SD_CSRE         0x124  /* Card Status Response Error */
+#define SD_SYSTEST      0x128  /* System Test */
+#define SD_CON          0x12C  /* Configuration */
+#define SD_PWCNT        0x130  /* Power Counter */
+#define SD_SDMASA       0x200  /* SDMA System Address */
+#define SD_BLK          0x204  /* Transfer Length Configuration */
+#define SD_ARG          0x208  /* Command Argument */
+#define SD_CMD          0x20C  /* Command and Transfer Mode */
+#define SD_RSP10        0x210  /* Command Response 0 and 1 */
+#define SD_RSP32        0x214  /* Command Response 2 and 3 */
+#define SD_RSP54        0x218  /* Command Response 4 and 5 */
+#define SD_RSP76        0x21C  /* Command Response 6 and 7 */
+#define SD_DATA         0x220  /* Data */
+#define SD_PSTATE       0x224  /* Present State */
+#define SD_HCTL         0x228  /* Host Control */
+#define SD_SYSCTL       0x22C  /* SD System Control */
+#define SD_STAT         0x230  /* Interrupt Status */
+#define SD_IE           0x234  /* Interrupt Enable */
+#define SD_ISE          0x238  /* Interrupt Enable Set */
+#define SD_AC12         0x23C  /* Auto CMD12 Error Status */
+#define SD_CAPA         0x240  /* Capabilities */
+#define SD_CUR_CAPA     0x248  /* Maximum Current Capabilities */
+#define SD_FE           0x250  /* Force Event */
+#define SD_ADMAES       0x254  /* ADMA Error Status */
+#define SD_ADMASAL      0x258  /* ADMA System Address Low bits */
+#define SD_ADMASAH      0x25C  /* ADMA System Address High bits */
+#define SD_REV          0x2FC  /* Versions */
 
-// Control Module Registers for Pin Muxing
+/*Control Module Registers for Pin Muxing*/
 #define CONTROL_MODULE_BASE    0x44E10000
 #define CONF_MMC0_DAT3        (CONTROL_MODULE_BASE + 0x8F0)
 #define CONF_MMC0_DAT2        (CONTROL_MODULE_BASE + 0x8F4)
@@ -307,7 +347,7 @@ enum SDRegister
 #define CMD62 0x3E
 #define CMD63 0x3F
 
-// Application-specific commands (ACMD)
+/* Application-specific commands (ACMD)*/
 #define ACMD0  0x00
 #define ACMD1 0x01
 #define ACMD2  0x02
