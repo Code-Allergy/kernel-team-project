@@ -28,7 +28,7 @@ export CFLAGS 	= 	-Wall \
 					-mfloat-abi=soft \
 					-pedantic \
 					-ffreestanding \
-					-fbuiltin \
+					-fno-builtin \
 					-marm \
 					-MMD \
 					-MP \

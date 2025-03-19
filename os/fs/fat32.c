@@ -77,15 +77,19 @@ void* memcpy(void* dest, const void* src, size_t n)
 }
 
 static inline uint32_t read_unaligned_uint32(const void* ptr) {
-    return ((uint32_t) ((uint8_t*) ptr)[0]) |
-           ((uint32_t) ((uint8_t*) ptr)[1] << 8) |
-           ((uint32_t) ((uint8_t*) ptr)[2] << 16) |
-           ((uint32_t) ((uint8_t*) ptr)[3] << 24);
+    /* Force GCC to not compile this out and try and read unaligned ptr */
+    const volatile uint8_t* p = (const volatile uint8_t*) ptr;
+    return ((uint32_t) p[0]) |
+           ((uint32_t) p[1] << 8) |
+           ((uint32_t) p[2] << 16) |
+           ((uint32_t) p[3] << 24);
 }
 
 static inline uint16_t read_unaligned_uint16(const void* ptr) {
-    return ((uint16_t) ((uint8_t*) ptr)[0]) |
-           ((uint16_t) ((uint8_t*) ptr)[1] << 8);
+    /* Force GCC to not compile this out and try and read unaligned ptr */
+    const volatile uint8_t* p = (const volatile uint8_t*) ptr;
+    return ((uint16_t) p[0]) |
+           ((uint16_t) p[1] << 8);
 }
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -161,7 +165,7 @@ int fat32_mount(fat32_fs_t* fs, const fat32_diskio_t* io)
     {
         return FAT32_ERROR_INVALID_BOOT_SECTOR;
     }
-    
+
     /* Read actual boot sector if we found via MBR */
     if (found_via_mbr)
     {

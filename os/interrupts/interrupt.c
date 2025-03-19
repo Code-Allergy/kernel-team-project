@@ -48,7 +48,7 @@ bool INTC_enable_irq(uint32_t int_num) {
         return false;
     }
     __asm(" dsb");
-    REG32_write_masked( INTC_BASE_ADDR, 
+    REG32_write_masked( INTC_BASE_ADDR,
                         INTC_MIRn_CLR_OFF(int_num),
                         INTC_IRQ_REG_BIT(int_num),
                         INTC_IRQ_REG_BIT(int_num)
@@ -61,7 +61,7 @@ bool INTC_disable_irq(uint32_t int_num) {
         return false;
     }
     __asm(" dsb");
-    REG32_write_masked( INTC_BASE_ADDR, 
+    REG32_write_masked( INTC_BASE_ADDR,
                         INTC_MIRn_SET_OFF(int_num),
                         INTC_IRQ_REG_BIT(int_num),
                         INTC_IRQ_REG_BIT(int_num)
@@ -92,26 +92,26 @@ void system_interrupt_init(void) {
 }
 
 
-extern void reset_handler_asm(void);             
-extern void undef_handler_asm(void);              
-extern void svc_handler_asm(void);               
+extern void reset_handler_asm(void);
+extern void undef_handler_asm(void);
+extern void svc_handler_asm(void);
 extern void prefetch_abort_handler_asm(void);
-extern void data_abort_handler_asm(void);     
-extern void irq_handler_asm(void);          
-extern void fiq_handler_asm(void);            
-extern void reserved_handler_asm(void);       
+extern void data_abort_handler_asm(void);
+extern void irq_handler_asm(void);
+extern void fiq_handler_asm(void);
+extern void reserved_handler_asm(void);
 
 
 /* This is the same way the default dead loops are set up*/
 static unsigned int const vector_table[] = {
     0xE59FF018,    /* Opcode for loading PC with the contents of [PC + 0x18] */
-    0xE59FF018,    
-    0xE59FF018,    
-    0xE59FF018,    
-    0xE59FF018,    
-    0xE59FF018,    
-    0xE59FF018,    
-    0xE59FF018,   
+    0xE59FF018,
+    0xE59FF018,
+    0xE59FF018,
+    0xE59FF018,
+    0xE59FF018,
+    0xE59FF018,
+    0xE59FF018,
     (unsigned int)reset_handler_asm,
     (unsigned int)undef_handler_asm,
     (unsigned int)svc_handler_asm,
@@ -141,5 +141,10 @@ void prefetch_abort_handler(void) {
 }
 
 void data_abort_handler(void) {
-    panic("Data abort exception");
+    uint32_t fault_address, dfsr;
+    /* READ DFAR */
+    __asm__ volatile ("MRC p15, 0, %0, c6, c0, 0" : "=r" (fault_address));
+    /* READ DFSR */
+    __asm__ volatile ("MRC p15, 0, %0, c5, c0, 0" : "=r" (dfsr));
+    panic("Data abort exception at address 0x%x, DFSR: %x\n", fault_address, dfsr);
 }
