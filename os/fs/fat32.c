@@ -76,7 +76,22 @@ void* memcpy(void* dest, const void* src, size_t n)
     return dest;
 }
 
+static inline uint32_t read_unaligned_uint32(const void* ptr) {
+    return ((uint32_t) ((uint8_t*) ptr)[0]) |
+           ((uint32_t) ((uint8_t*) ptr)[1] << 8) |
+           ((uint32_t) ((uint8_t*) ptr)[2] << 16) |
+           ((uint32_t) ((uint8_t*) ptr)[3] << 24);
+}
+
+static inline uint16_t read_unaligned_uint16(const void* ptr) {
+    return ((uint16_t) ((uint8_t*) ptr)[0]) |
+           ((uint16_t) ((uint8_t*) ptr)[1] << 8);
+}
+
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+/* Store the in use sector for mount at 0x91000000 */
+static uint8_t* sector_buffer = (uint8_t*)0x91000000;
 
 /* static helpers */
 static void parse_fat32_path(const char* path, fat32_path_t* parser);
@@ -102,10 +117,10 @@ int fat32_mount(fat32_fs_t* fs, const fat32_diskio_t* io)
 {
     MBR* mbr;
     Fat32BootSector* boot_sector;
-    uint8_t sector_buffer[FAT32_SECTOR_SIZE];
     uint32_t fat32_start_sector = 0;
-    bool found_via_mbr          = false;
-    bool found_via_sector0      = false;
+    int found_via_mbr          = 0;
+    int found_via_sector0      = 0;
+    int i;
 
     /* Parameter validation */
     if (!fs || !io || !io->read_sector)
@@ -123,7 +138,16 @@ int fat32_mount(fat32_fs_t* fs, const fat32_diskio_t* io)
     mbr = (MBR*) sector_buffer;
     if (mbr->signature == MBR_SIGNATURE)
     {
-        found_via_mbr = find_partition_via_mbr(mbr, &fat32_start_sector);
+        for (i = 0; i < 4; i++)
+        {
+            if (mbr->partitions[i].partition_type == FAT32_PART_TYPE_1 ||
+                mbr->partitions[i].partition_type == FAT32_PART_TYPE_2)
+            {
+                fat32_start_sector = read_unaligned_uint32(&mbr->partitions[i].start_sector);
+                found_via_mbr      = 1;
+                break;
+            }
+        }
     }
 
     /* Fallback to check sector 0 directly if no MBR partition found */
@@ -137,7 +161,7 @@ int fat32_mount(fat32_fs_t* fs, const fat32_diskio_t* io)
     {
         return FAT32_ERROR_INVALID_BOOT_SECTOR;
     }
-
+    
     /* Read actual boot sector if we found via MBR */
     if (found_via_mbr)
     {
@@ -779,10 +803,11 @@ static int find_partition_via_mbr(const MBR* mbr, uint32_t* start_sector)
             mbr->partitions[i].partition_type == FAT32_PART_TYPE_2)
         {
             *start_sector = mbr->partitions[i].start_sector;
-            return true;
+            return 1;
         }
     }
-    return false;
+
+    return 0;
 }
 
 static int check_sector0_for_fat32(const uint8_t* sector_buffer, uint32_t* start_sector)
@@ -798,8 +823,13 @@ static int check_sector0_for_fat32(const uint8_t* sector_buffer, uint32_t* start
 
 static int validate_fat32_boot_sector(const Fat32BootSector* boot_sector)
 {
-    if (boot_sector->bootSectorSig != FAT32_BOOT_SECTOR_SIGNATURE || boot_sector->sectorsPerCluster == 0 ||
-        boot_sector->reservedSectors == 0 || boot_sector->numFATs == 0 || boot_sector->sectorsPerFAT32 == 0)
+    uint32_t boot_sector_sig = read_unaligned_uint32(&boot_sector->bootSectorSig);
+    uint8_t sectorsPerCluster = boot_sector->sectorsPerCluster;
+    uint16_t reservedSectors = read_unaligned_uint16(&boot_sector->reservedSectors);
+    uint8_t numFATs = boot_sector->numFATs;
+    uint32_t sectorsPerFAT32 = read_unaligned_uint32(&boot_sector->sectorsPerFAT32);
+    if (boot_sector_sig != FAT32_BOOT_SECTOR_SIGNATURE || sectorsPerCluster == 0 ||
+        reservedSectors == 0 || numFATs == 0 || sectorsPerFAT32 == 0)
     {
         return FAT32_ERROR_INVALID_BOOT_SECTOR;
     }
@@ -811,18 +841,18 @@ static void initialize_fat32_fs(fat32_fs_t* fs,
                                 const Fat32BootSector* boot_sector,
                                 uint32_t fat32_start_sector)
 {
+    uint32_t total_sectors_16 = read_unaligned_uint16(&boot_sector->totalSectors16);
     fs->disk                  = *io;
     fs->bytes_per_sector      = FAT32_SECTOR_SIZE;
     fs->sectors_per_cluster   = boot_sector->sectorsPerCluster;
-    fs->reserved_sector_count = boot_sector->reservedSectors;
+    fs->reserved_sector_count = read_unaligned_uint16(&boot_sector->reservedSectors);
     fs->num_fats              = boot_sector->numFATs;
-    fs->sectors_per_fat       = boot_sector->sectorsPerFAT32;
-    fs->fat_start_sector      = fat32_start_sector + boot_sector->reservedSectors;
-    fs->first_data_sector =
-        fat32_start_sector + boot_sector->reservedSectors + (boot_sector->numFATs * boot_sector->sectorsPerFAT32);
-    fs->root_cluster   = boot_sector->rootCluster;
+    fs->sectors_per_fat       = read_unaligned_uint32(&boot_sector->sectorsPerFAT32);
+    fs->fat_start_sector      = fat32_start_sector + (uint32_t) read_unaligned_uint16(&boot_sector->reservedSectors);
+    fs->first_data_sector = fs->fat_start_sector + (fs->num_fats * fs->sectors_per_fat);
+    fs->root_cluster   = read_unaligned_uint32(&boot_sector->rootCluster);
     fs->cluster_size   = fs->sectors_per_cluster * fs->bytes_per_sector;
-    fs->total_sectors  = (boot_sector->totalSectors16 != 0) ? boot_sector->totalSectors16 : boot_sector->totalSectors32;
+    fs->total_sectors  = (total_sectors_16 != 0) ? total_sectors_16 : read_unaligned_uint32(&boot_sector->totalSectors32);
     fs->total_clusters = (fs->total_sectors - (fs->first_data_sector - fat32_start_sector)) / fs->sectors_per_cluster;
     fs->magic          = FAT32_MAGIC;
 }

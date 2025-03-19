@@ -17,7 +17,10 @@ LDSCRIPT = $(OS_DIR)/linker.ld
 LDFLAGS = -T $(LDSCRIPT) \
 			--build-id=none \
 			-nostdlib \
-			-static
+			-static \
+			$(GLOBAL_LD_FLAGS)
+
+LDLIBS = $(GLOBAL_LD_LIBS)
 
 IFLAGS = 	-I$(OS_DIR)/ \
 			-I$(DRIVERS_DIR) \
@@ -103,8 +106,8 @@ kernel_build_dir:
 $(OUTPUT_BIN): $(OUTPUT_ELF)
 	$(OBJCOPY) -O binary $< $@
 
-$(OUTPUT_ELF): $(KERNEL_OBJS)
-	$(LD) $(LDFLAGS) -o $@ $^
+$(OUTPUT_ELF): $(KERNEL_OBJS) $(UTILS_OBJS) $(DRIVER_OBJS) $(INTERRUPTS_OBJS) $(FS_OBJS) $(MMU_OBJS)
+	$(LD) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 $(OS_DIR)/build/%.o: $(OS_DIR)/%.c
 	$(CC) $(IFLAGS) $(CFLAGS) -c $< -o $@

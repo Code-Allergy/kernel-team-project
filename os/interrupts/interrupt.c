@@ -131,3 +131,15 @@ void setup_vector_table(void) {
         ((unsigned int*)VECTOR_TABLE_DEST_ADDR)[i] = vector_table[i];
     }
 }
+
+void undef_handler(void) {
+    panic("Undefined instruction exception");
+}
+
+void prefetch_abort_handler(void) {
+    panic("Prefetch abort exception");
+}
+
+void data_abort_handler(void) {
+    panic("Data abort exception");
+}

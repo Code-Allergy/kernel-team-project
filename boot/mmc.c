@@ -1,3 +1,4 @@
+#include "interrupt.h"
 #include <uart.h>
 #include <utils.h>
 #include <clock_module.h>
@@ -59,7 +60,7 @@ int enableClocks(void)
     timeout = 100000;
 
     /*wait until fully enabled*/
-    while (REG32_read_masked(CM_PER_BASE, CM_PER_MMC0_CLKCTRL, (0b11 << 16)) 
+    while (REG32_read_masked(CM_PER_BASE, CM_PER_MMC0_CLKCTRL, (0b11 << 16))
             != 0x0)
     {
         if (--timeout == 0)
@@ -79,7 +80,7 @@ int enableDeBounceClock(void)
      * software reset is done*/
     REG32_write_masked(CONTROL_MODULE_BASE, CLK32KDIVRATIO_CTRL, 0b1, 0b1);
     timeout = 100000;
-    while(REG32_read_masked(CONTROL_MODULE_BASE, CLK32KDIVRATIO_CTRL, 0b1) 
+    while(REG32_read_masked(CONTROL_MODULE_BASE, CLK32KDIVRATIO_CTRL, 0b1)
             != 0b1)
     {
         if (--timeout == 0)
@@ -97,7 +98,7 @@ int softwareReset(void)
     unsigned int timeout;
 
     /*software reset*/
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCONFIG, 0x2, 0x2); /*write 1 to 
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCONFIG, 0x2, 0x2); /*write 1 to
     the SOFTRESET (1st) bit*/
 
     /*wait for the request to complete*/
@@ -120,9 +121,9 @@ int linesReset(unsigned int LINE_SHIFT)
 
     uart_puts("waiting for lines reset\n");
 
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << LINE_SHIFT), 
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << LINE_SHIFT),
             (0b1 << LINE_SHIFT));
-   
+
     timeout = 100000;
     while(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << LINE_SHIFT)) != 0)
     {
@@ -192,7 +193,7 @@ int changeInternalClockFreq(unsigned int divider)
     /*enable the internal clock*/
     REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1), (0x1));
 
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1111111111 << 6), 
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1111111111 << 6),
             (divider << 6));
 
     /*wait for clock to stabilize by reading ICS bit of SD_SYSCTL*/
@@ -210,7 +211,7 @@ int changeInternalClockFreq(unsigned int divider)
 
 
 /*function to send command to the card*/
-int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType, 
+int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType,
         unsigned int response[])
 {
     unsigned int reg;
@@ -223,7 +224,7 @@ int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType,
 
     /*write args*/
     REG32_write(MMCHS0_BASE, SD_ARG, args);
-    
+
     reg = 0;
     reg |= (rspType << 16);
     reg |= (0b11 << 19);
@@ -236,36 +237,24 @@ int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType,
         reg |= (0x1 << 4);  /*Data read*/
     }
 
-    /*write command*/
+    /* write command */
+    log_message(LOG_LEVEL_DEBUG, "sending command %d\n", cmdNum);
     REG32_write(MMCHS0_BASE, SD_CMD, reg);
-    uart_puts("waiting for command to complete\n");
+    log_message(LOG_LEVEL_DEBUG, "waiting for command to complete\n");
 
     /*wait for command to complete*/
     while(REG32_read_masked(MMCHS0_BASE, SD_STAT, (0b1)) != 0x1)
     {
-        uart_puts("SD_STAT: ");
-        print_number(REG32_read(MMCHS0_BASE, SD_STAT), 2, 0);
-        uart_puts("\n");
-        /*check for error bits*/
-
         /*check for command timeout error*/
         if(REG32_read_masked(MMCHS0_BASE, SD_STAT, (0b1 << 16)) == (0x1 << 16))
         {
             REG32_write(MMCHS0_BASE, SD_STAT, 0xFFFFFFFF);
-
-            uart_puts("Command Timeout error\n");
-            
+            log_message(LOG_LEVEL_ERROR, "Command Timeout error on cmd %d\n", cmdNum);
             return CTO_ERROR;
         }
 
         /*can add other error checks*/
     }
-    uart_puts("command complete STAT: ");
-    unsigned int r = REG32_read(MMCHS0_BASE, SD_STAT);
-
-    print_number(r, 2, 0);
-
-    uart_puts("\n");
 
     /*clear the command complete flag*/
     if(cmdNum != CMD17)
@@ -273,20 +262,12 @@ int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType,
         REG32_write_masked(MMCHS0_BASE, SD_STAT, (0b1 << 0), (1 << 0));
     }
 
-    uart_puts("after CC flag cleared STAT: ");
-    r = REG32_read(MMCHS0_BASE, SD_STAT);
-
-    print_number(r, 2, 0);
-
-    uart_puts("\n");
-
-
     switch(cmdNum)
     {
         /*commands that have response R1*/
         /*case CMD0:*/
         case CMD1:
-        case CMD6: 
+        case CMD6:
         case CMD9:
         case CMD10:
         case CMD16:
@@ -305,7 +286,7 @@ int sendCommand(unsigned int cmdNum, unsigned int args, unsigned int rspType,
         case ACMD41:
             response[0] = REG32_read(MMCHS0_BASE, SD_RSP10);
             break;
-        
+
         /*case R1b*/
         case CMD12:
         case CMD28:
@@ -366,69 +347,45 @@ int enableInternalClock(void)
     return 0;
 }
 
-
+/* Reads physical sector `sector` and copies bytes into `buffer`, returning 0 on success. */
 int mmc_read_sector(unsigned int sector, uint8_t buffer[512])
 {
     unsigned int responses[4];
-
-    unsigned int stat, pstat, timeout;
-
+    unsigned int stat, timeout;
     unsigned int i, word;
 
-    /*set block size to 512 bytes*/
-    REG32_write(MMCHS0_BASE, SD_BLK, 0x200);
-
-    /*uart_puts("sending cmd16\n");
-
-    sendCommand(CMD16, 512, 0x0, responses);*/
-
-    uart_puts("sending cmd17\n");
-
-    if(sendCommand(CMD17, sector, 0b10, responses) != CC)
+    if(sendCommand(CMD17, sector, 0x2, responses) != CC)
     {
-        uart_puts("CMD17 CTO\n");
+        log_message(LOG_LEVEL_WARN, "CMD17 CTO\n");
         return -1;
     }
 
     timeout = 1000000;
+    /* Wait for SD_STAT to report it is finished with the read */
     while(1)
     {
         stat = REG32_read(MMCHS0_BASE, SD_STAT);
-
-        pstat = REG32_read(MMCHS0_BASE, SD_PSTATE);
-
-        if(stat & (1 << 5) != 0)
+        if((stat & (1 << 5)) != 0)
         {
-            uart_puts("buffer read ready\n");
             break;
         }
 
         if(stat == 0)
         {
+            log_message(LOG_LEVEL_ERROR, "No response from card (SD_STAT = 0 after cmd17)\n");
             break;
         }
 
-        uart_puts("SD_STAT: ");
-        
-        print_number(stat, 2, 0);
-
-        uart_puts("\n");
-        
-        uart_puts("SD_PSTATE: ");
-        
-        print_number(pstat, 2, 0);
-
-        uart_puts("\n");
-
-        if(stat & (1 << 20) != 0)
+        if((stat & (1 << 20)) != 0)
         {
-            uart_puts("Data timeout error\n");
+            log_message(LOG_LEVEL_ERROR, "Data timeout error after cmd17\n");
             return -1;
         }
 
-        if(stat & 0x78000 != 0)
+        if((stat & 0x78000) != 0)
         {
-            uart_puts("Data error stat\n");
+            log_message(LOG_LEVEL_ERROR, "Some other error.."
+                "cmd17 stat raw: %d", stat);
             return -1;
         }
 
@@ -436,8 +393,8 @@ int mmc_read_sector(unsigned int sector, uint8_t buffer[512])
 
         if(timeout == 0)
         {
-            uart_puts("Timeout waiting for BRR bit\n");
-            return;
+            log_message(LOG_LEVEL_ERROR, "Timeout waiting for BRR bit\n");
+            return -1;
         }
     }
 
@@ -452,9 +409,8 @@ int mmc_read_sector(unsigned int sector, uint8_t buffer[512])
 
     /*clear stat bits and disable data transfer*/
     REG32_write(MMCHS0_BASE, SD_STAT, 0xFFFFFFFF);
-
-    REG32_write(MMCHS0_BASE, SD_CON, REG32_read(MMCHS0_BASE, SD_CON) 
-            & !(1 << 1));
+    REG32_write(MMCHS0_BASE, SD_CON, REG32_read(MMCHS0_BASE, SD_CON)
+            & ~(1 << 1));
 
     return 0;
 }
@@ -463,23 +419,17 @@ int mmc_read_sector(unsigned int sector, uint8_t buffer[512])
 void mmc_controller_init(void)
 {
     unsigned int timeout, reg;
-   /* 
-    CorePLLInit();
+    log_message(LOG_LEVEL_INFO, "init mmc controller\n");
 
-    PerPLLInit();
-    */
-    uart_puts("Enabling module clocks\n");
-
-    /*
-     * ENABLE CLOCK */
+    log_message(LOG_LEVEL_DEBUG, "Enabling module clocks\n");
     if(enableClocks() != 0)
     {
         uart_puts("Failed to enable clocks\n");
         return;
     }
-    
-    uart_puts("Enabling internal clocks\n");
-    
+
+
+    log_message(LOG_LEVEL_DEBUG, "Enabling internal clocks\n");
     if(enableInternalClock() != 0)
     {
         uart_puts("Failed to enable internal clocks\n");
@@ -487,14 +437,15 @@ void mmc_controller_init(void)
     }
 
     /*maybe SD_HCTL bit 7 = 0?*/
-    
-    uart_puts("setting system config\n");
+
+    log_message(LOG_LEVEL_DEBUG, "setting system config\n");
 
     /*disable autoidle*/
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCONFIG, (0b1), 0);
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCONFIG, (0x1), 0);
+
     /*check to make sure settings are applied*/
     timeout = 100000;
-    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCONFIG, (0b1)) != 0)
+    while(REG32_read_masked(MMCHS0_BASE, SD_SYSCONFIG, (0x1)) != 0)
     {
         if (--timeout == 0)
         {
@@ -502,68 +453,62 @@ void mmc_controller_init(void)
             return;
         }
     }
-    
-    uart_puts("setting interface and functional clocks to remain on\n");
 
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, 0b1, 0b1);
+    log_message(LOG_LEVEL_DEBUG, "setting interface and functional clocks to remain on\n");
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, 0x1, 0x1);
 
-    uart_puts("setting power and clocks to remain on\n");
-    
-    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 2), (0b1 << 2));
-    
-    uart_puts("setting MMC to never enter low power mode\n");
+    log_message(LOG_LEVEL_DEBUG, "setting power and clocks to remain on\n");
+    REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0x1 << 2), (0x1 << 2));
 
+    log_message(LOG_LEVEL_DEBUG, "setting MMC to never enter low power mode\n");
     REG32_write_masked(MMCHS0_BASE, SD_SYSCTL, (0x000F0000), (0x000F0000));
-    
-    uart_puts("check to make sure settings applied\n");
 
+    /* Verify that what we did had an effect */
+    log_message(LOG_LEVEL_DEBUG, "check to make sure settings applied\n");
     reg = REG32_read(MMCHS0_BASE, SD_SYSCTL);
-
-    if(reg & (0b1) != (0b1)) 
+    if((reg & (0x1)) != (0x1))
     {
         uart_puts("Failed to set internal clock");
     }
-    if(reg & (0b1 << 2) != (0b1 << 2))
+    if((reg & (0x1 << 2)) != (0x1 << 2))
     {
         uart_puts("Failed to set clock always on");
     }
-    if(reg & (0x000F0000) != (0x000F0000))
+    if((reg & (0x000F0000)) != (0x000F0000))
     {
         uart_puts("Failed to set MMC to never enter low-power mode");
     }
-    
-    uart_puts("setting supported voltage\n");
+
+    log_message(LOG_LEVEL_DEBUG, "setting supported voltage\n");
 
     /*set bus voltage to 1.8*/
     setBusSupportedVoltage();
-
-
     setBusVoltage(0x5); /*5h = 1.8v*/
 
-    uart_puts("setting and checking bus power\n");
+    log_message(LOG_LEVEL_DEBUG, "setting and checking bus power\n");
 
     if(setBusPowerOn() != 0)
     {
         return;
     }
 
-    uart_puts("disabling DDR\n");
+    log_message(LOG_LEVEL_DEBUG, "disabling DDR\n");
 
     /*disable DDR*/
     REG32_write_masked(MMCHS0_BASE, SD_CON, (0 << 19), 0);
-    
-    uart_puts("setting functional mode\n");
+
+    log_message(LOG_LEVEL_DEBUG, "setting functional mode\n");
 
     REG32_write_masked(MMCHS0_BASE, SD_HCTL, 0, 0);
-    
-    uart_puts("setting block mode\n");
+
+    log_message(LOG_LEVEL_DEBUG, "setting block mode\n");
 
     /*set block size*/
     REG32_write(MMCHS0_BASE, SD_BLK, 0x200); /*0x200 for 512 bytes block size*/
 
     /*reset data and cmd lines*/
-    
-    uart_puts("resetting MMC_DAT line\n");
+
+    log_message(LOG_LEVEL_DEBUG, "resetting MMC_DAT line\n");
 
     /*26 for dat lines 25 for cmd line and 24 for all lines reset*/
     if(linesReset(26) != 0)
@@ -571,28 +516,30 @@ void mmc_controller_init(void)
         return;
     }
 
-    uart_puts("resetting MMC_CMD line\n");
+    log_message(LOG_LEVEL_DEBUG, "resetting MMC_CMD line\n");
 
     if(linesReset(25) != 0)
     {
         return;
     }
 
-    uart_puts("checking MMC0 clocks\n");
 
     /*check that clocks are on*/
-    if(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, (0b1 << 2)) != (0b1 << 2))
+    log_message(LOG_LEVEL_DEBUG, "checking MMC0 clocks\n");
+    if(REG32_read_masked(MMCHS0_BASE, SD_SYSCTL, (0x1 << 2)) != (0x1 << 2))
     {
         uart_puts("MMC clocks not on\n");
         return;
     }
 
-    uart_puts("clearing all status flags\n");
 
     /*clear all status flags*/
+    log_message(LOG_LEVEL_DEBUG, "clearing all status flags\n");
     REG32_write(MMCHS0_BASE, SD_STAT, 0xFFFFFFFF);
 
-    uart_puts("MMC init successful\n");
+    /*set block size to 512 bytes*/
+    log_message(LOG_LEVEL_DEBUG, "setting block size to 512 bytes and 1 block transfer mode\n");
+    REG32_write(MMCHS0_BASE, SD_BLK, 1 << 16 | 0x200);
 
-    return;
+    log_message(LOG_LEVEL_INFO, "MMC init successful\n");
 }

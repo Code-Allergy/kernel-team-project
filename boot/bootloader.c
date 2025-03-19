@@ -52,7 +52,7 @@ static inline void gpio_test(void)
     GpioSetPinMode(GPIO1_BASE, 0xf << 21, GpioPinOut);
     GPIO_set(GPIO1_BASE, 1 << 21);
 
-    system_interrupt_init();
+    // system_interrupt_init();
 
     // 8N1
     uart_init(0,      // UART index (0 = UART0, 1 = UART1, etc.)
@@ -65,12 +65,12 @@ static inline void gpio_test(void)
     );
 
 
-    timer_init(TIMER2, 1000, timer_tick);
-    timer_val = timer_value(TIMER2);
-    uart_printf("Timer init value: %u\n", timer_val);
-    timer_start(TIMER2);
-    timer_val = timer_value(TIMER2);
-    uart_printf("Timer counting?. value: %u\n", timer_val);
+    // timer_init(TIMER2, 1000, timer_tick);
+    // timer_val = timer_value(TIMER2);
+    // uart_printf("Timer init value: %u\n", timer_val);
+    // timer_start(TIMER2);
+    // timer_val = timer_value(TIMER2);
+    // uart_printf("Timer counting?. value: %u\n", timer_val);
 
 
     /*
@@ -162,9 +162,9 @@ void __BootloaderEntry(void)
         /*  Failure - Memory test failed */
     	uart_puts("DDR Memory test FAILED\n");
     }
-    
+
     uart_puts("Init ddr end\n");
-    
+
     uart_puts("MMC Init\n");
     mmc_controller_init();
 
@@ -257,7 +257,6 @@ void __BootloaderEntry(void)
     boot_header.boot_table_entry_addr = MEM_BOOT_PAGE_TABLE_BASE;
 
     /* for now, copy the instruction to jump to the kernel entry to the kernel entry point */
-    *((uint32_t*)kernel_header->kernel_entry) = 0xEA000000 | (kernel_header->kernel_entry - MEM_KERNEL_BASE);
     log_message(LOG_LEVEL_INFO, "Jumping to kernel entry at %x\n", kernel_header->kernel_entry);
     log_message(LOG_LEVEL_INFO, "Hanging at kernel stub\n", &boot_header);
     ((void (*)(bootloader_header_t*)) kernel_header->kernel_entry)(&boot_header);

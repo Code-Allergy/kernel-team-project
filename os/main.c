@@ -1,6 +1,7 @@
 /* Entry point */
 #include <types.h>
 #include <boot.h>
+#include <uart.h>
 
 /* pad out bss space for now to view sections */
 static unsigned char bss_space[4096];
@@ -13,5 +14,6 @@ extern kernel_header_t kernel_header;
 
 void kmain(bootloader_header_t* boot_header) {
     (void)boot_header;
+    uart_printf("Hello from kernel!\n");
     while(1);
 }
