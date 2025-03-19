@@ -13,7 +13,7 @@
 
 
 /* Clear the bootloader page tables (they will have DRAM stock pattern on them) */
-static inline void clear_boot_tables(void) {
+void clear_boot_tables(void) {
     int32_t i;
     uint32_t *l1_base = (uint32_t *)MEM_BOOT_PAGE_TABLE_BASE;
     for (i = 0; i < 4096; i++) {
@@ -132,7 +132,6 @@ void MMU_init(void) {
     /* We can also enable caching on memory */
     /* mmu_map_hardware_pages(void) */
 
-    /* Also remap only the first 1MB of kernel to first 1MB of DRAM */
     set_ttbr0(l1_tables);
     log_message(LOG_LEVEL_INFO, "Loaded L1 tables located at %x into TTBR0\n");
 }
