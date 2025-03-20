@@ -34,5 +34,6 @@ void GPIO_clear(unsigned int gpio_base, unsigned int pins)
 }
 
 int GPIO_get(unsigned int gpio_base, unsigned int pin) {
-	return REG32_read(gpio_base, pin);
+	int bank =  REG32_read(gpio_base, GPIO_DATAIN_OFF);
+	return (bank >> pin) & 0x1;
 }
