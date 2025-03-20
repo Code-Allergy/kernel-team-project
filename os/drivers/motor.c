@@ -44,21 +44,21 @@ int motor_write(int motor_num, void* buf, int count) {
 
 	motor = motors[motor_num];
 	v = *((int*)buf);
-	/*
 	if (v == 0) {
-		GPIO_clear(motor.gpio_base, motor.forwards_pin);
-		GPIO_clear(motor.gpio_base, motor.backwards_pin);
+		GPIO_clear(motor.gpio_base, motor.pin1);
+		GPIO_clear(motor.gpio_base, motor.pin2);
 		return 0;
 	}
 	else if (v > 0) {
-		GPIO_set(motor.gpio_base, motor.forwards_pin);
+		GPIO_set(motor.gpio_base, motor.pin1);
+		GPIO_clear(motor.gpio_base, motor.pin2);
 		return 0;
 	}
 	else {
-		GPIO_set(motor.gpio_base, motor.backwards_pin);
+		GPIO_clear(motor.gpio_base, motor.pin1);
+		GPIO_set(motor.gpio_base, motor.pin2);
 		return 0;
 	}
-	*/
 }
 
 
