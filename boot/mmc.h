@@ -1,0 +1,404 @@
+#ifndef MMC_H
+#define MMC_H
+
+/*base for mmc0*/
+#define MMCHS0_BASE 0x48060000
+
+/*mmc functions*/
+void mmc_controller_init(void);
+int mmc_read_sector(unsigned int sector, uint8_t buffer[512]);
+
+/**/
+#define CONTROL_MODULE_BASE 0x44E10000
+#define CLK32KDIVRATIO_CTRL 0x444
+/*SD card command timeout error*/
+#define CTO_ERROR -16
+#define CC 0
+
+
+#define SD_CAPA_VS (0x7 << 24)
+#define SD_CAPA_VS_1P8 (0x4 << 24)
+
+#define SD_SYSCTL_LINES_RESET 0x1
+#define SD_SYSCTL_SRD 26
+#define SD_SYSCTL_SRC 25
+#define SD_SYSCTL_SRA 24
+#define SD_SYSCTL_ICE (0x1)
+#define SD_SYSCTL_ICS (0x1 << 1)
+#define SD_SYSCTL_CEN (0x1 << 2)
+#define SD_SYSCTL_DTO (0x000F0000)
+
+#define SD_HCTL_SDVS (0x7 << 9)
+#define SD_HCTL_SDVS_SHIFT 9
+#define SD_HCTL_SDBP (0x1 << 8)
+#define SD_HCTL_SDBP_ON (0x1 << 8)
+#define SD_HCTL_SDBV_1P8 0x5
+
+#define SD_PSTATE_CC 0x1
+#define SD_PSTATE_C_ALLOWED 0
+
+#define SD_STAT_CLEAR 0xFFFFFFFF
+#define SD_STAT_CC 0x1
+#define SD_STAT_CTO (0x1 << 16)
+#define SD_STAT_CC_CLEAR 0x1
+
+#define SD_CMD_RSPTYPE_SHIFT 16
+#define SD_CMD_CCCE_CICE_ENABLE (0x3 << 19)
+#define SD_CMD_INDX_SHIFT 24
+#define SD_CMD_CMDTYPE_NORMAL (0x0 << 22)
+#define SD_CMD_DP (0x1 << 21)
+#define SD_CMD_DDIR_READ (0x1 << 4)
+#define SD_CMD_48BITRSP 0x2
+
+#define SD_SYSCONFIG_AUTOIDLE 0x1
+#define SD_SYSCONFIG_AUTOIDLE_DISABLE 0x0
+
+#define SD_CON_DDR (0 << 19)
+#define SD_CON_DDR_DISABLE 0
+
+#define SD_BLK_512 0x200
+
+/*
+110hSD_SYSCONFIGSystem ConfigurationSection 18.5.1.1
+114hSD_SYSSTATUSSystem StatusSection 18.5.1.2
+124hSD_CSRECard status response errorSection 18.5.1.3
+128hSD_SYSTESTSystem TestSection 18.5.1.4
+12ChSD_CONConfigurationSection 18.5.1.5
+130hSD_PWCNTPower counterSection 18.5.1.6
+200hSD_SDMASASDMA System address:Section 18.5.1.7
+204hSD_BLKTransfer Length ConfigurationSection 18.5.1.8
+208hSD_ARGCommand argumentSection 18.5.1.9
+20ChSD_CMDCommand and transfer modeSection 18.5.1.10
+210hSD_RSP10Command Response 0 and 1Section 18.5.1.11
+214hSD_RSP32Command Response 2 and 3Section 18.5.1.12
+218hSD_RSP54Command Response 4 and 5Section 18.5.1.13
+21ChSD_RSP76Command Response 6 and 7Section 18.5.1.14
+220hSD_DATADataSection 18.5.1.15
+224hSD_PSTATEPresent stateSection 18.5.1.16
+228hSD_HCTLHost ControlSection 18.5.1.17
+22ChSD_SYSCTLSD system controlSection 18.5.1.18
+230hSD_STATSD interrupt statusSection 18.5.1.19
+234hSD_IESD interrupt enableSection 18.5.1.20
+238hSD_ISESD interrupt enable setSection 18.5.1.21
+23ChSD_AC12Auto CMD12 Error StatusSection 18.5.1.22
+240hSD_CAPACapabilitiesSection 18.5.1.23
+248hSD_CUR_CAPAMaximum current capabilitiesSection 18.5.1.24
+250hSD_FEForce EventSection 18.5.1.25
+254hSD_ADMAESADMA Error StatusSection 18.5.1.26
+258hSD_ADMASALADMA System address Low bitsSection 18.5.1.27
+25ChSD_ADMASAHADMA System address High bitsSection 18.5.1.28
+2FChSD_REVVersionsSection 18.5.1.29
+*/
+
+#define SD_SYSCONFIG    0x110  /* System Configuration */
+#define SD_SYSSTATUS    0x114  /* System Status */
+#define SD_CSRE         0x124  /* Card Status Response Error */
+#define SD_SYSTEST      0x128  /* System Test */
+#define SD_CON          0x12C  /* Configuration */
+#define SD_PWCNT        0x130  /* Power Counter */
+#define SD_SDMASA       0x200  /* SDMA System Address */
+#define SD_BLK          0x204  /* Transfer Length Configuration */
+#define SD_ARG          0x208  /* Command Argument */
+#define SD_CMD          0x20C  /* Command and Transfer Mode */
+#define SD_RSP10        0x210  /* Command Response 0 and 1 */
+#define SD_RSP32        0x214  /* Command Response 2 and 3 */
+#define SD_RSP54        0x218  /* Command Response 4 and 5 */
+#define SD_RSP76        0x21C  /* Command Response 6 and 7 */
+#define SD_DATA         0x220  /* Data */
+#define SD_PSTATE       0x224  /* Present State */
+#define SD_HCTL         0x228  /* Host Control */
+#define SD_SYSCTL       0x22C  /* SD System Control */
+#define SD_STAT         0x230  /* Interrupt Status */
+#define SD_IE           0x234  /* Interrupt Enable */
+#define SD_ISE          0x238  /* Interrupt Enable Set */
+#define SD_AC12         0x23C  /* Auto CMD12 Error Status */
+#define SD_CAPA         0x240  /* Capabilities */
+#define SD_CUR_CAPA     0x248  /* Maximum Current Capabilities */
+#define SD_FE           0x250  /* Force Event */
+#define SD_ADMAES       0x254  /* ADMA Error Status */
+#define SD_ADMASAL      0x258  /* ADMA System Address Low bits */
+#define SD_ADMASAH      0x25C  /* ADMA System Address High bits */
+#define SD_REV          0x2FC  /* Versions */
+
+/*Control Module Registers for Pin Muxing*/
+#define CONTROL_MODULE_BASE    0x44E10000
+#define CONF_MMC0_DAT3        (CONTROL_MODULE_BASE + 0x8F0)
+#define CONF_MMC0_DAT2        (CONTROL_MODULE_BASE + 0x8F4)
+#define CONF_MMC0_DAT1        (CONTROL_MODULE_BASE + 0x8F8)
+#define CONF_MMC0_DAT0        (CONTROL_MODULE_BASE + 0x8FC)
+#define CONF_MMC0_CLK         (CONTROL_MODULE_BASE + 0x900)
+#define CONF_MMC0_CMD         (CONTROL_MODULE_BASE + 0x904)
+
+#define CONTROL_CONF_MMC0_DAT3   (0x8f0)
+#define CONTROL_CONF_MMC0_DAT2   (0x8f4)
+#define CONTROL_CONF_MMC0_DAT1   (0x8f8)
+#define CONTROL_CONF_MMC0_DAT0   (0x8fc)
+#define CONTROL_CONF_MMC0_CLK   (0x900)
+#define CONTROL_CONF_MMC0_CMD   (0x904)
+
+
+/* CONF_MMC0_DAT3 */
+#define CONTROL_CONF_MMC0_DAT3_CONF_MMC0_DAT3_MMODE   (0x00000007u)
+#define CONTROL_CONF_MMC0_DAT3_CONF_MMC0_DAT3_MMODE_SHIFT   (0x00000000u)
+
+#define CONTROL_CONF_MMC0_DAT3_CONF_MMC0_DAT3_PUDEN   (0x00000008u)
+#define CONTROL_CONF_MMC0_DAT3_CONF_MMC0_DAT3_PUDEN_SHIFT   (0x00000003u)
+
+#define CONTROL_CONF_MMC0_DAT3_CONF_MMC0_DAT3_PUTYPESEL   (0x00000010u)
+#define CONTROL_CONF_MMC0_DAT3_CONF_MMC0_DAT3_PUTYPESEL_SHIFT   (0x00000004u)
+
+#define CONTROL_CONF_MMC0_DAT3_CONF_MMC0_DAT3_RSVD   (0x000FFF80u)
+#define CONTROL_CONF_MMC0_DAT3_CONF_MMC0_DAT3_RSVD_SHIFT   (0x00000007u)
+
+#define CONTROL_CONF_MMC0_DAT3_CONF_MMC0_DAT3_RXACTIVE   (0x00000020u)
+#define CONTROL_CONF_MMC0_DAT3_CONF_MMC0_DAT3_RXACTIVE_SHIFT   (0x00000005u)
+
+#define CONTROL_CONF_MMC0_DAT3_CONF_MMC0_DAT3_SLEWCTRL   (0x00000040u)
+#define CONTROL_CONF_MMC0_DAT3_CONF_MMC0_DAT3_SLEWCTRL_SHIFT   (0x00000006u)
+
+
+/* CONF_MMC0_DAT2 */
+#define CONTROL_CONF_MMC0_DAT2_CONF_MMC0_DAT2_MMODE   (0x00000007u)
+#define CONTROL_CONF_MMC0_DAT2_CONF_MMC0_DAT2_MMODE_SHIFT   (0x00000000u)
+
+#define CONTROL_CONF_MMC0_DAT2_CONF_MMC0_DAT2_PUDEN   (0x00000008u)
+#define CONTROL_CONF_MMC0_DAT2_CONF_MMC0_DAT2_PUDEN_SHIFT   (0x00000003u)
+
+#define CONTROL_CONF_MMC0_DAT2_CONF_MMC0_DAT2_PUTYPESEL   (0x00000010u)
+#define CONTROL_CONF_MMC0_DAT2_CONF_MMC0_DAT2_PUTYPESEL_SHIFT   (0x00000004u)
+
+#define CONTROL_CONF_MMC0_DAT2_CONF_MMC0_DAT2_RSVD   (0x000FFF80u)
+#define CONTROL_CONF_MMC0_DAT2_CONF_MMC0_DAT2_RSVD_SHIFT   (0x00000007u)
+
+#define CONTROL_CONF_MMC0_DAT2_CONF_MMC0_DAT2_RXACTIVE   (0x00000020u)
+#define CONTROL_CONF_MMC0_DAT2_CONF_MMC0_DAT2_RXACTIVE_SHIFT   (0x00000005u)
+
+#define CONTROL_CONF_MMC0_DAT2_CONF_MMC0_DAT2_SLEWCTRL   (0x00000040u)
+#define CONTROL_CONF_MMC0_DAT2_CONF_MMC0_DAT2_SLEWCTRL_SHIFT   (0x00000006u)
+
+
+/* CONF_MMC0_DAT1 */
+#define CONTROL_CONF_MMC0_DAT1_CONF_MMC0_DAT1_MMODE   (0x00000007u)
+#define CONTROL_CONF_MMC0_DAT1_CONF_MMC0_DAT1_MMODE_SHIFT   (0x00000000u)
+
+#define CONTROL_CONF_MMC0_DAT1_CONF_MMC0_DAT1_PUDEN   (0x00000008u)
+#define CONTROL_CONF_MMC0_DAT1_CONF_MMC0_DAT1_PUDEN_SHIFT   (0x00000003u)
+
+#define CONTROL_CONF_MMC0_DAT1_CONF_MMC0_DAT1_PUTYPESEL   (0x00000010u)
+#define CONTROL_CONF_MMC0_DAT1_CONF_MMC0_DAT1_PUTYPESEL_SHIFT   (0x00000004u)
+
+#define CONTROL_CONF_MMC0_DAT1_CONF_MMC0_DAT1_RSVD   (0x000FFF80u)
+#define CONTROL_CONF_MMC0_DAT1_CONF_MMC0_DAT1_RSVD_SHIFT   (0x00000007u)
+
+#define CONTROL_CONF_MMC0_DAT1_CONF_MMC0_DAT1_RXACTIVE   (0x00000020u)
+#define CONTROL_CONF_MMC0_DAT1_CONF_MMC0_DAT1_RXACTIVE_SHIFT   (0x00000005u)
+
+#define CONTROL_CONF_MMC0_DAT1_CONF_MMC0_DAT1_SLEWCTRL   (0x00000040u)
+#define CONTROL_CONF_MMC0_DAT1_CONF_MMC0_DAT1_SLEWCTRL_SHIFT   (0x00000006u)
+
+
+/* CONF_MMC0_DAT0 */
+#define CONTROL_CONF_MMC0_DAT0_CONF_MMC0_DAT0_MMODE   (0x00000007u)
+#define CONTROL_CONF_MMC0_DAT0_CONF_MMC0_DAT0_MMODE_SHIFT   (0x00000000u)
+
+#define CONTROL_CONF_MMC0_DAT0_CONF_MMC0_DAT0_PUDEN   (0x00000008u)
+#define CONTROL_CONF_MMC0_DAT0_CONF_MMC0_DAT0_PUDEN_SHIFT   (0x00000003u)
+
+#define CONTROL_CONF_MMC0_DAT0_CONF_MMC0_DAT0_PUTYPESEL   (0x00000010u)
+#define CONTROL_CONF_MMC0_DAT0_CONF_MMC0_DAT0_PUTYPESEL_SHIFT   (0x00000004u)
+
+#define CONTROL_CONF_MMC0_DAT0_CONF_MMC0_DAT0_RSVD   (0x000FFF80u)
+#define CONTROL_CONF_MMC0_DAT0_CONF_MMC0_DAT0_RSVD_SHIFT   (0x00000007u)
+
+#define CONTROL_CONF_MMC0_DAT0_CONF_MMC0_DAT0_RXACTIVE   (0x00000020u)
+#define CONTROL_CONF_MMC0_DAT0_CONF_MMC0_DAT0_RXACTIVE_SHIFT   (0x00000005u)
+
+#define CONTROL_CONF_MMC0_DAT0_CONF_MMC0_DAT0_SLEWCTRL   (0x00000040u)
+#define CONTROL_CONF_MMC0_DAT0_CONF_MMC0_DAT0_SLEWCTRL_SHIFT   (0x00000006u)
+
+
+/* CONF_MMC0_CLK */
+#define CONTROL_CONF_MMC0_CLK_CONF_MMC0_CLK_MMODE   (0x00000007u)
+#define CONTROL_CONF_MMC0_CLK_CONF_MMC0_CLK_MMODE_SHIFT   (0x00000000u)
+
+#define CONTROL_CONF_MMC0_CLK_CONF_MMC0_CLK_PUDEN   (0x00000008u)
+#define CONTROL_CONF_MMC0_CLK_CONF_MMC0_CLK_PUDEN_SHIFT   (0x00000003u)
+
+#define CONTROL_CONF_MMC0_CLK_CONF_MMC0_CLK_PUTYPESEL   (0x00000010u)
+#define CONTROL_CONF_MMC0_CLK_CONF_MMC0_CLK_PUTYPESEL_SHIFT   (0x00000004u)
+
+#define CONTROL_CONF_MMC0_CLK_CONF_MMC0_CLK_RSVD   (0x000FFF80u)
+#define CONTROL_CONF_MMC0_CLK_CONF_MMC0_CLK_RSVD_SHIFT   (0x00000007u)
+
+#define CONTROL_CONF_MMC0_CLK_CONF_MMC0_CLK_RXACTIVE   (0x00000020u)
+#define CONTROL_CONF_MMC0_CLK_CONF_MMC0_CLK_RXACTIVE_SHIFT   (0x00000005u)
+
+#define CONTROL_CONF_MMC0_CLK_CONF_MMC0_CLK_SLEWCTRL   (0x00000040u)
+#define CONTROL_CONF_MMC0_CLK_CONF_MMC0_CLK_SLEWCTRL_SHIFT   (0x00000006u)
+
+
+/* CONF_MMC0_CMD */
+#define CONTROL_CONF_MMC0_CMD_CONF_MMC0_CMD_MMODE   (0x00000007u)
+#define CONTROL_CONF_MMC0_CMD_CONF_MMC0_CMD_MMODE_SHIFT   (0x00000000u)
+
+#define CONTROL_CONF_MMC0_CMD_CONF_MMC0_CMD_PUDEN   (0x00000008u)
+#define CONTROL_CONF_MMC0_CMD_CONF_MMC0_CMD_PUDEN_SHIFT   (0x00000003u)
+
+#define CONTROL_CONF_MMC0_CMD_CONF_MMC0_CMD_PUTYPESEL   (0x00000010u)
+#define CONTROL_CONF_MMC0_CMD_CONF_MMC0_CMD_PUTYPESEL_SHIFT   (0x00000004u)
+
+#define CONTROL_CONF_MMC0_CMD_CONF_MMC0_CMD_RSVD   (0x000FFF80u)
+#define CONTROL_CONF_MMC0_CMD_CONF_MMC0_CMD_RSVD_SHIFT   (0x00000007u)
+
+#define CONTROL_CONF_MMC0_CMD_CONF_MMC0_CMD_RXACTIVE   (0x00000020u)
+#define CONTROL_CONF_MMC0_CMD_CONF_MMC0_CMD_RXACTIVE_SHIFT   (0x00000005u)
+
+#define CONTROL_CONF_MMC0_CMD_CONF_MMC0_CMD_SLEWCTRL   (0x00000040u)
+#define CONTROL_CONF_MMC0_CMD_CONF_MMC0_CMD_SLEWCTRL_SHIFT   (0x00000006u)
+
+
+/* CONF_SPI0_CS1 */
+#define CONTROL_CONF_SPI0_CS1_CONF_SPI0_CS1_MMODE   (0x00000007u)
+#define CONTROL_CONF_SPI0_CS1_CONF_SPI0_CS1_MMODE_SHIFT   (0x00000000u)
+
+#define CONTROL_CONF_SPI0_CS1_CONF_SPI0_CS1_PUDEN   (0x00000008u)
+#define CONTROL_CONF_SPI0_CS1_CONF_SPI0_CS1_PUDEN_SHIFT   (0x00000003u)
+
+#define CONTROL_CONF_SPI0_CS1_CONF_SPI0_CS1_PUTYPESEL   (0x00000010u)
+#define CONTROL_CONF_SPI0_CS1_CONF_SPI0_CS1_PUTYPESEL_SHIFT   (0x00000004u)
+
+#define CONTROL_CONF_SPI0_CS1_CONF_SPI0_CS1_RSVD   (0x000FFF80u)
+#define CONTROL_CONF_SPI0_CS1_CONF_SPI0_CS1_RSVD_SHIFT   (0x00000007u)
+
+#define CONTROL_CONF_SPI0_CS1_CONF_SPI0_CS1_RXACTIVE   (0x00000020u)
+#define CONTROL_CONF_SPI0_CS1_CONF_SPI0_CS1_RXACTIVE_SHIFT   (0x00000005u)
+
+#define CONTROL_CONF_SPI0_CS1_CONF_SPI0_CS1_SLEWCTRL   (0x00000040u)
+#define CONTROL_CONF_SPI0_CS1_CONF_SPI0_CS1_SLEWCTRL_SHIFT   (0x00000006u)
+
+
+#define CONTROL_CONF_SPI0_CS1   (0x960)
+
+
+
+/*SD commands*/
+#define CMD0  0x0
+#define CMD1  0x1
+#define CMD2 0x2
+#define CMD3 0x3
+#define CMD4 0x4
+#define CMD5 0x5
+#define CMD6 0x6
+#define CMD7 0x7
+#define CMD8 0x8
+#define CMD9 0x9
+#define CMD10 0x0A
+#define CMD11 0x0B
+#define CMD12 0x0C
+#define CMD13 0x0D
+#define CMD14 0x0E
+#define CMD15 0x0F
+#define CMD16 0x10
+#define CMD17 0x11
+#define CMD18 0x12
+#define CMD19 0x13
+#define CMD20 0x14
+#define CMD21 0x15
+#define CMD22 0x16
+#define CMD23 0x17
+#define CMD24 0x18
+#define CMD25 0x19
+#define CMD26 0x1A
+#define CMD27 0x1B
+#define CMD28 0x1C
+#define CMD29 0x1D
+#define CMD30 0x1E
+#define CMD31 0x1F
+#define CMD32 0x20
+#define CMD33 0x21
+#define CMD34 0x22
+#define CMD35 0x23
+#define CMD36 0x24
+#define CMD37 0x25
+#define CMD38 0x26
+#define CMD39 0x27
+#define CMD40 0x28
+#define CMD41 0x29
+#define CMD42 0x2A
+#define CMD43 0x2B
+#define CMD44 0x2C
+#define CMD45 0x2D
+#define CMD46 0x2E
+#define CMD47 0x2F
+#define CMD48 0x30
+#define CMD49 0x31
+#define CMD50 0x32
+#define CMD51 0x33
+#define CMD52 0x34
+#define CMD53 0x35
+#define CMD54 0x36
+#define CMD55 0x37
+#define CMD56 0x38
+#define CMD57 0x39
+#define CMD58 0x3A
+#define CMD59 0x3B
+#define CMD60 0x3C
+#define CMD61 0x3D
+#define CMD62 0x3E
+#define CMD63 0x3F
+
+/* Application-specific commands (ACMD)*/
+#define ACMD0  0x00
+#define ACMD1 0x01
+#define ACMD2  0x02
+#define ACMD3  0x03
+#define ACMD4  0x04
+#define ACMD5  0x05
+#define ACMD6  0x06
+#define ACMD7  0x07
+#define ACMD8  0x08
+#define ACMD9  0x09
+#define ACMD10  0x0A
+#define ACMD11  0x0B
+#define ACMD12  0x0C
+#define ACMD13  0x0D
+#define ACMD14  0x0E
+#define ACMD15  0x0F
+#define ACMD16  0x10
+#define ACMD17  0x11
+#define ACMD18  0x12
+#define ACMD19  0x13
+#define ACMD20  0x14
+#define ACMD21  0x15
+#define ACMD22  0x16
+#define ACMD23  0x17
+#define ACMD24  0x18
+#define ACMD25  0x19
+#define ACMD26  0x1A
+#define ACMD27  0x1B
+#define ACMD28  0x1C
+#define ACMD29  0x1D
+#define ACMD30  0x1E
+#define ACMD31  0x1F
+#define ACMD32  0x20
+#define ACMD33  0x21
+#define ACMD34  0x22
+#define ACMD35  0x23
+#define ACMD36  0x24
+#define ACMD37  0x25
+#define ACMD38  0x26
+#define ACMD39  0x27
+#define ACMD40  0x28
+#define ACMD41  0x29
+#define ACMD42  0x2A
+#define ACMD43  0x2B
+#define ACMD44  0x2C
+#define ACMD45  0x2D
+#define ACMD46  0x2E
+#define ACMD47  0x2F
+#define ACMD48  0x30
+#define ACMD49  0x31
+#define ACMD50  0x32
+#define ACMD51  0x33
+
+#endif

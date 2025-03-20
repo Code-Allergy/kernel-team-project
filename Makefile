@@ -5,6 +5,7 @@ ifeq ($(PLATFORM),QEMU)
     TOP_DIR = ./qemu
 endif
 
+QEMU_DIR        = $(TOP_DIR)/qemu
 BOOT_DIR 		= $(TOP_DIR)/boot
 DRIVERS_DIR 	= $(OS_DIR)/drivers
 BUILD_DIR 		= $(TOP_DIR)/build
@@ -27,10 +28,11 @@ export CFLAGS 	= 	-Wall \
 					-mfloat-abi=soft \
 					-pedantic \
 					-ffreestanding \
-					-fbuiltin \
+					-fno-builtin \
 					-marm \
 					-MMD \
 					-MP \
+					-g \
 					$(CCDEFINES)
 
 LIBGCC = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
@@ -46,6 +48,7 @@ else
 	export MAKE_SDIMG_SCRIPT = $(TOP_DIR)/sdimager/mksdimage-rootless.sh
 endif
 
+.PHONY: all utils drivers fs mmu boot kernel interrupts os clean sdimg flash qemu qemu-run
 all: boot sdimg
 
 utils:
@@ -66,14 +69,19 @@ fs: utils
 		PLATFORM=$(PLATFORM) \
 		fs
 
-boot: utils drivers fs interrupts
+mmu: utils
+	make -f $(OS_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM) \
+		mmu
+
+boot: utils drivers fs interrupts mmu | $(BUILD_DIR)
 	make -f $(BOOT_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM)
-	mkdir -p $(BUILD_DIR)
 	cp $(BOOT_DIR)/build/MLO $(BOOT_DIR)/build/boot_disassembly.txt $(BUILD_DIR)/
 
-kernel: | $(BUILD_DIR)
+kernel: utils drivers fs interrupts mmu | $(BUILD_DIR)
 	make -f $(OS_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM) \
@@ -93,6 +101,7 @@ os: utils
 		PLATFORM=$(PLATFORM)
 
 clean:
+	rm -rf $(BUILD_DIR)
 	make -f $(OS_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM) \
@@ -117,6 +126,18 @@ qemu-gdb: $(OUTPUT_SDIMG)
 	qemu-img resize $(OUTPUT_SDIMG) 128M
 	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(BOOT_DIR)/build/bootloader.bin -sd $(OUTPUT_SDIMG) -d guest_errors,unimp,int \
 	 -S -gdb tcp::1234
+
+qemu: _qemu
+_qemu: $(OUTPUT_SDIMG)
+	$(MAKE) TOP_DIR=$(QEMU_DIR) \
+        PLATFORM=QEMU qemu-run
+
+
+
 qemu-run: $(OUTPUT_SDIMG)
 	qemu-img resize $(OUTPUT_SDIMG) 128M
 	qemu-system-arm -M cubieboard -cpu cortex-a8 -nographic -kernel $(BOOT_DIR)/build/bootloader.bin -sd $(OUTPUT_SDIMG) -d guest_errors,unimp,int -D qemu.log
+
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)

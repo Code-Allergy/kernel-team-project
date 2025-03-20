@@ -28,11 +28,14 @@
 .global reserved_handler_asm
 
 .extern intc_vector_table
+.extern undef_handler
+.extern prefetch_abort_handler
+.extern data_abort_handler
 
 .section .text
 
 reset_handler_asm:
-    .word __init
+    /* .word __init */
     b .
 
 irq_handler_asm:
@@ -43,12 +46,12 @@ irq_handler_asm:
 
     /* Save the threshold value */
     ldr      r0, =(INTC_BASE_ADDR + INTC_THRESHOLD_OFF)
-    ldr      r1, [r0, #0]             
-    stmfd    r13!, {r1}                                         
-    
-    /* Set the priority as threshold. 
+    ldr      r1, [r0, #0]
+    stmfd    r13!, {r1}
+
+    /* Set the priority as threshold.
     interrupt with priority less than threshold will not be serviced */
-    ldr      r2, =(INTC_BASE_ADDR + INTC_IRQ_PRIORITY_OFF)      
+    ldr      r2, =(INTC_BASE_ADDR + INTC_IRQ_PRIORITY_OFF)
     ldr      r3, [r2, #0]
     str      r3, [r0, #0]
 
@@ -57,7 +60,7 @@ irq_handler_asm:
     ldr      r2, [r1]
     and      r2, r2, #0x7f
 
-    /* Enable new IRQ generation if priority is > 0 (maskable)*/ 
+    /* Enable new IRQ generation if priority is > 0 (maskable)*/
     mov      r0, #0x01
     ldr      r1, =(INTC_BASE_ADDR + INTC_CONTROL_OFF)
     cmp      r3, #0
@@ -69,7 +72,7 @@ irq_handler_asm:
     orr      r14, r14, #MODE_System   /* Switch to System Mode */
     bicne    r14, r14, #I_BIT         /* Enable IRQ if priority > 0 */
     msr      cpsr, r14
-                            
+
     stmfd    r13!, {r14}              /* Save lr_usr */
 
     ldr      r0, =intc_vector_table   /* Load the base of the vector table */
@@ -84,13 +87,13 @@ irq_handler_asm:
 
     ldr      r0, =(INTC_BASE_ADDR + INTC_THRESHOLD_OFF)      /* Get the IRQ Threshold */
     ldr      r1, [r0, #0]
-    /* If the threshold is 0, then enable new IRQ generation 
+    /* If the threshold is 0, then enable new IRQ generation
     (was disabled in the beginning) */
     cmp      r1, #0                   /* If priority 0 */
     moveq    r2, #0x01                /* Enable new IRQ Generation */
-    ldreq    r1, =(INTC_BASE_ADDR + INTC_CONTROL_OFF) 
+    ldreq    r1, =(INTC_BASE_ADDR + INTC_CONTROL_OFF)
     streq    r2, [r1]
-    
+
     ldmfd    r13!, {r1}
     str      r1, [r0, #0]             /* Restore the threshold value */
     ldmfd    r13!, {r12}
@@ -102,16 +105,19 @@ irq_handler_asm:
 
 /* Unimplemented handlers */
 undef_handler_asm:
+    b undef_handler
 svc_handler_asm:
 prefetch_abort_handler_asm:
+    b prefetch_abort_handler
 data_abort_handler_asm:
+    b data_abort_handler
 fiq_handler_asm:
 reserved_handler_asm:
     b .
 
 /**
 * @brief Set the vector table base address
-* 
+*
 * @param r0 - Address of the vector table
 */
 .global set_vector_table_base_addr_asm
