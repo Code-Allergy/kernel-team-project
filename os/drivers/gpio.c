@@ -32,3 +32,7 @@ void GPIO_clear(unsigned int gpio_base, unsigned int pins)
 {
     REG32_write_masked(gpio_base, GPIO_CLEARDATAOUT_OFF, pins, pins);
 }
+
+int GPIO_get(unsigned int gpio_base, unsigned int pin) {
+	return REG32_read(gpio_base, pin);
+}
