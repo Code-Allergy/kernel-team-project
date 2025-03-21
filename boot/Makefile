@@ -57,6 +57,7 @@ OBJFILES := $(patsubst $(BOOT_DIR)/%.S,$(BOOT_DIR)/build/%.o,$(S_FILES)) \
 			$(UTILS_DIR)/build/utils.o \
 			$(UTILS_DIR)/build/circular_buffer.o \
 			$(INTERRUPTS_DIR)/build/interrupt.o \
+			$(INTERRUPTS_DIR)/build/syscall.o \
 			$(INTERRUPTS_DIR)/build/interrupt_handlers.o \
 			$(FS_DIR)/build/fat32.o
 

@@ -4,14 +4,10 @@
 #include <interrupt.h>
 #include <ddr.h>
 #include <timer.h>
+#include <syscall.h>
 
 
 extern void setup_vbar();
-#define LED_PINS    (0xF << 21)
-#define LED0        (0x1 << 21)
-#define LED1        (0x2 << 21)
-#define LED2        (0x4 << 21)
-#define LED3        (0x6 << 21)
 
 bool tick_led_on = false;
 
@@ -63,6 +59,20 @@ static inline void gpio_test()
     timer_start(TIMER2);
     timer_val = timer_value(TIMER2);
     uart_printf("Timer counting?. value: %u\n", timer_val);
+    GPIO_clear(GPIO1_BASE, LED_PINS);
+    setup_syscall_table();
+ 
+    // GpioSetPinMode(GPIO1_BASE, DRIVER_PINS, GpioPinOut);
+    // GPIO_clear(GPIO1_BASE, DRIVER_PINS);
+    //GPIO_set(GPIO1_BASE, DRIVER_ENA | DRIVER_ENB | DRIVER_IN1 | DRIVER_IN3);
+    //GPIO_set(GPIO1_BASE, DRIVER_IN1 | DRIVER_IN3);
+
+    while(1){
+        delay(2);
+        syscall(SYS_READ, 0);
+        delay(2);
+        GPIO_clear(GPIO1_BASE, LED2|LED3); /* set when sys_read is called (debugging)*/
+    }
 
 
     /*
