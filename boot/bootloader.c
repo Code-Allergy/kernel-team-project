@@ -9,6 +9,7 @@
 #include <boot.h>
 #include <utils.h>
 #include <fat32.h>
+#include <syscall.h>
 
 #define KERNEL_MAGIC 0x1B1B1B1B
 #define BOOTLOADER_MAGIC 0x2B2B2B2B
@@ -21,6 +22,7 @@ extern void setup_vbar(void);
 #define LED1        (0x2 << 21)
 #define LED2        (0x4 << 21)
 #define LED3        (0x6 << 21)
+
 
 bool tick_led_on = false;
 
@@ -68,6 +70,20 @@ static inline void gpio_test(void)
     timer_start(TIMER2);
     timer_val = timer_value(TIMER2);
     uart_printf("Timer counting?. value: %u\n", timer_val);
+    GPIO_clear(GPIO1_BASE, LED_PINS);
+    setup_syscall_table();
+ 
+    // GpioSetPinMode(GPIO1_BASE, DRIVER_PINS, GpioPinOut);
+    // GPIO_clear(GPIO1_BASE, DRIVER_PINS);
+    //GPIO_set(GPIO1_BASE, DRIVER_ENA | DRIVER_ENB | DRIVER_IN1 | DRIVER_IN3);
+    //GPIO_set(GPIO1_BASE, DRIVER_IN1 | DRIVER_IN3);
+
+    while(1){
+        delay(2);
+        syscall(SYS_READ, 0);
+        delay(2);
+        GPIO_clear(GPIO1_BASE, LED2|LED3); /* set when sys_read is called (debugging)*/
+    }
 
 
     /*

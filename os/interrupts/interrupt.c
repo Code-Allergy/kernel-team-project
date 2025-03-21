@@ -1,5 +1,4 @@
 #include <interrupt.h>
-#include <syscall.h>
 #include <types.h>
 #include <utils.h>
 #include <uart.h>
@@ -122,7 +121,7 @@ static unsigned int const vector_table[] = {
     (unsigned int)fiq_handler_asm
 };
 
-extern set_vector_table_base_addr_asm(unsigned int addr);
+extern void set_vector_table_base_addr_asm(unsigned int addr);
 
 void setup_vector_table(void) {
     uint16_t i;
