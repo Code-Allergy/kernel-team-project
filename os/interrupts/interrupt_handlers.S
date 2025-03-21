@@ -151,7 +151,6 @@ syscall:
 /* Unimplemented handlers */
 undef_handler_asm:
     b undef_handler
-svc_handler_asm:
 prefetch_abort_handler_asm:
     b prefetch_abort_handler
 data_abort_handler_asm:
