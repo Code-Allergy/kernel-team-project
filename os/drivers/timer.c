@@ -12,6 +12,7 @@ void handle_timer6_irq();
 void handle_timer7_irq();
 void handle_timer_irq(uint16_t timer_index);
 
+/*
 static const int timer_l4ls_clk_en_bit[8] = {
     -1,
     -1,
@@ -22,6 +23,7 @@ static const int timer_l4ls_clk_en_bit[8] = {
     1 << 28,
     1 << 13
 };
+*/
 
 static const uint32_t timer_base[8] = {
     -1,
