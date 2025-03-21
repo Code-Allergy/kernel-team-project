@@ -25,12 +25,12 @@ void GpioSetPinMode(const enum GpioIOBase Gpio, const unsigned int PinMask, cons
 
 void GPIO_set(unsigned int gpio_base, unsigned int pins)
 {
-    REG32_write_masked(gpio_base, GPIO_SETDATAOUT_OFF, pins, pins);
+    REG32_write(gpio_base, GPIO_SETDATAOUT_OFF, pins);
 }
 
 void GPIO_clear(unsigned int gpio_base, unsigned int pins)
 {
-    REG32_write_masked(gpio_base, GPIO_CLEARDATAOUT_OFF, pins, pins);
+    REG32_write(gpio_base, GPIO_CLEARDATAOUT_OFF, pins);
 }
 
 int GPIO_get(unsigned int gpio_base, unsigned int pin) {
