@@ -828,12 +828,7 @@ static int check_sector0_for_fat32(const uint8_t* sector_buffer, uint32_t* start
 static int validate_fat32_boot_sector(const Fat32BootSector* boot_sector)
 {
     uint32_t boot_sector_sig = read_unaligned_uint32(&boot_sector->bootSectorSig);
-    uint8_t sectorsPerCluster = boot_sector->sectorsPerCluster;
-    uint16_t reservedSectors = read_unaligned_uint16(&boot_sector->reservedSectors);
-    uint8_t numFATs = boot_sector->numFATs;
-    uint32_t sectorsPerFAT32 = read_unaligned_uint32(&boot_sector->sectorsPerFAT32);
-    if (boot_sector_sig != FAT32_BOOT_SECTOR_SIGNATURE || sectorsPerCluster == 0 ||
-        reservedSectors == 0 || numFATs == 0)
+    if (boot_sector_sig != FAT32_BOOT_SECTOR_SIGNATURE)
     {
         return FAT32_ERROR_INVALID_BOOT_SECTOR;
     }
