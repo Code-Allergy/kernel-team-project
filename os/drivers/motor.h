@@ -33,7 +33,7 @@ int motor_read(int motor_num, void* buf, int count);
 int motor_write(int motor_num, void* buf, int count);
 int motor_ioctl(int cmd, int value);
 
-void motor_test_sequence(void);
+void motor_test_sequence(void (*delay)(unsigned int));
 
 #endif //__MOTOR_H__
 

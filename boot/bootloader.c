@@ -10,6 +10,7 @@
 #include <utils.h>
 #include <fat32.h>
 #include <syscall.h>
+#include <motor.h>
 
 #define KERNEL_MAGIC 0x1B1B1B1B
 #define BOOTLOADER_MAGIC 0x2B2B2B2B
@@ -27,7 +28,8 @@ extern void setup_vbar(void);
 bool tick_led_on = false;
 
 uint32_t tick_secs = 0;
-static inline void delay(unsigned int secs)
+
+void delay(unsigned int secs)
 {
     uint32_t wait = tick_secs + secs;
     while (tick_secs < wait)
@@ -73,11 +75,7 @@ static inline void gpio_test(void)
     GPIO_clear(GPIO1_BASE, LED_PINS);
     setup_syscall_table();
  
-    // GpioSetPinMode(GPIO1_BASE, DRIVER_PINS, GpioPinOut);
-    // GPIO_clear(GPIO1_BASE, DRIVER_PINS);
-    //GPIO_set(GPIO1_BASE, DRIVER_ENA | DRIVER_ENB | DRIVER_IN1 | DRIVER_IN3);
-    //GPIO_set(GPIO1_BASE, DRIVER_IN1 | DRIVER_IN3);
-
+    motor_test_sequence(&delay); /* infinite loop */
     while(1){
         delay(2);
         syscall(SYS_READ, 0);

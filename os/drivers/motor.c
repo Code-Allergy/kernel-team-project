@@ -6,12 +6,12 @@
 
 #define LEFT 0
 #define RIGHT 1
-#define LEFT_MOTOR_PIN1  (0x1 << 2)
-#define LEFT_MOTOR_PIN2  (0x1 << 3)
-#define RIGHT_MOTOR_PIN1 (0x1 << 4)
-#define RIGHT_MOTOR_PIN2 (0x1 << 5)
-#define LEFT_MOTOR_EN    (0x1 << 6)
-#define RIGHT_MOTOR_EN   (0x1 << 7)
+#define LEFT_MOTOR_PIN1  (0x1 << 5)
+#define LEFT_MOTOR_PIN2  (0x1 << 4)
+#define RIGHT_MOTOR_PIN1 (0x1 << 2)
+#define RIGHT_MOTOR_PIN2 (0x1 << 3)
+#define LEFT_MOTOR_EN    (0x1 << 7)
+#define RIGHT_MOTOR_EN   (0x1 << 6)
 motor_t motors[NUM_MOTORS];
 
 
@@ -22,7 +22,7 @@ void motors_set_dir(int dirs);
 
 void motors_stop() {
 	int i;
-	for (i = 0; i < NUM_MOTORS; i++) {
+	for (i = 0; i < NUM_MOTORS; i++) { 
 		GPIO_clear(motors[i].gpio_base, motors[i].en_pin);
 	}
 }
@@ -200,27 +200,26 @@ int motor_write(int motor_num, void* buf, int count) {
 /*
  * Test sequence for the motor driver
  */
-extern void delay(unsigned int secs);
-void motor_test_sequence(void) {
+ void motor_test_sequence(void (*delay)(unsigned int)) {
 	int i;
 
 	motor_init();
 	
 	while(1){
+		delay(5);
 		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD);
-		delay(5);
+		delay(2);
 		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD);
-		delay(5);
+		delay(2);
 		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD | MOTOR_DIR_LEFT);
-		delay(5);
+		delay(2);
 		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD | MOTOR_DIR_LEFT);
-		delay(5);
+		delay(2);
 		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD | MOTOR_DIR_RIGHT);
-		delay(5);
+		delay(2);
 		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD | MOTOR_DIR_RIGHT);
-		delay(5);
+		delay(2);
 		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_STOP);
-		delay(5);
 	}
 }
 
