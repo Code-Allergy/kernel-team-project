@@ -23,7 +23,6 @@ extern void setup_vbar(void);
 #define LED2        (0x4 << 21)
 #define LED3        (0x6 << 21)
 
-
 bool tick_led_on = false;
 
 uint32_t tick_secs = 0;
