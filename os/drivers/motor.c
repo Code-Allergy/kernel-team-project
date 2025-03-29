@@ -107,6 +107,21 @@ void motors_set_dir(int dirs){
 
 
 
+/**
+ * @brief Handles motor control operations based on the given command.
+ *
+ * This function processes motor control commands and performs the appropriate
+ * actions, such as setting the motor direction or speed.
+ * motors are stopped before executing the command and restarted afterward.
+ *
+ * @param cmd The command to execute. Supported commands:
+ *            - MOTOR_SET_DIR: Set the motor direction.
+ *            - MOTOR_SET_SPEED: Set the motor speed (currently unimplemented).
+ * @param value The value associated with the command. For example, the direction
+ *              or speed value.
+ *
+ * @return returns 0 on success or error code on failure.
+ */
 int motor_ioctl(int cmd, int value) {
 	int i;
 	motors_stop();
@@ -138,8 +153,8 @@ int motor_read(int motor_num, void* buf, int count) {
 		return -1;
 
 	motor = motors[motor_num];
-	pin1_value = GPIO_read(motor.gpio_base, motor.pin1);
-	pin2_value = GPIO_read(motor.gpio_base, motor.pin2);
+	pin1_value = GPIO_get(motor.gpio_base, motor.pin1);
+	pin2_value = GPIO_get(motor.gpio_base, motor.pin2);
 	if ((pin1_value == 0 && pin2_value == 0) || (pin1_value == 1 && pin2_value == 1))
 		v = 0;	
 	if ((pin1_value == 0 && pin2_value == 1))
@@ -178,6 +193,34 @@ int motor_write(int motor_num, void* buf, int count) {
 		GPIO_clear(motor.gpio_base, motor.pin1);
 		GPIO_set(motor.gpio_base, motor.pin2);
 		return 0;
+	}
+}
+
+
+/*
+ * Test sequence for the motor driver
+ */
+extern void delay(unsigned int secs);
+void motor_test_sequence(void) {
+	int i;
+
+	motor_init();
+	
+	while(1){
+		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD);
+		delay(5);
+		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD);
+		delay(5);
+		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD | MOTOR_DIR_LEFT);
+		delay(5);
+		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD | MOTOR_DIR_LEFT);
+		delay(5);
+		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD | MOTOR_DIR_RIGHT);
+		delay(5);
+		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD | MOTOR_DIR_RIGHT);
+		delay(5);
+		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_STOP);
+		delay(5);
 	}
 }
 

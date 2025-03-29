@@ -58,6 +58,7 @@ OBJFILES := $(patsubst $(BOOT_DIR)/%.S,$(BOOT_DIR)/build/%.o,$(S_FILES)) \
 			$(DRIVERS_DIR)/build/uart.o \
 			$(DRIVERS_DIR)/build/gpio.o \
 			$(DRIVERS_DIR)/build/timer.o \
+			$(DRIVERS_DIR)/build/motor.o \
 			$(UTILS_DIR)/build/utils.o \
 			$(UTILS_DIR)/build/circular_buffer.o \
 			$(INTERRUPTS_DIR)/build/interrupt.o \
