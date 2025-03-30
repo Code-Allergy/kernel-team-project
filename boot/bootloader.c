@@ -135,33 +135,36 @@ void __BootloaderEntry(void)
     int32_t i, res;
     int32_t current_frame;
     int32_t text_section_size, data_section_size, bss_section_size;
-    int32_t text_sections, kernel_size;
-    int32_t data_sections;
-    int32_t bss_section_offset;
-    int32_t bss_section_paddr;
-    uint32_t* l1_tables;
-    const char* str1  = "kien";
-    const char* str2  = "sittineiwog";
-    volatile int len1 = 4;
-    volatile int len2 = 11;
+    int32_t kernel_sections, kernel_size;
+    int32_t bss_section_offset, bss_section_paddr;
 
-    if (levenshtein("kien", "sittineiwog", 4, 11) == 9)
-    {
-        len2 = 8;
-        len1 = 20;
-        gpio_test(); /* setup_vbar();  // Set the interrupt vector table */
-    }
+    GPIO_init(); /* Currently only configures GPIO1*/
+    GpioSetPinMode(GPIO1_BASE, 0xf << 21, GpioPinOut);
+    GPIO_set(GPIO1_BASE, 1 << 21);
 
-    uart_puts("Init ddr start\n");
+    system_interrupt_init();
+
+    /* 8N1*/
+    uart_init(0,      /* UART index (0 = UART0, 1 = UART1, etc.)*/
+              115200, /* Baud rate for communication*/
+              1,      /* Stop bit enable (1 = enabled, 0 = disabled)*/
+              0,      /* Number of stop bits (0 = 1 stop bit, 1 = 1.5/2 stop bits)*/
+              0,      /* Parity enable (1 = enabled, 0 = disabled)*/
+              0,      /* Parity type (0 = even, 1 = odd; ignored if parity is disabled)*/
+              8       /* Character length*/
+    );
+    log_message(LOG_LEVEL_INFO, "Bootloader started\n");
+
+    log_message(LOG_LEVEL_INFO, "Init DRAM\n");
     setup_memory();  /*  Initialize DDR3 */
-    uart_puts("Done DRAM!\n");
+    log_message(LOG_LEVEL_INFO, "Done DRAM!\n");
     int result = test_ddr3_memory();
     if (result == 0) {
         /*  Success - Memory is functioning correctly */
-    	uart_puts("DDR Memory test SUCCESS\n");
+    	log_message(LOG_LEVEL_INFO, "DDR Memory test SUCCESS\n");
     } else {
         /*  Failure - Memory test failed */
-    	uart_puts("DDR Memory test FAILED\n");
+    	log_message(LOG_LEVEL_WARN, "DDR Memory test FAILED\n");
     }
     log_message(LOG_LEVEL_INFO, "Init ddr end\n");
 
@@ -169,6 +172,9 @@ void __BootloaderEntry(void)
     log_message(LOG_LEVEL_INFO, "MMC Init\n");
     mmc_controller_init();
 
+
+
+    log_message(LOG_LEVEL_INFO, "FAT32 Init\n");
     /* Copy entire kernel image into memory at MEM_PHYS_BASE */
     diskio.read_sector = &mmc_read_sector;
     if ((res = fat32_mount(&fs, &diskio)) != 0) {
@@ -194,35 +200,28 @@ void __BootloaderEntry(void)
         panic("Invalid kernel magic value: %x\n", kernel_header->magic);
     }
 
-    // /* Verify the kernel data page is 1MB aligned */
-    // if (kernel_header->data_start % MEM_SECTION_SIZE != 0)
-    // {
-    //     panic("Kernel data section is not 1MB aligned: %x\n", kernel_header->data_start);
-    // }
-
     /* Set some values from the header */
     text_section_size = kernel_header->data_start - kernel_header->text_start;
     data_section_size = kernel_header->bss_start - kernel_header->data_start;
     bss_section_size = kernel_header->kernel_size - data_section_size;
-    text_sections = (text_section_size / MEM_SECTION_SIZE) + 1;
-    data_sections = ((data_section_size + bss_section_size) / MEM_SECTION_SIZE) + 1;
+    kernel_sections = (kernel_header->kernel_size + MEM_SECTION_SIZE - 1) / MEM_SECTION_SIZE;
     bss_section_offset = kernel_header->bss_start - MEM_KERNEL_BASE;
     bss_section_paddr = (MEM_PHYS_BASE + bss_section_offset);
 
-    /* Initialize and enable the MMU */
+    log_message(LOG_LEVEL_INFO, "MMU Init\n");
     MMU_init();
 
-    /* Create kernel code page mappings */
-    /* TODO, only mapping one RWX section while fixing 1M kernel loading */
-    current_frame = 0;
-    l1_tables = (uint32_t*)MEM_BOOT_PAGE_TABLE_BASE;
-    for (current_frame = 0; current_frame < text_sections; current_frame++)
+    /* Create kernel code page mappings, RWX pages for simplicity */
+    for (current_frame = 0; current_frame < kernel_sections; current_frame++)
     {
-        MMU_map_section(l1_tables, MEM_KERNEL_BASE + (current_frame * MEM_SECTION_SIZE),
+        MMU_map_section(MEM_BOOT_PAGE_TABLE_BASE, MEM_KERNEL_BASE + (current_frame * MEM_SECTION_SIZE),
             MEM_PHYS_BASE + (current_frame * MEM_SECTION_SIZE), L1_KERNEL_DATA_EXEC_FLAGS);
         log_vaddr_mappings((uint32_t*)(kernel_header->text_start + (current_frame * MEM_SECTION_SIZE)));
     }
     log_message(LOG_LEVEL_INFO, "Done mapping kernel code/data page!\n");
+
+    log_message(LOG_LEVEL_INFO, "MMU Enable\n");
+    MMU_enable();
 
     /* clear bss section */
     for (i = 0; i < bss_section_size; i += 4)
@@ -230,12 +229,9 @@ void __BootloaderEntry(void)
         *((uint32_t*)(bss_section_paddr + i)) = 0;
     }
 
-    MMU_enable();
-
     /* Setup whatever info is needed from bootloader */
     boot_header.magic = BOOTLOADER_MAGIC;
-    /* boot_header.mapped_sections = text_sections + data_sections; */
-    boot_header.mapped_sections = 1;
+    boot_header.mapped_sections = kernel_sections;
     boot_header.boot_table_entry_addr = MEM_BOOT_PAGE_TABLE_BASE;
 
     /* for now, copy the instruction to jump to the kernel entry to the kernel entry point */
