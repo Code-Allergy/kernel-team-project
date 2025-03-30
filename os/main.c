@@ -16,7 +16,18 @@ void kmain(bootloader_header_t* boot_header) {
     uart_printf("Hello from kernel! We used %d sections for kernel\n", boot_header->mapped_sections);
     init_frame_allocator(boot_header);
     uart_printf("Frame allocator initialized\n");
-    
+
+    /* reinitialize interrupts with kernel controlled tables */
+    system_interrupt_init();
+    uart_init(0,      /* UART index (0 = UART0, 1 = UART1, etc.)*/
+              115200, /* Baud rate for communication*/
+              1,      /* Stop bit enable (1 = enabled, 0 = disabled)*/
+              0,      /* Number of stop bits (0 = 1 stop bit, 1 = 1.5/2 stop bits)*/
+              0,      /* Parity enable (1 = enabled, 0 = disabled)*/
+              0,      /* Parity type (0 = even, 1 = odd; ignored if parity is disabled)*/
+              8       /* Character length*/
+    );
+    log_message(LOG_LEVEL_INFO, "kernel interrupts OK\n");
 
     scheduler_init();
     boot_test();
