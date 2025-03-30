@@ -120,33 +120,33 @@ static void mmu_map_hardware_pages(void) {
     MMU_map_section(l1_tables, 0x40300000, 0x40300000, L1_ACCESS_RW_NO | L1_CACHEABLE | L1_SHAREABLE);
 
     /* MAP L4 WKUP */
-    MMU_map_section(l1_tables, 0x44C00000, 0x44C00000, L1_ACCESS_RW_NO);
-    MMU_map_section(l1_tables, 0x44D00000, 0x44D00000, L1_ACCESS_RW_NO);
-    MMU_map_section(l1_tables, 0x44E00000, 0x44E00000, L1_ACCESS_RW_NO);
-    MMU_map_section(l1_tables, 0x44F00000, 0x44F00000, L1_ACCESS_RW_NO);
+    MMU_map_section(l1_tables, 0x44C00000, 0x44C00000, L1_KERNEL_DEVICE_FLAGS);
+    MMU_map_section(l1_tables, 0x44D00000, 0x44D00000, L1_KERNEL_DEVICE_FLAGS);
+    MMU_map_section(l1_tables, 0x44E00000, 0x44E00000, L1_KERNEL_DEVICE_FLAGS);
+    MMU_map_section(l1_tables, 0x44F00000, 0x44F00000, L1_KERNEL_DEVICE_FLAGS);
 
     /* MAP L4 PER (0x4800_0000, 16MB) */
     for (i = 0; i < 16; i++) {
         MMU_map_section(l1_tables, 0x48000000 + (i * MEM_SECTION_SIZE), 0x48000000 + (i * MEM_SECTION_SIZE),
-            L1_ACCESS_RW_NO);
+            L1_KERNEL_DEVICE_FLAGS);
     }
 
     /* MAP L4 FAST (0x4A00_0000, 16MB) */
     for (i = 0; i < 16; i++) {
         MMU_map_section(l1_tables, 0x4A000000 + (i * MEM_SECTION_SIZE), 0x4A000000 + (i * MEM_SECTION_SIZE),
-            L1_ACCESS_RW_NO);
+            L1_KERNEL_DEVICE_FLAGS);
     }
 
     /* MAP EMIF0 (0x4C00_0000, 16MB) */
     for (i = 0; i < 16; i++) {
         MMU_map_section(l1_tables, 0x4C000000 + (i * MEM_SECTION_SIZE), 0x4C000000 + (i * MEM_SECTION_SIZE),
-            L1_ACCESS_RW_NO);
+            L1_KERNEL_DEVICE_FLAGS);
     }
 
     /* MAP GPMC (0x5000_0000, 16MB) */
     for (i = 0; i < 16; i++) {
         MMU_map_section(l1_tables, 0x50000000 + (i * MEM_SECTION_SIZE), 0x50000000 + (i * MEM_SECTION_SIZE),
-            L1_ACCESS_RW_NO);
+            L1_KERNEL_DEVICE_FLAGS);
     }
 
     /* MAP PHYS MEM */

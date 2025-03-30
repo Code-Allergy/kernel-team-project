@@ -44,6 +44,9 @@
 #define RAW_TEX_XRW 0x2
 #define RAW_TEX_XRWB 0x3
 
+#define TEX_B 0x4
+#define TEX_C 0x8
+
 /* L1 page table AP bit shifts */
 #define L1_AP_SHIFT 10
 #define L1_AP2_SHIFT 15
@@ -56,7 +59,7 @@
 #define L1_SHAREABLE (1 << 16)
 #define L1_CACHEABLE (1 << 3)
 #define L1_NOT_GLOBAL (1 << 17)
-#define L1_GLOBAL (0 << 17)      /* User pages should be GLOBAL and have an ASID attached */
+#define L1_GLOBAL (0 << 17)      /* User pages should be NON-GLOBAL and have an ASID attached */
 #define L1_NON_SECURE (1 << 19)
 
 #define L1_ACCESS_NX (1 << 4)
@@ -75,6 +78,9 @@
 
 #define L1_KERNEL_DATA_FLAGS \
     (L1_ACCESS_RW_NO | L1_ACCESS_NX | L1_SHAREABLE | L1_CACHEABLE | L1_GLOBAL)
+
+#define L1_KERNEL_DEVICE_FLAGS \
+    (L1_ACCESS_RW_NO | L1_ACCESS_NX | L1_SHAREABLE | L1_GLOBAL | TEX_B)
 
 #define L1_USER_CODE_FLAGS \
     (L1_ACCESS_RW_RO | L1_ACCESS_X | L1_SHAREABLE | L1_CACHEABLE | L1_NON_GLOBAL)
