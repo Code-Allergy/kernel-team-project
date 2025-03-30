@@ -299,3 +299,39 @@ uint32_t alloc_frame(void) {
     }
     return 0;
 }
+
+void free_frame(uint32_t addr) {                                                
+    /* Check alignment */
+    if (addr % MEM_SECTION_SIZE != 0) {                                         
+        uart_puts("Error: Attempt to free unaligned frame.\n");                 
+        return;                                                                 
+    }                                                                           
+
+    /* Check address range */
+    if (addr < MEM_PHYS_BASE || addr >= (MEM_PHYS_BASE + MEM_PHYS_SIZE)) {      
+        uart_puts("Error: Attempt to free address outside valid range.\n");     
+        return;                                                                 
+    }                                                                           
+
+    /* Check for double free */
+    frame_t *current = frame_list;                                               
+    while (current) {                                                            
+        if (current->addr == addr) {                                             
+            uart_puts("Error: Attempt to free an already freed frame.\n");      
+            return;                                                              
+        }                                                                        
+        current = current->next;                                                 
+    }                                                                            
+
+    /* Calculate frame index and get the frame pointer */
+    uint32_t frame_index = (addr - MEM_PHYS_BASE) / MEM_SECTION_SIZE;
+    frame_t *frame = &frames[frame_index];
+
+    /* Add the frame back to the free list */
+    frame->addr = addr;                                                         
+    frame->next = frame_list;                                                   
+    frame_list = frame;                                                         
+
+    uart_puts("Frame successfully freed.\n");                                   
+}
+

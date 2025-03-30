@@ -19,7 +19,7 @@ enum UartOperationMode
     UART_MODE_B = 0xBF
 };
 /* UART Register Offsets by mode */
-// Page 4337 of the TRM
+/* Page 4337 of the TRM */
 /*
 0h THR Transmit Holding Register Section 19.5.1.1
 0h RHR Receiver Holding Register Section 19.5.1.2

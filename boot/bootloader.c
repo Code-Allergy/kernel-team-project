@@ -66,23 +66,14 @@ static inline void gpio_test(void)
               8       /* Character length*/
     );
 
+    /*
     timer_init(TIMER2, 1000, timer_tick);
     timer_val = timer_value(TIMER2);
     uart_printf("Timer init value: %u\n", timer_val);
     timer_start(TIMER2);
     timer_val = timer_value(TIMER2);
     uart_printf("Timer counting?. value: %u\n", timer_val);
-    GPIO_clear(GPIO1_BASE, LED_PINS);
-    setup_syscall_table();
- 
-    motor_test_sequence(&delay); /* infinite loop */
-    while(1){
-        delay(2);
-        syscall(SYS_READ, 0);
-        delay(2);
-        GPIO_clear(GPIO1_BASE, LED2|LED3); /* set when sys_read is called (debugging)*/
-    }
-
+    */
 
     /*
     while (1)

@@ -131,3 +131,4 @@ void log_vaddr_mappings(uint32_t* vaddr);
 /* Start IDX of free frames, should skip kernel pages */
 void init_frame_allocator(bootloader_header_t *header);
 uint32_t alloc_frame(void);
+void free_frame(uint32_t addr);
