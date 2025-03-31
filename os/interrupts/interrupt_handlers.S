@@ -40,12 +40,88 @@ reset_handler_asm:
     b .
 
 irq_handler_asm:
+
+    mov      r0, r13                  /* Move current SP to r0 */
+    mrs      r1, cpsr                 /* Get current CPSR */
+    ldr      r12, =0xDEADBEEF         /* Push first marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xBADCAFE0         /* Push second marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+    ldr      r12, =0xCAFEBABE         /* Push third marker */
+    stmfd    r13!, {r12}
+
     sub      r14, r14, #4             /* Apply lr correction */
     stmfd    r13!, {r0-r12, r14}  /* Save context */
     mrs      r12, spsr                /* Copy spsr */
     stmfd    r13!, {r12}
 
-    /* bl   save_context (save to pcb and return) */
 
     /* Save the threshold value */
     ldr      r0, =(INTC_BASE_ADDR + INTC_THRESHOLD_OFF)
@@ -146,6 +222,33 @@ svc_handler_asm:
 syscall:
     swi #0       /* Trigger software interrupt (syscall) */
     bx lr        /* Return to caller (R0 holds syscall result) */
+
+    ldr      r0, [r13]                /* Load back the top of the stack */
+    cmp      r0, r12                  /* Compare with expected value */
+    bne      loop_forever             /* If equal, loop forever */
+
+
+    mov      r1, r13                  /* Copy stack pointer to r1 */
+    mov      r2, #64                  /* Set counter for 64 words */
+
+    search_loop:
+        ldr      r0, [r1], #4         /* Load word from stack and advance */
+        cmp      r0, r12              /* Compare with marker */
+        beq      continue_execution   /* If equal, continue execution */
+        subs     r2, r2, #1           /* Decrease counter */
+        bne      search_loop          /* If not zero, continue loop */
+
+    b        loop_forever             /* If marker not found, loop forever */
+
+
+    continue_execution:
+        ldmfd    r13!, {r0-r3, r12, pc}^  /* Restore the context and return */
+
+
+
+
+loop_forever:
+    b loop_forever 
 
 
 /* Unimplemented handlers */
