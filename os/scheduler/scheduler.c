@@ -96,190 +96,7 @@ int scheduler_add_process(process_t *proc) {
 
 
 
-void stack_test() {                                                            
-    int i;                                                                              
-    if (!scheduler_initialized) {                                                
-        uart_puts("uninitialized");                                              
-        return;                                                                  
-    }                                                                            
-                                                                                 
-    process_t *old_proc = current_process;                                        
-    process_t *new_proc = NULL;                                                  
-    unsigned int raw_stack_sys[512];  /* System/User mode stack */               
-    unsigned int raw_stack_irq[512];  /* IRQ mode stack */                       
-    unsigned int *stack_ptr_sys = (unsigned int *)raw_stack_sys;                 
-    unsigned int *stack_ptr_irq = (unsigned int *)raw_stack_irq;                 
-    unsigned int irq_sp;                                                         
-                                                                                 
-    uart_puts("Called Sched Run\n");                                             
-                                                                                 
-    /* Dump System/User stack and search for 0xCAFEBABE */                       
-    asm volatile (                                                               
-        "mov r1, sp\n"                  /* Load System/User stack pointer */   
-        "mov r2, %[stack_ptr_sys]\n"    /* Load raw_stack_sys pointer */       
-        "mov r3, #512\n"                /* Number of words to pop */           
-        "ldr r12, =0xCAFEBABE\n"        /* Load marker to check */            
-                                                                                 
-        "1:\n"                                                                  
-        "ldr r0, [r1], #4\n"            /* Load word from r1 and advance */   
-        "str r0, [r2], #4\n"            /* Store word in raw_stack_sys */     
-        "cmp r0, r12\n"                 /* Compare with marker */             
-        "beq loop_forever_sys\n"        /* If found, loop forever */          
-        "subs r3, r3, #1\n"                                                   
-        "bne 1b\n"                      /* Loop until counter hits 0 */       
-        "b continue_sys\n"              /* Continue if marker not found */    
-                                                                                 
-    "loop_forever_sys:\n"                                                      
-        "b loop_forever_sys\n"          /* Infinite loop if marker found */   
-                                                                                 
-    "continue_sys:\n"                                                          
-        :                                                                        
-        : [stack_ptr_sys] "r" (stack_ptr_sys)                                   
-        : "r0", "r1", "r2", "r3", "r12", "memory"                     
-    );                                                                           
-                                                                                 
-    /* Print System/User stack in address:value format */                        
-    for (i = 0; i < 512; i++) {                                                  
-        uart_printf("Address: 0x%x, Value: 0x%x\n",                           
-                    (unsigned int)&raw_stack_sys[i], raw_stack_sys[i]);          
-    }                                                                            
-                                                                                 
-    /* Get IRQ stack pointer */                                                  
-    asm volatile (                                                               
-        "mrs r0, cpsr\n"                /* Save current mode */               
-        "orr r1, r0, #0x12\n"           /* Switch to IRQ mode */               
-        "msr cpsr_c, r1\n"              /* Set IRQ mode */                    
-        "mov %[irq_sp], sp\n"           /* Get IRQ stack pointer */           
-        "msr cpsr_c, r0\n"              /* Restore original mode */           
-        : [irq_sp] "=r" (irq_sp)                                                
-        :                                                                        
-        : "r0", "r1", "memory"                                               
-    );                                                                           
-                                                                                 
-    uart_printf("IRQ SP: 0x%x\n", irq_sp);                                    
-                                                                                 
-    /* Dump IRQ stack and search for 0xCAFEBABE */                               
-    asm volatile (                                                               
-        "mov r1, %[irq_sp]\n"           /* Load IRQ stack pointer */          
-        "mov r2, %[stack_ptr_irq]\n"    /* Load raw_stack_irq pointer */      
-        "mov r3, #512\n"                /* Number of words to pop */          
-        "ldr r12, =0xCAFEBABE\n"        /* Load marker to check */            
-                                                                                 
-        "2:\n"                                                                  
-        "ldr r0, [r1], #4\n"            /* Load word from r1 and advance */  
-        "str r0, [r2], #4\n"            /* Store word in raw_stack_irq */    
-        "cmp r0, r12\n"                 /* Compare with marker */            
-        "beq loop_forever_irq\n"        /* If found, loop forever */         
-        "subs r3, r3, #1\n"                                                  
-        "bne 2b\n"                      /* Loop until counter hits 0 */      
-        "b continue_irq\n"              /* Continue if marker not found */   
-                                                                                 
-    "loop_forever_irq:\n"                                                     
-        "b loop_forever_irq\n"          /* Infinite loop if marker found */  
-                                                                                 
-    "continue_irq:\n"                                                         
-        :                                                                        
-        : [stack_ptr_irq] "r" (stack_ptr_irq), [irq_sp] "r" (irq_sp)         
-        : "r0", "r1", "r2", "r3", "r12", "memory"                    
-    );                                                                           
-                                                                                 
-    /* Print IRQ stack in address:value format */                                
-    for (i = 0; i < 512; i++) {                                                  
-        uart_printf("Address: 0x%x, Value: 0x%x\n",                           
-                    (unsigned int)&raw_stack_irq[i], raw_stack_irq[i]);          
-    }                                                                            
-                                                                                 
-    uart_puts("End Sched Run\n");                                              
-                                                                                 
-                                                                                
-}
 
-
-
-void scheduler_run() {
-    if (!scheduler_initialized) {
-        uart_puts("uninitialized");
-        return;
-    }
-
-    process_t *old_proc = current_process;
-    process_t *new_proc = NULL;
-
-    uart_puts("Called Sched Run\n");
-
-    /* Pick next process to run */
-    do {
-        new_proc = scheduler.schedule_next();
-    } while (new_proc->state == BLOCKED);
-
-    /* Mark new process as running */
-    new_proc->state = RUNNING;
-
-    /* Save the current context (if old_proc is valid) */
-    if (old_proc) {
-        asm volatile (
-            /* Save general-purpose registers r0-r12 */
-            "stmia %[regs], {r0-r12}\n"
-            /* Save stack pointer (sp) */
-            "mov %[sp], sp\n"
-            /* Save link register (lr) */
-            "mov %[lr], lr\n"
-            /* Save CPSR to r0 temporarily and store */
-            "mrs r0, cpsr\n"
-            "str r0, [%[cpsr]]\n"
-            :
-            : [regs] "r" (old_proc->registers),   /* Pointer to registers */
-              [sp] "r" (&old_proc->stack_pointer), /* Pointer to sp */
-              [lr] "r" (&old_proc->link_register), /* Pointer to lr */
-              [cpsr] "r" (&old_proc->cpsr)        /* Pointer to cpsr */
-            : "r0", "memory"
-        );
-
-        /* Mark old process as ready if it was running */
-        if (old_proc->state == RUNNING) {
-            old_proc->state = READY;
-        }
-    }
-
-    uart_puts("Saved\n");
-    /* Set current process */
-    current_process = new_proc;
-
-    /* Debugging print for context switch */
-    uart_printf("Restoring CPSR: 0x%x\n", new_proc->cpsr);
-    uart_printf("Switching to proc: SP = 0x%x, PC = 0x%x\n",
-                new_proc->stack_pointer, new_proc->program_counter);
-
-    /* Load the context of the new process */
-    asm volatile (
-        /* Load general-purpose registers r0-r12 */
-        "ldmia %[regs], {r0-r12}\n"
-        /* Load stack pointer (sp) */
-        "ldr sp, [%[sp]]\n"
-        /* Load link register (lr) */
-        "ldr lr, [%[lr]]\n"
-        /* Load CPSR and switch to new context */
-        "ldr r0, [%[cpsr]]\n"
-        "msr cpsr_c, r0\n"
-        /* Load PC from program_counter (NOT from stack) */
-        "ldr pc, [%[pc]]\n"
-        :
-        : [regs] "r" (new_proc->registers),
-          [sp] "r" (&new_proc->stack_pointer),
-          [lr] "r" (&new_proc->link_register),
-          [cpsr] "r" (&new_proc->cpsr),
-          [pc] "r" (&new_proc->program_counter)
-        : "r0", "memory"
-    );
-
-    /* Should never get here if context switch worked */
-    uart_puts("Return Proc\n");
-
-    /* Halt system if something went wrong */
-    while (1) {
-        uart_puts("Infinite loop trap\n");
-    }
-}
 
 
 process_t* round_robin_scheduler() {
@@ -298,121 +115,83 @@ process_t* round_robin_scheduler() {
 }
 
 
+void scheduler_run() {
+    process_t *p;
+    void (*entry)();
 
+    uart_puts("Running minimal scheduler\n");
+
+    p = scheduler.schedule_next();
+    if (!p) {
+        uart_puts("No process to run.\n");
+        while (1);
+    }
+
+    uart_printf("Jumping to process PC = 0x%x\n", p->program_counter);
+
+    entry = (void (*)())p->program_counter;
+    entry();
+
+    uart_puts("Returned from process (unexpected)\n");
+    while (1);
+}
 
 
 process_t* process_create(void (*entry_point)(void)) {
     process_t *proc;
+    uint32_t paddr;
+    uint32_t *ptr;
     int i;
 
-    /* Allocate a single frame (1MB segment) for the process */
-    uint32_t paddr = alloc_frame();
+    paddr = alloc_frame();
     if (!paddr) {
         uart_puts("Error: Failed to allocate memory for process.\n");
         return NULL;
     }
 
-    /* Ensure paddr is aligned to 4 KB boundary */
+    uart_printf("Allocated frame for process at paddr = 0x%x\n", paddr);
+
     if (paddr & 0xFFF) {
         uart_puts("Error: paddr is not 4 KB aligned!\n");
         return NULL;
     }
 
-    /* Cast the allocated frame as a process_t pointer */
-    proc = (process_t *)paddr;
-
-    /* Zero out the entire segment (1MB region) */
-    uint32_t *ptr = (uint32_t *)paddr;
+    ptr = (uint32_t *)paddr;
     for (i = 0; i < SEGMENT_SIZE / sizeof(uint32_t); i++) {
         ptr[i] = 0;
     }
 
-    uart_printf("Allocated frame at 0x%x\n", paddr);
-
-    /* Copy the entry point function into process memory */
-    asm volatile (
-        "mov r0, %[src]\n"
-        "mov r1, %[dst]\n"
-        "mov r2, %[size]\n"
-        "1:\n"
-        "ldr r3, [r0], #4\n"
-        "str r3, [r1], #4\n"
-        "subs r2, r2, #4\n"
-        "bne 1b\n"
-        :
-        : [src] "r" (entry_point),
-          [dst] "r" (paddr),
-          [size] "r" (PROCESS_CODE_SIZE)
-        : "r0", "r1", "r2", "r3", "memory"
-    );
-
-    /* Set entry point to copied function */
-    entry_point = (void (*)())paddr;
-
-    /* Debug check to verify copied function */
-    uart_printf("Checking Copied Code: dst[0] = 0x%x, dst[1] = 0x%x\n",
-                ((uint32_t *)paddr)[0], ((uint32_t *)paddr)[1]);
-
-    /* Set segment base to the allocated frame address */
+    proc = (process_t *)paddr;
     proc->segment_base = paddr;
 
-    /* Set up user stack */
-    proc->stack_pointer = paddr + USER_STACK_TOP;
-    uint32_t *stack = (uint32_t *)proc->stack_pointer;
 
-    /* Align stack to 8 bytes for safety */
-    stack = (uint32_t *)((uint32_t)stack & ~7);
+   uart_printf("process2 is at: 0x%x\n", (uint32_t)&process2);
+    uart_printf("Copying from entry_point = 0x%x to paddr = 0x%x\n", (uint32_t)entry_point, paddr);
 
-    /* Set initial context: SPSR, PC, LR */
-    *(--stack) = 0x600001D3;             /* SPSR with correct mode */
-    *(--stack) = (uint32_t)entry_point;  /* PC (entry point in copied process memory) */
-    *(--stack) = (uint32_t)scheduler_run; /* LR fallback if process exits */
-
-    /* Clear R0-R12 */
-    for (i = 0; i <= 12; i++) {
-        *(--stack) = 0;
+    // Copy the code into the beginning of the segment
+    uart_puts("Copying code into segment\n");
+    for (i = 0; i < PROCESS_CODE_SIZE / sizeof(uint32_t); i++) {
+        ((uint32_t *)paddr)[i] = ((uint32_t *)entry_point)[i];
     }
 
-    /* Set SP correctly */
-    proc->stack_pointer = (uint32_t)stack;
 
-    /* Debug Stack Verification */
-    uart_printf("Stack Check: sp[0] = 0x%x, sp[1] = 0x%x, sp[2] = 0x%x\n",
-                stack[0], stack[1], stack[2]);
+    flush_d_cache();
+    flush_i_cache();
 
-    /* Set link register to a safe exit handler */
-    proc->link_register = (uint32_t)scheduler_run;
-
-    /* Set initial CPSR to System mode with IRQs enabled */
-    proc->cpsr = 0x1D3;
-
-    /* Set program counter to copied function */
+    // Set PC to the beginning of the copied code
     proc->program_counter = paddr;
 
-    /* Set process state and mode */
-    proc->current_mode = 1;  /* User mode for the process */
     proc->state = READY;
 
-    /* Print stack contents for verification */
-    uart_printf("Final Stack: sp[0] = 0x%x, sp[1] = 0x%x, sp[2] = 0x%x\n",
-                ((uint32_t *)proc->stack_pointer)[0],
-                ((uint32_t *)proc->stack_pointer)[1],
-                ((uint32_t *)proc->stack_pointer)[2]);
-
-    /* Debug print to confirm process creation */
-    uart_puts("Process created.\n");
-    uart_printf("New Process SP: 0x%x, PC: 0x%x\n", proc->stack_pointer, proc->program_counter);
+    uart_puts("Process created (with copied code).\n");
+    uart_printf("Proc struct at: 0x%x\n", (uint32_t)proc);
+    uart_printf("Proc PC set to: 0x%x (copied into segment)\n", proc->program_counter);
 
     return proc;
 }
 
 
 
-
-
-
-
-       
 
 
 
@@ -440,6 +219,7 @@ void boot_test() {
         return;
     }
 
+   
     /* Add processes to the scheduler queue */
     uart_puts("Adding processes to queue\n");
     scheduler_add_process(proc1);
@@ -457,21 +237,38 @@ void yield() {
 }
 
 
-
+/*
 void process1() {                                                               
     int i;
     while (1) {
         uart_puts("Process 1 running...\n");                                        
     	for(i = 0; i < 10000; i++);
     }                                                                
-}                                                                               
+}
+                                                                               
 void process2() {                                                               
     int i;
     while (1) {
         uart_puts("Process 2 running...\n"); 
     	for(i = 0; i < 10000; i++);
     }                                                                
-}                                                                               
+}
+*/
+
+
+__attribute__((naked)) void process1() {
+    while (1) {
+        asm volatile("nop");
+    }
+}
+
+__attribute__((naked)) void process2() {
+    while (1) {
+        asm volatile("nop");
+    }
+}
+
+                                                                               
 
 
 void uart_print_hex(uint32_t value) {

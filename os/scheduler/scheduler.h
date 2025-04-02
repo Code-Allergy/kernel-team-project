@@ -9,8 +9,6 @@
 #define SEGMENT_SIZE        0x100000   // 1MB per process
 #define USER_STACK_SIZE     (200 * 1024) // 200 KB User Stack
 
-#define USER_STACK_TOP      SEGMENT_SIZE        // User stack starts at top of segment
-#define KERNEL_STACK_TOP    (USER_STACK_TOP - USER_STACK_SIZE) // Kernel stack below user stack
 #define HEAP_BASE_OFFSET    0xC8000   // Heap base remains at 800 KB
 #define PROCESS_CODE_SIZE (600 * 1024)  /* 600 KB */
 
