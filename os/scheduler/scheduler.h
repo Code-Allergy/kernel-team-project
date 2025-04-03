@@ -59,6 +59,8 @@ typedef struct {
 } scheduler_t;
 
 
+void scheduler_tick(void);
+
 
 process_t* process_create(void (*entry_point)(void));
 void scheduler_init();

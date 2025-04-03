@@ -6,11 +6,11 @@
 #include <timer.h>
 #include <mmu.h>
 
-#define REG_OFFSET     8
-#define SP_OFFSET      (REG_OFFSET + 13 * 4)
-#define LR_OFFSET      (REG_OFFSET + 13 * 4)
-#define CPSR_OFFSET    (REG_OFFSET + 14 * 4)
-#define PC_OFFSET      (REG_OFFSET + 15 * 4)
+#define REG_OFFSET     12
+#define SP_OFFSET      (REG_OFFSET + 13 * 4)   // 64
+#define LR_OFFSET      (SP_OFFSET + 4)         // 68
+#define CPSR_OFFSET    (LR_OFFSET + 4)         // 72
+#define PC_OFFSET      (CPSR_OFFSET + 4)       // 76
 
 
 #define MAX_PROCS 64
@@ -31,11 +31,9 @@ static process_t* proc_table[MAX_PROCESSES];
 static int next_proc_index = 0;
 
 __attribute__((naked)) void idle_task() {
-    asm volatile(
-        "1:\n"
-        "nop\n"
-        "b 1b\n"
-    );
+   while(1){
+       uart_puts("hello from idle !!!!");
+   }
 }
 
 
@@ -44,30 +42,35 @@ void scheduler_tick(){
     scheduler_should_switch = 1;
 }
 
-__attribute__((naked)) void do_restore_context(uint32_t *regs, uint32_t sp,
-                                               uint32_t lr_val, uint32_t cpsr,
-                                               uint32_t pc_val) {
+
+volatile uint32_t debug_loaded_pc = 0;
+volatile uint32_t debug_loaded_sp = 0;
+
+__attribute__((naked)) void restore_context(process_t *proc) {
     __asm__ volatile (
-        "ldmia r0, {r0-r12}\n"        // Load saved registers
-        "mov sp, r1\n"                // Set stack pointer
-        "mov lr, r2\n"                // Set LR
-        "msr spsr_cxsf, r3\n"         // Restore CPSR
-        "movs pc, r4\n"               // Return to user mode
+        "mov r1, r0\n"                             // r1 = proc
+
+        // Load SP
+        "ldr r2, [r1, %[sp_offset]]\n"
+        "mov sp, r2\n"
+
+        // Set CPSR to User mode (from proc->cpsr)
+        "ldr r2, [r1, %[cpsr_offset]]\n"
+        "msr spsr_cxsf, r2\n"
+
+        // Load PC
+        "ldr r2, [r1, %[pc_offset]]\n"
+
+        // Jump to user mode
+        "movs pc, r2\n"  // triggers mode switch from SPSR
+
+        :
+        : [pc_offset] "I" (PC_OFFSET),
+          [sp_offset] "I" (SP_OFFSET),
+          [cpsr_offset] "I" (CPSR_OFFSET)
+        : "r1", "r2", "memory"
     );
 }
-
-void restore_context(process_t *proc) {
-    uint32_t *regs = proc->registers;
-    uint32_t sp = proc->stack_pointer;
-    uint32_t lr = proc->link_register;
-    uint32_t cpsr = proc->cpsr;
-    uint32_t pc = proc->program_counter;
-
-
-
-    do_restore_context(regs, sp, lr, cpsr, pc);
-}
-
 
 
 unsigned int get_function_size(void *func) {
@@ -127,7 +130,7 @@ void scheduler_init() {
 
 
     /* Set up timer to trigger scheduler every 1000ms */
-    timer_init(TIMER2, 1000,  scheduler_tick);
+    timer_init(TIMER2, 4000,  scheduler_tick);
     timer_start(TIMER2);
 
     /* Mark scheduler as initialized */
@@ -216,6 +219,9 @@ void scheduler_run() {
     uart_printf("  raw PC = 0x%x\n", *(uint32_t *)((uint8_t *)p + PC_OFFSET));
 
     restore_context(p);  // clean handoff, no inline context switch here
+
+    uart_printf("Loaded SP: 0x%x\n", debug_loaded_sp);
+    uart_printf("Loaded PC: 0x%x\n", debug_loaded_pc);
     __builtin_unreachable();
 }
 
@@ -258,18 +264,21 @@ process_t* process_create(void (*entry_point)(void)) {
     proc = (process_t *)paddr;
     proc_table[next_proc_index++] = proc;
 
-    // Code starts after the struct (at 0x1000 offset)
-    code_offset = 0x1000;
+    // Code starts near the end of the page (but before the stack)
+    code_offset = 0x1000;  // Avoids overwriting struct, still within segment
     code_addr = paddr + code_offset;
+
     func_size = get_function_size(entry_point);
+    func_size = (func_size + 7) & ~0x7;  // Round up to nearest 4 bytes
+
 
     uart_printf("Received entry_point = 0x%x\n", (uint32_t)entry_point);
     uart_printf("Allocated frame for process at paddr = 0x%x\n", paddr);
     uart_printf("Copying from entry_point = 0x%x to code_addr = 0x%x\n",
                 (uint32_t)entry_point, code_addr);
 
-    for (i = 0; i < func_size / sizeof(uint32_t); i++) {
-        ((uint32_t *)code_addr)[i] = ((uint32_t *)entry_point)[i];
+    for (i = 0; i < func_size; i++) {
+        ((uint8_t *)code_addr)[i] = ((uint8_t *)entry_point)[i];
     }
 
     uart_printf("Verifying copy at code_addr: 0x%x\n", code_addr);
@@ -289,10 +298,10 @@ process_t* process_create(void (*entry_point)(void)) {
     proc->cpsr            = 0x10;  // user mode, IRQs disabled
 
     uart_puts("Process created (with copied code).\n");
-    uart_printf("Proc PC set to: 0x%x\n", proc->program_counter);
 
     return proc;
 }
+
 
 
 
@@ -368,12 +377,8 @@ void process2() {
 
 
 __attribute__((naked)) void process1() {
-    asm volatile (
-        "b 1f\n"
-        ".word 0x600D1DEA\n"
-        "1:\n"
-        "b 1b\n"
-    );
+   while(1){
+   }
 }
 
 
@@ -383,14 +388,8 @@ volatile uint32_t process1_signature = 0x600D1DEA;
 
 
 __attribute__((naked)) void process2() {
-    asm volatile (
-        "1:\n"
-        "b 1b\n"                 // Infinite loop
-        ".align 4\n"
-        ".global __end_process2\n"
-        "__end_process2:\n"
-        ".word 0x600D1DEA\n"     // This marker is *data*, not code
-    );
+   while(1){
+   } 
 }
 
 

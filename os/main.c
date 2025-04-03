@@ -45,7 +45,7 @@ void kmain(bootloader_header_t* boot_header) {
     other drivers init, processes, then schedule */
 
     while(1){
-	uart_puts("infinite loop\n");
+        uart_puts("infinite loop\n");
 	for(i = 0; i < 19999; i++);
     }
 
