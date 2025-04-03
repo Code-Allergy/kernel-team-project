@@ -203,10 +203,28 @@ void dump_undef_info(uint32_t cpsr, uint32_t fault_addr) {
 
 
 void data_abort_handler(void) {
-    uint32_t fault_address, dfsr;
-    /* READ DFAR */
+    uint32_t fault_address, dfsr, instr, cpsr, lr;
+
+    // Read DFAR: faulting virtual address
     __asm__ volatile ("MRC p15, 0, %0, c6, c0, 0" : "=r" (fault_address));
-    /* READ DFSR */
+
+    // Read DFSR: fault type (domain + status)
     __asm__ volatile ("MRC p15, 0, %0, c5, c0, 0" : "=r" (dfsr));
-    panic("Data abort exception at address 0x%x, DFSR: %x\n", fault_address, dfsr);
+
+    // Read LR and CPSR at time of exception
+    __asm__ volatile ("MOV %0, lr" : "=r"(lr));
+    __asm__ volatile ("MRS %0, cpsr" : "=r"(cpsr));
+
+    // Read instruction at LR (should be where fault occurred)
+    instr = *((volatile uint32_t *)lr);
+
+    uart_puts("PANIC: Data abort exception!\n");
+    uart_printf("  Fault address (DFAR):  0x%x\n", fault_address);
+    uart_printf("  Fault status  (DFSR):  0x%x\n", dfsr);
+    uart_printf("  Instruction at LR:     0x%x\n", instr);
+    uart_printf("  LR (return addr):      0x%x\n", lr);
+    uart_printf("  CPSR:                  0x%x\n", cpsr);
+
+    panic("Data abort exception triggered.");
 }
+

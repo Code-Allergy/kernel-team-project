@@ -32,13 +32,14 @@ static int next_proc_index = 0;
 
 __attribute__((naked)) void idle_task() {
    while(1){
-       uart_puts("hello from idle !!!!");
    }
 }
+__attribute__((used)) 
+volatile uint32_t idle_task_signature = 0x600D1DEA;
 
 
 void scheduler_tick(){
-    /*stack_test();*/
+    uart_puts("scheduler_tick\n");
     scheduler_should_switch = 1;
 }
 
@@ -130,7 +131,7 @@ void scheduler_init() {
 
 
     /* Set up timer to trigger scheduler every 1000ms */
-    timer_init(TIMER2, 4000,  scheduler_tick);
+    timer_init(TIMER2, 1000,  scheduler_tick);
     timer_start(TIMER2);
 
     /* Mark scheduler as initialized */
@@ -180,9 +181,12 @@ process_t* round_robin_scheduler() {
 }
 
 void scheduler_run() {
+
+    uart_puts("scheduler start\n");
     if (!scheduler_should_switch) {
         // No scheduling needed, just resume current process
-        restore_context(current_process);
+        uart_puts("no switch\n");
+	restore_context(current_process);
         __builtin_unreachable();  // for clarity
     }
 
@@ -238,6 +242,8 @@ process_t* process_create(void (*entry_point)(void)) {
     uint32_t *ptr;
     process_t *proc;
 
+    uart_puts("Creating Proc\n");
+
     if (next_proc_index >= MAX_PROCESSES) {
         uart_puts("No more process slots available.\n");
         return NULL;
@@ -254,19 +260,32 @@ process_t* process_create(void (*entry_point)(void)) {
         return NULL;
     }
 
+
+    uart_puts("Clearing Segment Memory\n");
+
     // Clear the segment memory
     ptr = (uint32_t *)paddr;
     for (i = 0; i < SEGMENT_SIZE / sizeof(uint32_t); i++) {
         ptr[i] = 0;
     }
 
+
+
+    uart_puts("Post Clear\n");
+    
+
     // Store the process_t struct at the base of the segment
     proc = (process_t *)paddr;
     proc_table[next_proc_index++] = proc;
 
+
+    uart_puts("Stored process t\n");
+
     // Code starts near the end of the page (but before the stack)
     code_offset = 0x1000;  // Avoids overwriting struct, still within segment
     code_addr = paddr + code_offset;
+
+    uart_puts("Before getting function size\n");
 
     func_size = get_function_size(entry_point);
     func_size = (func_size + 7) & ~0x7;  // Round up to nearest 4 bytes
@@ -356,49 +375,27 @@ void yield() {
     scheduler_run(); /* explicitly yield back to scheduler */
 }
 
-
-/*
-void process1() {                                                               
-    int i;
-    while (1) {
-        uart_puts("Process 1 running...\n");                                        
-    	for(i = 0; i < 10000; i++);
-    }                                                                
-}
-                                                                               
-void process2() {                                                               
-    int i;
-    while (1) {
-        uart_puts("Process 2 running...\n"); 
-    	for(i = 0; i < 10000; i++);
-    }                                                                
-}
-*/
-
-
 __attribute__((naked)) void process1() {
-   while(1){
-   }
+    uint32_t p1_counter = 0;
+
+    while (1) {
+        p1_counter++;
+        __asm__ volatile ("nop");  // intentional no-op for debugging
+    }
 }
-
-
-
-__attribute__((used))
-volatile uint32_t process1_signature = 0x600D1DEA;
+__attribute__((used)) 
+volatile uint32_t process1_signiture = 0x600D1DEA;
 
 
 __attribute__((naked)) void process2() {
-   while(1){
-   } 
+    uint32_t p2_counter = 0;
+    while (1) {
+        p2_counter += 2;
+        __asm__ volatile ("nop");
+    }
 }
-
-
-
-
-
-__attribute__((used))
-volatile uint32_t process2_signature = 0x600D1DEA;
-
+__attribute__((used)) 
+volatile uint32_t process2_signiture = 0x600D1DEA;
 
 
                                                                                

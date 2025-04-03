@@ -111,21 +111,66 @@ irq_handler_asm:
     b  scheduler_run
 
 
+
+
+.global save_context
 save_context:
-    // Get the current_process pointer
     ldr r0, =current_process
-    ldr r0, [r0]               // r0 = current_process
+    ldr r0, [r0]                     @ r0 = process_t*
+    add r1, r0, #12  
 
-    // Save r0–r12 (from original context) into current_process->registers[]
-    add r1, r0, #8             // offset to 'registers[0]'
-    stmia r1, {r0-r12}         // save r0–r12
+    @ -- Save user CPSR (SPSR from IRQ mode) --
+    ldmfd sp!, {r2}                  @ Pop SPSR
+    str   r2, [r0, #68]              @ Offset for cpsr
 
-    // Save lr and spsr into process struct
-    mrs r2, spsr
-    str lr, [r0, #(8 + 13*4)]  // offset to link_register
-    str r2, [r0, #(8 + 14*4)]  // offset to cpsr
+    @ -- Save user LR --
+    ldmfd sp!, {r2}                  @ Pop user LR
+    str   r2, [r0, #64]              @ Offset for link_register
+    str   r2, [r0, #72]              @ Save to program_counter
 
-    bx lr                      // return to caller
+    @ -- Save r0–r12 --
+    ldmfd sp!, {r2}      @ r2 = r0
+    str   r2, [r1, #0]
+
+    ldmfd sp!, {r2}      @ r2 = r1
+    str   r2, [r1, #4]
+
+    ldmfd sp!, {r2}      @ r2 = r2
+    str   r2, [r1, #8]
+
+    ldmfd sp!, {r2}      @ r2 = r3
+    str   r2, [r1, #12]
+
+    ldmfd sp!, {r2}      @ r2 = r4
+    str   r2, [r1, #16]
+
+    ldmfd sp!, {r2}      @ r2 = r5
+    str   r2, [r1, #20]
+
+    ldmfd sp!, {r2}      @ r2 = r6
+    str   r2, [r1, #24]
+
+    ldmfd sp!, {r2}      @ r2 = r7
+    str   r2, [r1, #28]
+
+    ldmfd sp!, {r2}      @ r2 = r8
+    str   r2, [r1, #32]
+
+    ldmfd sp!, {r2}      @ r2 = r9
+    str   r2, [r1, #36]
+
+    ldmfd sp!, {r2}      @ r2 = r10
+    str   r2, [r1, #40]
+
+    ldmfd sp!, {r2}      @ r2 = r11
+    str   r2, [r1, #44]
+
+    ldmfd sp!, {r2}      @ r2 = r12
+    str   r2, [r1, #48]
+   
+    bx lr                            @ Done
+
+
 
 
 mmu_undef_handler_asm:
