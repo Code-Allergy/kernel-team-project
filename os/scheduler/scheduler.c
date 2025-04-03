@@ -19,7 +19,6 @@ static scheduler_t scheduler;
 static int scheduler_initialized = 0;
 volatile int scheduler_tick_flag = 0;
 void process1(void);
-void process2(void);
 
 void recompile(void){
 }
@@ -33,6 +32,25 @@ static int next_proc_index = 0;
 volatile uint32_t p2_heartbeat = 0;
 __attribute__((naked)) void idle_task() {
    while(1){
+   __asm__ volatile (
+        "mov r4, pc\n"
+        "ldr r5, =0xFFF00000\n"
+        "and r4, r4, r5\n"
+
+        "str sp, [r4, #64]\n"
+        "str lr, [r4, #68]\n"
+        "mrs r6, cpsr\n"
+        "str r6, [r4, #72]\n"
+
+        "mov r7, pc\n"
+        "str r7, [r4, #76]\n"
+
+        "mov r0, #103\n"
+        "swi #0\n"
+        :
+        :
+        : "r0", "r4", "r5", "r6", "r7"
+    ); 
    }
 }
 __attribute__((used)) 
@@ -134,9 +152,10 @@ void scheduler_init() {
     current_process = &scheduler.idle_process;
 
 
+
     /* Set up timer to trigger scheduler every 1000ms */
-    timer_init(TIMER2, 1000,  scheduler_tick);
-    timer_start(TIMER2);
+    //timer_init(TIMER2, 1000,  scheduler_tick);
+    //timer_start(TIMER2);
 
     /* Mark scheduler as initialized */
     scheduler_initialized = 1;
@@ -187,13 +206,6 @@ process_t* round_robin_scheduler() {
 void scheduler_run() {
 
     uart_puts("scheduler start\n");
-    if (!scheduler_should_switch) {
-        // No scheduling needed, just resume current process
-        uart_puts("no switch\n");
-	restore_context(current_process);
-        __builtin_unreachable();  // for clarity
-    }
-
     scheduler_should_switch = 0;  // reset for next tick
 
     process_t *old_proc = current_process;
@@ -225,6 +237,9 @@ void scheduler_run() {
     uart_printf("  cpsr = 0x%x\n", p->cpsr);
 
     uart_printf("  raw PC = 0x%x\n", *(uint32_t *)((uint8_t *)p + PC_OFFSET));
+
+    uart_printf("%x\n", *(uint32_t *)((uint8_t *)p + 64));
+
 
     restore_context(p);  // clean handoff, no inline context switch here
 
@@ -304,10 +319,10 @@ process_t* process_create(void (*entry_point)(void)) {
         ((uint8_t *)code_addr)[i] = ((uint8_t *)entry_point)[i];
     }
 
-    uart_printf("Verifying copy at code_addr: 0x%x\n", code_addr);
-    for (i = 0; i < 4; i++) {
-        uart_printf("word[%d] = 0x%x\n", i, ((uint32_t *)code_addr)[i]);
+    for (i = 0; i < 8; i++) {
+        uart_printf("code[0x%x] = 0x%x\n", code_addr + (i * 4), ((uint32_t *)code_addr)[i]);
     }
+
 
     for (i = 0; i < 13; i++) {
         proc->registers[i] = 0;
@@ -318,7 +333,7 @@ process_t* process_create(void (*entry_point)(void)) {
     proc->stack_pointer   = paddr + SEGMENT_SIZE - 0x100;
     proc->state           = READY;
     proc->link_register   = 0x0;
-    proc->cpsr            = 0x10;  // user mode, IRQs disabled
+    proc->cpsr            = 0x1F;  // user mode, IRQs disabled
 
     uart_puts("Process created (with copied code).\n");
 
@@ -351,22 +366,10 @@ void boot_test() {
         return;
     }
 
-
-    /* Create process 2 */
-    uart_puts("Created 1, creating proc 2\n");
-    proc2 = process_create(process2);
-    if (!proc2) {
-        uart_puts("Error: Failed to create proc2\n");
-        /* Free proc1 if proc2 creation fails */
-        free_frame((uint32_t)proc1);
-        return;
-    }
-
    
     /* Add processes to the scheduler queue */
     uart_puts("Adding processes to queue\n");
     scheduler_add_process(proc1);
-    scheduler_add_process(proc2);
 
     /* Run the scheduler */
     uart_puts("Running scheduler\n");
@@ -374,34 +377,25 @@ void boot_test() {
 }
 
 
-void yield() {
-    scheduler.processes[scheduler.current_index]->state = READY;
-    scheduler_run(); /* explicitly yield back to scheduler */
-}
 
-__attribute__((naked)) void process1() {
-    uint32_t p1_counter = 0;
+
+void process1() {
+    volatile uint32_t p1_counter = 0;
 
     while (1) {
         p1_counter++;
-        __asm__ volatile ("nop");  // intentional no-op for debugging
+        if (p1_counter > 3000000) {
+            p1_counter = 0;
+
+        }
     }
 }
+
+
 __attribute__((used)) 
 volatile uint32_t process1_signiture = 0x600D1DEA;
 
 
-
-
-__attribute__((naked)) void process2() {
-    uint32_t p2_counter = 0;
-    while (1) {
-        p2_counter += 2;
-        __asm__ volatile ("nop");
-    }
-}
-__attribute__((used)) 
-volatile uint32_t process2_signiture = 0x600D1DEA;
 
 
                                                                                

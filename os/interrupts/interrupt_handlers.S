@@ -39,6 +39,8 @@
 .extern irq_handler
 .extern current_process
 
+
+
 .section .text
 
 reset_handler_asm:
@@ -46,15 +48,12 @@ reset_handler_asm:
     b .
 
 irq_handler_asm:
-    sub      lr, lr, #4               @ Adjust return address (actual PC)
-    stmfd    sp!, {lr}                @ Save return address (PC)
-    stmfd    sp!, {r0-r12}            @ Save general-purpose registers
-    mrs      r12, spsr                @ Save user CPSR
-    bic      r12, r12, #(1 << 7)      @ Enable IRQs again in saved CPSR
-    stmfd    sp!, {r12}               @ Save SPSR 
-    
-    @bl irq_handler
-    bl   save_context /* (save to pcb and return) */
+    sub      r14, r14, #4             /* Apply lr correction */
+    stmfd    r13!, {r0-r12, r14}  /* Save context */
+    mrs      r12, spsr                /* Copy spsr */
+    stmfd    r13!, {r12}
+
+    /* bl   save_context (save to pcb and return) */
 
     /* Save the threshold value */
     ldr      r0, =(INTC_BASE_ADDR + INTC_THRESHOLD_OFF)
@@ -72,7 +71,7 @@ irq_handler_asm:
     ldr      r2, [r1]
     and      r2, r2, #0x7f
 
-    /* Enable new IRQ generation if priority is > (maskable)*/
+    /* Enable new IRQ generation if priority is > 0 (maskable)*/
     mov      r0, #0x01
     ldr      r1, =(INTC_BASE_ADDR + INTC_CONTROL_OFF)
     cmp      r3, #0
@@ -109,39 +108,79 @@ irq_handler_asm:
     ldmfd    r13!, {r1}
     str      r1, [r0, #0]             /* Restore the threshold value */
 
-  @ Switch to System mode to read user SP
-    mrs     r0, cpsr              @ r0 = current CPSR (in IRQ mode)
-    bic     r1, r0, #0x10         @ clear mode bits
-    orr     r1, r1, #0x10         @ set to User mode (0x1F)
-    msr     cpsr_c, r1            
-    nop
+    /* b  scheduler  (should not return) */
 
-    mrs     r3, cpsr              @ confirm mode switch
-    and     r3, r3, #0x10
-    cmp     r3, #0x10
-    bne     1f                    @ if not System mode, go into infinite loop
+    /* These will never be reached once scheduler is implemented */
+    ldmfd    r13!, {r12}
+    msr      spsr, r12                /* Restore spsr */
+    ldmfd    r13!, {r0-r12, pc}^  /* Restore the context and return */
+
+
+svc_handler_asm:
+    stmfd    r13!, {r0-r12, r14}
+    mrs      r12, spsr                /* Copy spsr */
+    stmfd    r13!, {r12}
+
+    /* bl   save_context (save to pcb and return) */
+
+    //ldr      r0, [r14, #-4]
+    //bic      r0, r0, #0xFF000000
+    //ldr      r1, =syscall_vector_table   /* Load the base of the vector table */
+    //add      r14, pc, #0              /* Save return address in lr */
+    //ldr      pc, [r1, r0, lsl #2]     /* Jump to the ISR. pc = vector_base + (intc_num * 4) */
+    bl       handle_syscall
+
+    /* b  scheduler  (should not return) */
     
+    /* These will never be reached once scheduler is implemented */
+    ldmfd    r13!, {r12}
+    msr      spsr, r12                /* Restore spsr */
+    ldmfd    r13!, {r0-r12, pc}^ 
+
+/*
+ * syscall:
+ * This function triggers a software interrupt (syscall) and returns to the caller.
+ * Takes variable args, first argument (r0) is the syscall number
+ * and the remaining arguments are the arguments needed by the
+ * syscall handler
+ * 
+ * Arguments:
+ * - r0: The syscall number.
+ * - r1, r2, r3, etc.: The arguments needed by the syscall handler.
+ * 
+ * Returns:
+ * - The result of the syscall is stored in r0.
+ */
+
+
+
+/*
+ * syscall:
+ * This function triggers a software interrupt (syscall) and returns to the caller.
+ * Takes variable args, first argument (r0) is the syscall number
+ * and the remaining arguments are the arguments needed by the
+ * syscall handler
+ * 
+ * Arguments:
+ * - r0: The syscall number.
+ * - r1, r2, r3, etc.: The arguments needed by the syscall handler.
+ * 
+ * Returns:
+ * - The result of the syscall is stored in r0.
+ */
+syscall:
+    swi #0       /* Trigger software interrupt (syscall) */
     
-
-    mov     r2, sp                @ r2 = SP_usr
-
-    swi 102 
-
-    b  scheduler_run
+    bx lr        /* Return to caller (R0 holds syscall result) */
 
 
-1:
-    b       1b                    @ infinite loop if mode switch failed
 
-
+/*
 .global save_context
 save_context:
     ldr r0, =current_process
     ldr r0, [r0]             @ r0 = process_t*
     add r1, r0, #12          @ r1 = &proc->registers[0]
-
-    ldmfd sp!, {r2}          @ Pop user SP
-    str   r2, [r0, #64]      @ SP_OFFSET
 
     ldmfd sp!, {r2}          @ Pop SPSR
     str   r2, [r0, #72]      @ CPSR_OFFSET
@@ -178,7 +217,7 @@ save_context:
     str   r2, [r0, #76]      @ PC_OFFSET
 
     bx lr
-
+*/
 
 
 mmu_undef_handler_asm:
@@ -189,7 +228,6 @@ mmu_undef_handler_asm:
 
 1:
     b 1b                        @ infinite loop
-
 
 
 loop_forever:
