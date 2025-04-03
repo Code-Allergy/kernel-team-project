@@ -47,6 +47,8 @@ void timer_tick(void)
 
 static inline void gpio_test(void)
 {
+    char uart_buffer[100];
+    int read = 0;
     uint32_t timer_val = 0;
 
     GPIO_init(); /* Currently only configures GPIO1*/
@@ -78,18 +80,18 @@ static inline void gpio_test(void)
     /*
     while (1)
     {
-        delay(5);
+        delay(1);
 
         timer_val = timer_value(TIMER2);
         uart_printf("Timer value: %u\n", timer_val);
 
-        read = uart0_readline(uart_buffer, 100);
+        read = uart_readline(1, uart_buffer, 100);
         if(read > 0)
         {
             uart_printf("Received: %s", uart_buffer);
         }
     }
-    */
+    
 }
 
 int min(int a, int b, int c)

@@ -171,6 +171,8 @@ char uart_getc(void);
 
 void uart0_interrupt_init(void);
 void handle_uart0_irq(void);
+void uart1_interrupt_init(void);
+void handle_uart1_irq(void);
 
 void print_number(int32_t num, char base, bool is_signed);
 void uart_printf(const char* format, ...);
@@ -178,16 +180,17 @@ void uart_vprintf(const char* fmt, va_list ap);
 
 /* Both non blocking*/
 /**
- * @brief Get a single character from UART0's buffer.'
+ * @brief Get a single character from a specified UART's buffer.
  *
+ * @param uart_index Index of the UART to read from.
  * @param c Pointer to a character variable where the received character will be
  * stored.
  * @return Returns 1 if a character is present and 0 otherwise.
  */
-unsigned int uart0_getchar(char* c);
+unsigned int uart_getchar(unsigned short uart_index, char* c);
 
 /**
- * @brief Reads a line of text from UART0's buffer.
+ * @brief Reads a line of text from a specified UART's buffer.
  *
  * NOTE: The destination buffer must be large enough to store the received line,
  * including the newline character and the null terminator. The function will
@@ -195,12 +198,13 @@ unsigned int uart0_getchar(char* c);
  * or the destination buffer is full (in which case the destination buffer
  * will not have a newline and null terminator!!).
  *
+ * @param uart_index Index of the UART to read from.
  * @param buffer Pointer to a character array where the received line will be
  * stored.
  * @param buffer_size The size of the buffer.
  * @return Returns the number of characters read, or a non-zero error code on
  * failure.
  */
-unsigned int uart0_readline(char* buffer, unsigned int buffer_size);
+unsigned int uart_readline(unsigned short uart_index, char* buffer, unsigned int buffer_size);
 
 #endif
