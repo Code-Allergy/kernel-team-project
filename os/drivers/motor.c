@@ -3,6 +3,7 @@
 #include <motor.h>
 #include <gpio.h>
 #include <driver_defs.h>
+#include <uart.h>
 
 #define LEFT 0
 #define RIGHT 1
@@ -201,11 +202,41 @@ int motor_write(int motor_num, void* buf, int count) {
  * Test sequence for the motor driver
  */
  void motor_test_sequence(void (*delay)(unsigned int)) {
-	int i;
+	int x_joystick, y_joystick, read;
+	char uart_buffer[10];
 
 	motor_init();
 	
 	while(1){
+
+
+		read = uart_readline(1, uart_buffer, 100);
+        if(read == 5) /* xayb*/
+        {
+            x_joystick = (int)uart_buffer[1] - 128;
+            y_joystick = (int)uart_buffer[3] - 128;
+            uart_printf("Received: x:%d, y:%d\n", x_joystick, y_joystick);
+
+			if (x_joystick > -5 && x_joystick < 5 && y_joystick > 5) { /* straight forward*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD);
+			}else if (x_joystick > -5 && x_joystick < 5 && y_joystick < -5) { /* straight backward*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD);
+			}else if (x_joystick > 5 && y_joystick > 5) { /* right forward*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD | MOTOR_DIR_RIGHT);
+			}else if (x_joystick > 5 && y_joystick < -5) { /* right backward*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD | MOTOR_DIR_RIGHT);
+			}else if (x_joystick < -5 && y_joystick > 5) { /* left forward*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD | MOTOR_DIR_LEFT);
+			}else if (x_joystick < -5 && y_joystick < -5) { /* left backward*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD | MOTOR_DIR_LEFT);
+			}else if ((x_joystick >-5 && x_joystick < 5) && (y_joystick > -5 && y_joystick < 5)) { /* stop*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_STOP);
+			}else{
+				/* stop */
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_STOP);
+			}
+        }
+		/*
 		delay(5);
 		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD);
 		delay(2);
@@ -220,6 +251,7 @@ int motor_write(int motor_num, void* buf, int count) {
 		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD | MOTOR_DIR_RIGHT);
 		delay(2);
 		motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_STOP);
+		*/
 	}
 }
 
