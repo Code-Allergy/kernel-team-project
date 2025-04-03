@@ -222,13 +222,16 @@ void handle_timer_irq(uint16_t timer_index){
 }
 
 void handle_timer2_irq(){
-    uint16_t timer_index = 2;
+    uint16_t timer_index = 2; 
+    uart_puts("handle timer 2 irq\n");
+    uart_printf("TCRR: 0x%x\n", *((volatile uint32_t *)(TIMER2_BASE + 0x3C)));
+
+    
     handle_timer_irq(timer_index);
 }
 
 void handle_timer3_irq(){
     uint16_t timer_index = 3; 
-    uart_puts("handle timer 3 irq\n");
     handle_timer_irq(timer_index);
 }
 

@@ -83,13 +83,13 @@ mmu: utils
 		PLATFORM=$(PLATFORM) \
 		mmu
 
-boot: utils drivers fs interrupts mmu | $(BUILD_DIR)
+boot: utils drivers fs interrupts mmu scheduler | $(BUILD_DIR)
 	make -f $(BOOT_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM)
 	cp $(BOOT_DIR)/build/MLO $(BOOT_DIR)/build/boot_disassembly.txt $(BUILD_DIR)/
 
-kernel: utils drivers fs interrupts mmu | $(BUILD_DIR)
+kernel: utils drivers fs interrupts mmu scheduler | $(BUILD_DIR)
 	make -f $(OS_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM) \
@@ -102,6 +102,14 @@ interrupts:
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM) \
 		interrupts
+
+scheduler:
+	make -f $(OS_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM) \
+		scheduler
+
+
 
 os: utils
 	make -f $(OS_DIR)/Makefile \

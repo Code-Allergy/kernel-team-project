@@ -99,4 +99,6 @@ static inline uint16_t INTC_active_irq_num(void) {
     return (uint16_t)(REG32_read(INTC_BASE_ADDR, INTC_SIR_IRQ_OFF) & 0x7F);
 }
 
+void dump_undef_info(uint32_t cpsr, uint32_t fault_addr);
+
  #endif /* __INTERRUPT_H    */

@@ -101,6 +101,7 @@ $(MMU_DIR)/build/%.o: $(MMU_DIR)/%.c
 SCHEDULER_OBJS := $(patsubst $(SCHEDULER_DIR)/%.c, $(SCHEDULER_DIR)/build/%.o, $(wildcard $(SCHEDULER_DIR)/*.c))
 SCHEDULER_OBJS += $(patsubst $(SCHEDULER_DIR)/%.S, $(SCHEDULER_DIR)/build/%.o, $(wildcard $(SCHEDULER_DIR)/*.S))
 
+
 scheduler: scheduler_build_dir $(SCHEDULER_OBJS)
 
 scheduler_build_dir:
@@ -111,7 +112,6 @@ $(SCHEDULER_DIR)/build/%.o: $(SCHEDULER_DIR)/%.c | scheduler_build_dir
 
 $(SCHEDULER_DIR)/build/%.o: $(SCHEDULER_DIR)/%.S | scheduler_build_dir
 	$(CC) $(IFLAGS) $(CFLAGS) $(ASFLAGS) -c $< -o $@
-
 
 
 #----------- KERNEL

@@ -29,6 +29,10 @@
 #define L1_SECTION_DESCRIPTOR 0x2
 #define L1_PAGE_DESCRIPTOR 0x1
 
+
+#define L1_ACCESS_X  (0 << 4)
+
+
 /* Raw permission bits, needs to be shifted into place */
 #define RAW_AP_NO_NO 0x0
 #define RAW_AP_RW_NO 0x1
@@ -99,6 +103,7 @@ void MMU_init(void);
 
 /* Enable the MMU, ensure that the MMU has been initialized and TTBR0 is valid. */
 void MMU_enable(void);
+void mmu_disable(void);
 
 /* Map VADDR -> PADDR with flags as a section. vaddr and paddr should be 1MB aligned */
 void MMU_map_section(uint32_t *l1_base, uint32_t vaddr,

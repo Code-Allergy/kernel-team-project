@@ -7,6 +7,9 @@
 /* AOF(array offset), get reg in array form */
 #define ArrOff(x) (x / sizeof(RegIO))
 
+
+void check_mode(void);
+
 /**
  * Write a value to a register
  *

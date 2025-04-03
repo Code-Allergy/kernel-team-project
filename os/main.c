@@ -10,9 +10,13 @@
 /* Pointer to the generated header from the linker */
 extern kernel_header_t kernel_header;
 
+
 __attribute__((section(".text.kmain")))
 void kmain(bootloader_header_t* boot_header) {
     int i;
+    
+    check_mode();
+
     uart_printf("Hello from kernel! We used %d sections for kernel\n", boot_header->mapped_sections);
     init_frame_allocator(boot_header);
     uart_printf("Frame allocator initialized\n");
@@ -29,7 +33,11 @@ void kmain(bootloader_header_t* boot_header) {
     );
     log_message(LOG_LEVEL_INFO, "kernel interrupts OK\n");
 
+
+
+    check_mode();
     scheduler_init();
+    check_mode();
     boot_test();
 
 

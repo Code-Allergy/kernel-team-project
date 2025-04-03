@@ -23,7 +23,7 @@ void clear_boot_tables(void) {
 
 /* Just use domain 0 for kernel, enable memory protection */
 void MMU_set_domains(void) {
-    uint32_t dacr = 0x1;
+    uint32_t dacr = 0x55555555;
     __asm__ volatile("mcr p15, 0, %0, c3, c0, 0" : : "r"(dacr));
 }
 
@@ -83,14 +83,33 @@ void d_cache_disable(void) {
     __asm__ volatile("mcr p15, 0, %0, c1, c0, 0" : : "r"(value));
 }
 
-/* Flush instruction cache */
 void flush_i_cache(void) {
-    __asm__ volatile("mcr p15, 0, %0, c7, c5, 0" : : "r"(0));
+    __asm__ volatile (
+        "mrs r1, cpsr\n"
+        "bic r2, r1, #0x1F\n"
+        "orr r2, r2, #0x1F\n"      // Switch to System mode (privileged)
+        "msr cpsr_c, r2\n"
+
+        "mcr p15, 0, %0, c7, c5, 0\n"
+
+        "msr cpsr_c, r1\n"         // Restore original mode
+        : : "r"(0) : "r1", "r2", "memory"
+    );
 }
 
-/* Flush data cache */
 void flush_d_cache(void) {
-    __asm__ volatile("mcr p15, 0, %0, c7, c6, 0" : : "r"(0));
+    __asm__ volatile (
+        "mrs r1, cpsr\n"
+        "bic r2, r1, #0x1F\n"
+        "orr r2, r2, #0x1F\n"
+        "msr cpsr_c, r2\n"
+
+        "mov r0, #0\n"
+        "mcr p15, 0, r0, c7, c14, 0\n"
+
+        "msr cpsr_c, r1\n"
+        : : : "r0", "r1", "r2", "memory"
+    );
 }
 
 
@@ -107,6 +126,11 @@ static void _mmu_disable(void) {
     __asm__ volatile("mrc p15, 0, %0, c1, c0, 0" : "=r"(control));
     control &= ~0x1;                            /* Disable MMU */
     __asm__ volatile("mcr p15, 0, %0, c1, c0, 0" : : "r"(control));
+}
+
+
+void mmu_disable(void){
+    _mmu_disable();
 }
 
 static void mmu_map_hardware_pages(void) {
@@ -149,12 +173,26 @@ static void mmu_map_hardware_pages(void) {
             L1_KERNEL_DEVICE_FLAGS);
     }
 
+
+    uint32_t flags = 0x00050C0E; 
+
     /* MAP PHYS MEM */
     for (i = 0; i < MEM_PHYS_SIZE / MEM_SECTION_SIZE; i++) {
         MMU_map_section(l1_tables, MEM_PHYS_BASE + (i * MEM_SECTION_SIZE),
-            MEM_PHYS_BASE + (i * MEM_SECTION_SIZE),
-            L1_ACCESS_RW_NO | L1_CACHEABLE | L1_SHAREABLE);
+            MEM_PHYS_BASE + (i * MEM_SECTION_SIZE), flags);
     }
+
+
+    uint32_t index = 0x9fe00000 >> 20;  // = 0x9FE
+
+
+    uart_printf("L1[0x%x] = 0x%x\n", index, l1_tables[index]);
+
+    if (l1_tables[index] & (1 << 4)) {
+        uart_puts("XN IS SET — cannot execute\n");
+    }
+
+
 }
 
 void MMU_init(void) {
@@ -169,7 +207,11 @@ void MMU_init(void) {
 
     set_ttbr0(l1_tables);
     log_message(LOG_LEVEL_INFO, "Loaded L1 tables located at 0x%x into TTBR0\n", l1_tables);
+
+    flush_tlb();
 }
+
+
 
 void MMU_enable(void) {
     flush_tlb();

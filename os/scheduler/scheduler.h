@@ -29,7 +29,7 @@ typedef enum {
 
 
 
-typedef struct {
+typedef struct{
     uint32_t pid;
     process_state_t state;
     uint32_t priority;
@@ -67,4 +67,5 @@ int context_switch(process_t *old_proc, process_t *new_proc);
 void boot_test();
 process_t* round_robin_scheduler();
 void scheduler_run();
+void restore_context(process_t *proc);
 #endif // SCHED_H

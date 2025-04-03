@@ -32,6 +32,12 @@
 .extern undef_handler
 .extern prefetch_abort_handler
 .extern data_abort_handler
+.extern scheduler_run
+
+.global mmu_undef_handler_asm
+.extern dump_undef_info
+.extern irq_handler
+.extern current_process
 
 .section .text
 
@@ -40,88 +46,14 @@ reset_handler_asm:
     b .
 
 irq_handler_asm:
-
-    mov      r0, r13                  /* Move current SP to r0 */
-    mrs      r1, cpsr                 /* Get current CPSR */
-    ldr      r12, =0xDEADBEEF         /* Push first marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xBADCAFE0         /* Push second marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-    ldr      r12, =0xCAFEBABE         /* Push third marker */
-    stmfd    r13!, {r12}
-
     sub      r14, r14, #4             /* Apply lr correction */
     stmfd    r13!, {r0-r12, r14}  /* Save context */
     mrs      r12, spsr                /* Copy spsr */
     stmfd    r13!, {r12}
 
+    /*bl irq_handler*/
+
+    bl   save_context /* (save to pcb and return) */
 
     /* Save the threshold value */
     ldr      r0, =(INTC_BASE_ADDR + INTC_THRESHOLD_OFF)
@@ -139,7 +71,7 @@ irq_handler_asm:
     ldr      r2, [r1]
     and      r2, r2, #0x7f
 
-    /* Enable new IRQ generation if priority is > 0 (maskable)*/
+    /* Enable new IRQ generation if priority is > (maskable)*/
     mov      r0, #0x01
     ldr      r1, =(INTC_BASE_ADDR + INTC_CONTROL_OFF)
     cmp      r3, #0
@@ -176,74 +108,34 @@ irq_handler_asm:
     ldmfd    r13!, {r1}
     str      r1, [r0, #0]             /* Restore the threshold value */
 
-    /* b  scheduler  (should not return) */
-
-    /* These will never be reached once scheduler is implemented */
-    ldmfd    r13!, {r12}
-    msr      spsr, r12                /* Restore spsr */
-    ldmfd    r13!, {r0-r12, pc}^  /* Restore the context and return */
+    b  scheduler_run
 
 
-svc_handler_asm:
-    stmfd    r13!, {r0-r12, r14}
-    mrs      r12, spsr                /* Copy spsr */
-    stmfd    r13!, {r12}
+save_context:
+    // Get the current_process pointer
+    ldr r0, =current_process
+    ldr r0, [r0]               // r0 = current_process
 
-    /* bl   save_context (save to pcb and return) */
+    // Save r0–r12 (from original context) into current_process->registers[]
+    add r1, r0, #8             // offset to 'registers[0]'
+    stmia r1, {r0-r12}         // save r0–r12
 
-    //ldr      r0, [r14, #-4]
-    //bic      r0, r0, #0xFF000000
-    //ldr      r1, =syscall_vector_table   /* Load the base of the vector table */
-    //add      r14, pc, #0              /* Save return address in lr */
-    //ldr      pc, [r1, r0, lsl #2]     /* Jump to the ISR. pc = vector_base + (intc_num * 4) */
-    bl       handle_syscall
+    // Save lr and spsr into process struct
+    mrs r2, spsr
+    str lr, [r0, #(8 + 13*4)]  // offset to link_register
+    str r2, [r0, #(8 + 14*4)]  // offset to cpsr
 
-    /* b  scheduler  (should not return) */
-    
-    /* These will never be reached once scheduler is implemented */
-    ldmfd    r13!, {r12}
-    msr      spsr, r12                /* Restore spsr */
-    ldmfd    r13!, {r0-r12, pc}^ 
-
-/*
- * syscall:
- * This function triggers a software interrupt (syscall) and returns to the caller.
- * Takes variable args, first argument (r0) is the syscall number
- * and the remaining arguments are the arguments needed by the
- * syscall handler
- * 
- * Arguments:
- * - r0: The syscall number.
- * - r1, r2, r3, etc.: The arguments needed by the syscall handler.
- * 
- * Returns:
- * - The result of the syscall is stored in r0.
- */
-syscall:
-    swi #0       /* Trigger software interrupt (syscall) */
-    bx lr        /* Return to caller (R0 holds syscall result) */
-
-    ldr      r0, [r13]                /* Load back the top of the stack */
-    cmp      r0, r12                  /* Compare with expected value */
-    bne      loop_forever             /* If equal, loop forever */
+    bx lr                      // return to caller
 
 
-    mov      r1, r13                  /* Copy stack pointer to r1 */
-    mov      r2, #64                  /* Set counter for 64 words */
+mmu_undef_handler_asm:
+    sub lr, lr, #4              @ LR = faulting instruction
+    mrs r0, cpsr                @ r0 = CPSR
+    mov r1, lr                  @ r1 = fault address
+    bl dump_undef_info          @ call C function with r0 (cpsr) and r1 (addr)
 
-    search_loop:
-        ldr      r0, [r1], #4         /* Load word from stack and advance */
-        cmp      r0, r12              /* Compare with marker */
-        beq      continue_execution   /* If equal, continue execution */
-        subs     r2, r2, #1           /* Decrease counter */
-        bne      search_loop          /* If not zero, continue loop */
-
-    b        loop_forever             /* If marker not found, loop forever */
-
-
-    continue_execution:
-        ldmfd    r13!, {r0-r3, r12, pc}^  /* Restore the context and return */
-
+1:
+    b 1b                        @ infinite loop
 
 
 
