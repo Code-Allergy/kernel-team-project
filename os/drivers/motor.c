@@ -201,7 +201,7 @@ int motor_write(int motor_num, void* buf, int count) {
 /*
  * Test sequence for the motor driver
  */
- void motor_test_sequence(void (*delay)(unsigned int)) {
+ void motor_test_sequence(void) {
 	int x_joystick, y_joystick, read;
 	char uart_buffer[10];
 
