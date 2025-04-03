@@ -113,15 +113,58 @@ extern void mmu_undef_handler_asm(void);
 
 
 
+
+
+
 uint32_t get_active_irq() {
     return *((volatile uint32_t *)(INTC_BASE + 0x40)) & 0x7F;
 }
 
 void irq_handler(void) {
-    uint32_t irq_num = get_active_irq();
-    *((volatile uint32_t *)(DMTIMER2_BASE + DMTIMER_IRQSTATUS_OFFSET)) = DMTIMER_IRQ_OVERFLOW;
-    uart_printf(">>> IRQ fired: IRQ%d <<<\n", irq_num);
+    static int irq_count = 0;
+    irq_count++;
+
+    uint32_t irq_num;
+    uint32_t saved_cpsr;
+    volatile uint32_t* irq_sp;
+    volatile uint32_t* user_sp;
+    uint32_t user_lr;
+    int i;
+
+    irq_num = get_active_irq();
+
+    // Only do full debug printout on second IRQ (user mode expected)
+    if (irq_count == 2) {
+        asm volatile ("mov %0, sp" : "=r"(irq_sp));
+        asm volatile ("mrs %0, cpsr" : "=r"(saved_cpsr));
+
+        uint32_t sys_cpsr = (saved_cpsr & ~0x1F) | 0x1F;
+        asm volatile ("msr cpsr_c, %0" :: "r"(sys_cpsr));
+        asm volatile ("mov %0, sp" : "=r"(user_sp));
+        asm volatile ("mov %0, lr" : "=r"(user_lr));
+        asm volatile ("msr cpsr_c, %0" :: "r"(saved_cpsr));
+
+        uart_printf(">>> IRQ fired: IRQ%d <<<\n", irq_num);
+
+        uart_puts("Top 10 IRQ stack words:\n");
+        for (i = 0; i < 10; i++) {
+            uart_printf("  word: 0x%x\n", irq_sp[i]);
+        }
+
+        uart_puts("Top 10 USER stack words:\n");
+        for (i = 0; i < 10; i++) {
+            uart_printf("  word: 0x%x\n", user_sp[i]);
+        }
+
+        uart_printf("User LR = 0x%x\n", user_lr);
+    }
+
 }
+
+
+
+
+
 
 
 

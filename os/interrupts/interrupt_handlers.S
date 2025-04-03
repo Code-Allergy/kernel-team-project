@@ -46,13 +46,25 @@ reset_handler_asm:
     b .
 
 irq_handler_asm:
-    sub      r14, r14, #4             /* Apply lr correction */
-    stmfd    r13!, {r0-r12, r14}  /* Save context */
-    mrs      r12, spsr                /* Copy spsr */
-    stmfd    r13!, {r12}
+    sub      lr, lr, #4               @ Adjust return address (actual PC)
+    stmfd    sp!, {lr}                @ Save return address (PC)
+    stmfd    sp!, {r0-r12}            @ Save general-purpose registers
+    mrs      r12, spsr                @ Save user CPSR
+    bic      r12, r12, #(1 << 7)      @ Enable IRQs again in saved CPSR
+    stmfd    sp!, {r12}               @ Save SPSR
 
-    /*bl irq_handler*/
+    @ Switch to System mode to read user SP
+    mrs      r0, cpsr
+    bic      r1, r0, #0x1F
+    orr      r1, r1, #0x1F            @ Mode 0b11111 = System mode
+    msr      cpsr_c, r1
 
+    mov      r2, sp                   @ r2 = user mode SP
+
+    msr      cpsr_c, r0               @ Restore to IRQ mode
+    stmfd    sp!, {r2}                @ Save user mode SP (last)
+
+    bl irq_handler
     bl   save_context /* (save to pcb and return) */
 
     /* Save the threshold value */
@@ -111,65 +123,50 @@ irq_handler_asm:
     b  scheduler_run
 
 
-
-
 .global save_context
 save_context:
     ldr r0, =current_process
-    ldr r0, [r0]                     @ r0 = process_t*
-    add r1, r0, #12  
+    ldr r0, [r0]             @ r0 = process_t*
+    add r1, r0, #12          @ r1 = &proc->registers[0]
 
-    @ -- Save user CPSR (SPSR from IRQ mode) --
-    ldmfd sp!, {r2}                  @ Pop SPSR
-    str   r2, [r0, #68]              @ Offset for cpsr
+    ldmfd sp!, {r2}          @ Pop user SP
+    str   r2, [r0, #64]      @ SP_OFFSET
 
-    @ -- Save user LR --
-    ldmfd sp!, {r2}                  @ Pop user LR
-    str   r2, [r0, #64]              @ Offset for link_register
-    str   r2, [r0, #72]              @ Save to program_counter
+    ldmfd sp!, {r2}          @ Pop SPSR
+    str   r2, [r0, #72]      @ CPSR_OFFSET
 
-    @ -- Save r0–r12 --
-    ldmfd sp!, {r2}      @ r2 = r0
+    @ Pop r0–r12 in reverse order
+    ldmfd sp!, {r2}          @ r12
+    str   r2, [r1, #48]
+    ldmfd sp!, {r2}          @ r11
+    str   r2, [r1, #44]
+    ldmfd sp!, {r2}          @ r10
+    str   r2, [r1, #40]
+    ldmfd sp!, {r2}          @ r9
+    str   r2, [r1, #36]
+    ldmfd sp!, {r2}          @ r8
+    str   r2, [r1, #32]
+    ldmfd sp!, {r2}          @ r7
+    str   r2, [r1, #28]
+    ldmfd sp!, {r2}          @ r6
+    str   r2, [r1, #24]
+    ldmfd sp!, {r2}          @ r5
+    str   r2, [r1, #20]
+    ldmfd sp!, {r2}          @ r4
+    str   r2, [r1, #16]
+    ldmfd sp!, {r2}          @ r3
+    str   r2, [r1, #12]
+    ldmfd sp!, {r2}          @ r2
+    str   r2, [r1, #8]
+    ldmfd sp!, {r2}          @ r1
+    str   r2, [r1, #4]
+    ldmfd sp!, {r2}          @ r0
     str   r2, [r1, #0]
 
-    ldmfd sp!, {r2}      @ r2 = r1
-    str   r2, [r1, #4]
+    ldmfd sp!, {r2}          @ Pop saved PC
+    str   r2, [r0, #76]      @ PC_OFFSET
 
-    ldmfd sp!, {r2}      @ r2 = r2
-    str   r2, [r1, #8]
-
-    ldmfd sp!, {r2}      @ r2 = r3
-    str   r2, [r1, #12]
-
-    ldmfd sp!, {r2}      @ r2 = r4
-    str   r2, [r1, #16]
-
-    ldmfd sp!, {r2}      @ r2 = r5
-    str   r2, [r1, #20]
-
-    ldmfd sp!, {r2}      @ r2 = r6
-    str   r2, [r1, #24]
-
-    ldmfd sp!, {r2}      @ r2 = r7
-    str   r2, [r1, #28]
-
-    ldmfd sp!, {r2}      @ r2 = r8
-    str   r2, [r1, #32]
-
-    ldmfd sp!, {r2}      @ r2 = r9
-    str   r2, [r1, #36]
-
-    ldmfd sp!, {r2}      @ r2 = r10
-    str   r2, [r1, #40]
-
-    ldmfd sp!, {r2}      @ r2 = r11
-    str   r2, [r1, #44]
-
-    ldmfd sp!, {r2}      @ r2 = r12
-    str   r2, [r1, #48]
-   
-    bx lr                            @ Done
-
+    bx lr
 
 
 

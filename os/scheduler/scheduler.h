@@ -46,6 +46,7 @@ typedef struct{
     uint32_t program_counter; /* Program counter (entry point) */
     uint32_t segment_base; /* location of process */
     uint32_t current_mode;
+    uint32_t shared_page;
 } process_t;
 
 typedef struct {

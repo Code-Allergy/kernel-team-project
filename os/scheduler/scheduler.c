@@ -30,6 +30,7 @@ process_t *current_process = NULL;
 static process_t* proc_table[MAX_PROCESSES];
 static int next_proc_index = 0;
 
+volatile uint32_t p2_heartbeat = 0;
 __attribute__((naked)) void idle_task() {
    while(1){
    }
@@ -40,6 +41,9 @@ volatile uint32_t idle_task_signature = 0x600D1DEA;
 
 void scheduler_tick(){
     uart_puts("scheduler_tick\n");
+   
+    uart_printf("P2 Heartbeat: %u\n", p2_heartbeat);
+
     scheduler_should_switch = 1;
 }
 
@@ -314,7 +318,7 @@ process_t* process_create(void (*entry_point)(void)) {
     proc->stack_pointer   = paddr + SEGMENT_SIZE - 0x100;
     proc->state           = READY;
     proc->link_register   = 0x0;
-    proc->cpsr            = 0x10;  // user mode, IRQs disabled
+    proc->cpsr            = 0x1F;  // user mode, IRQs disabled
 
     uart_puts("Process created (with copied code).\n");
 
@@ -387,10 +391,13 @@ __attribute__((used))
 volatile uint32_t process1_signiture = 0x600D1DEA;
 
 
+
+
 __attribute__((naked)) void process2() {
     uint32_t p2_counter = 0;
     while (1) {
         p2_counter += 2;
+        p2_heartbeat = p2_counter;
         __asm__ volatile ("nop");
     }
 }
