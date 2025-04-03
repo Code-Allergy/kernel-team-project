@@ -51,20 +51,9 @@ irq_handler_asm:
     stmfd    sp!, {r0-r12}            @ Save general-purpose registers
     mrs      r12, spsr                @ Save user CPSR
     bic      r12, r12, #(1 << 7)      @ Enable IRQs again in saved CPSR
-    stmfd    sp!, {r12}               @ Save SPSR
-
-    @ Switch to System mode to read user SP
-    mrs      r0, cpsr
-    bic      r1, r0, #0x1F
-    orr      r1, r1, #0x1F            @ Mode 0b11111 = System mode
-    msr      cpsr_c, r1
-
-    mov      r2, sp                   @ r2 = user mode SP
-
-    msr      cpsr_c, r0               @ Restore to IRQ mode
-    stmfd    sp!, {r2}                @ Save user mode SP (last)
-
-    bl irq_handler
+    stmfd    sp!, {r12}               @ Save SPSR 
+    
+    @bl irq_handler
     bl   save_context /* (save to pcb and return) */
 
     /* Save the threshold value */
@@ -120,7 +109,29 @@ irq_handler_asm:
     ldmfd    r13!, {r1}
     str      r1, [r0, #0]             /* Restore the threshold value */
 
+  @ Switch to System mode to read user SP
+    mrs     r0, cpsr              @ r0 = current CPSR (in IRQ mode)
+    bic     r1, r0, #0x10         @ clear mode bits
+    orr     r1, r1, #0x10         @ set to User mode (0x1F)
+    msr     cpsr_c, r1            
+    nop
+
+    mrs     r3, cpsr              @ confirm mode switch
+    and     r3, r3, #0x10
+    cmp     r3, #0x10
+    bne     1f                    @ if not System mode, go into infinite loop
+    
+    
+
+    mov     r2, sp                @ r2 = SP_usr
+
+    swi 102 
+
     b  scheduler_run
+
+
+1:
+    b       1b                    @ infinite loop if mode switch failed
 
 
 .global save_context

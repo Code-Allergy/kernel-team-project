@@ -318,7 +318,7 @@ process_t* process_create(void (*entry_point)(void)) {
     proc->stack_pointer   = paddr + SEGMENT_SIZE - 0x100;
     proc->state           = READY;
     proc->link_register   = 0x0;
-    proc->cpsr            = 0x1F;  // user mode, IRQs disabled
+    proc->cpsr            = 0x10;  // user mode, IRQs disabled
 
     uart_puts("Process created (with copied code).\n");
 
@@ -397,7 +397,6 @@ __attribute__((naked)) void process2() {
     uint32_t p2_counter = 0;
     while (1) {
         p2_counter += 2;
-        p2_heartbeat = p2_counter;
         __asm__ volatile ("nop");
     }
 }
