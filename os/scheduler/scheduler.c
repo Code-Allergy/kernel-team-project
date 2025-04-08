@@ -5,6 +5,7 @@
 #include <utils.h>
 #include <timer.h>
 #include <mmu.h>
+#include <circular_buffer.h>
 
 #define REG_OFFSET     12
 #define SP_OFFSET      (REG_OFFSET + 13 * 4)   // 64
@@ -16,6 +17,9 @@
 #define MAX_PROCS 64
 
 static scheduler_t scheduler;
+static generic_circular_buffer_t processes;
+static generic_circular_buffer_t free_processes;
+static generic_circular_buffer_t ready_queue;
 static int scheduler_initialized = 0;
 volatile int scheduler_tick_flag = 0;
 void process1(void);
@@ -29,29 +33,17 @@ process_t *current_process = NULL;
 static process_t* proc_table[MAX_PROCESSES];
 static int next_proc_index = 0;
 
-volatile uint32_t p2_heartbeat = 0;
+volatile uint32_t p2_heartbeat = 0, idle_proc_heartbeat = 0, idle_count = 0;
 __attribute__((naked)) void idle_task() {
-   while(1){
-   __asm__ volatile (
-        "mov r4, pc\n"
-        "ldr r5, =0xFFF00000\n"
-        "and r4, r4, r5\n"
-
-        "str sp, [r4, #64]\n"
-        "str lr, [r4, #68]\n"
-        "mrs r6, cpsr\n"
-        "str r6, [r4, #72]\n"
-
-        "mov r7, pc\n"
-        "str r7, [r4, #76]\n"
-
-        "mov r0, #103\n"
-        "swi #0\n"
-        :
-        :
-        : "r0", "r4", "r5", "r6", "r7"
-    ); 
-   }
+    uart_printf("Idle task running...\n");
+    while(1){
+        uart_printf("Idle task heartbeat: %d\n", idle_proc_heartbeat);
+        idle_count = 0x1FFFFF;
+        while (idle_count > 0) {
+            idle_count--;
+        }
+        idle_proc_heartbeat++;
+    }
 }
 __attribute__((used)) 
 volatile uint32_t idle_task_signature = 0x600D1DEA;
@@ -65,6 +57,13 @@ void scheduler_tick(){
     scheduler_should_switch = 1;
 }
 
+void snprintf(char *dest, const char *src, int n) {
+    int i;
+    for (i = 0; i < n && src[i] != '\0'; i++) {
+        dest[i] = src[i];
+    }
+    dest[i] = '\0';
+}
 
 volatile uint32_t debug_loaded_pc = 0;
 volatile uint32_t debug_loaded_sp = 0;
@@ -105,11 +104,9 @@ unsigned int get_function_size(void *func) {
     return count * sizeof(uint32_t);  // returns size up to (but NOT including) sentinel
 }
 
-
-
 void scheduler_init() {
     int i;
-    process_t *idle_proc;
+    process_t *idle_proc, *proc;
 
     check_mode();
 
@@ -118,47 +115,42 @@ void scheduler_init() {
     scheduler.num_processes = 0;
     scheduler_should_switch = 1;
 
-    /* Set the scheduling algorithm to round robin */
-    scheduler.schedule_next = round_robin_scheduler;
+    /* Initialize the circular buffer for processes */
+    generic_circular_buffer_init(&processes);
+    generic_circular_buffer_init(&free_processes);
+    generic_circular_buffer_init(&ready_queue);
 
-    /* Clear process slots */
+    /* Populate free processes ring buffer */
     for (i = 0; i < MAX_PROCESSES; i++) {
-        scheduler.processes[i] = NULL;
+        proc = &scheduler.processes[i];
+        proc->pid = i;
+        proc->state = UNDEFINED;
+        proc->priority = 0;
+        proc->program_counter = 0;
+        proc->stack_pointer = 0;
+        proc->link_register = 0;
+        proc->cpsr = 0;
+        generic_circular_buffer_push(&free_processes, (void*)(proc));
     }
 
-
-    uart_printf("Passing idle_task address: 0x%x\n", (uint32_t)&idle_task);
-
-    check_mode();
-    /* Create Idle Process */
+    /* Create idle process */
+    uart_puts("Creating idle process...\n");
     idle_proc = process_create(idle_task);
     if (!idle_proc) {
-        uart_puts("Error: Failed to create idle process.\n");
-        return;
+        uart_puts("Failed to create idle process\n");
+        while (1);
     }
+    snprintf(idle_proc->name, "Idle Process", sizeof(idle_proc->name));
+    uart_printf("Created process: %s\n", idle_proc->name);
 
+    generic_circular_buffer_push(&processes, (void*)idle_proc);
+    scheduler.idle_process = idle_proc;
+    //generic_circular_buffer_push(&ready_queue, (void*)idle_proc);
 
-
-    /* Set idle process as the fallback */
-    scheduler.idle_process = *idle_proc;
-    scheduler.idle_process.pid = 0;
-    scheduler.idle_process.priority = 0;
-
-    /* Free the dynamically allocated idle_proc frame after copying */
-    free_frame((uint32_t)idle_proc);
-
-    uart_puts("making timer 3 \n");
-
-    current_process = &scheduler.idle_process;
-
-
-
-    /* Set up timer to trigger scheduler every 1000ms */
-    //timer_init(TIMER2, 1000,  scheduler_tick);
-    //timer_start(TIMER2);
-
-    /* Mark scheduler as initialized */
-    scheduler_initialized = 1;
+    /* Use Timer 2 for scheduling */
+    // timer_init(TIMER2, 1000, scheduler_tick);
+    // timer_start(TIMER2);
+    // uart_puts("Timer started\n");
 
     uart_puts("Scheduler Initialized\n");
 }
@@ -166,18 +158,18 @@ void scheduler_init() {
 
 
 int scheduler_add_process(process_t *proc) {
-    if (!scheduler_initialized) {
-        uart_puts("Error: Cannot add process, scheduler is not initialized!\n");
-        return -1;
-    }
+    // if (!scheduler_initialized) {
+    //     uart_puts("Error: Cannot add process, scheduler is not initialized!\n");
+    //     return -1;
+    // }
 
-    if (scheduler.num_processes >= MAX_PROCESSES) {
-        return -1;  /* No space for new processes */
-    }
+    // if (scheduler.num_processes >= MAX_PROCESSES) {
+    //     return -1;  /* No space for new processes */
+    // }
 
-    scheduler.processes[scheduler.num_processes] = proc;
-    proc->state = READY;
-    scheduler.num_processes++;
+    // scheduler.processes[scheduler.num_processes] = proc;
+    // proc->state = READY;
+    // scheduler.num_processes++;
     return 0;
 }
 
@@ -187,196 +179,115 @@ int scheduler_add_process(process_t *proc) {
 
 
 process_t* round_robin_scheduler() {
-    int i;
-    process_t *new_proc = NULL;
+    // int i;
+    // process_t *new_proc = NULL;
 	
-    uart_puts("robin scheduling\n");
+    // uart_puts("robin scheduling\n");
     
-    for (i = 0; i < scheduler.num_processes; i++) {
-        scheduler.current_index = (scheduler.current_index + 1) % scheduler.num_processes;
-        process_t *candidate = scheduler.processes[scheduler.current_index];
-        if (candidate && candidate->state == READY) {
-            return candidate;
-        }
-    }
+    // for (i = 0; i < scheduler.num_processes; i++) {
+    //     scheduler.current_index = (scheduler.current_index + 1) % scheduler.num_processes;
+    //     process_t *candidate = scheduler.processes[scheduler.current_index];
+    //     if (candidate && candidate->state == READY) {
+    //         return candidate;
+    //     }
+    // }
 
     return &scheduler.idle_process;
 }
 
 void scheduler_run() {
+    process_t *next_proc;
+    bool status;
 
-    uart_puts("scheduler start\n");
-    scheduler_should_switch = 0;  // reset for next tick
+    uart_puts("Scheduler running...\n");
 
-    process_t *old_proc = current_process;
-    process_t *p = scheduler.schedule_next();
-
-    if (!p) {
-        uart_puts("No process to run.\n");
-        while (1);
+    status = generic_circular_buffer_pop(&ready_queue, (void**)&next_proc);
+    if (!status) {
+        uart_puts("No READY process. Running idle...\n");
+        next_proc = scheduler.idle_process;
     }
 
-    if (old_proc && old_proc->state == RUNNING) {
-        old_proc->state = READY;
-    }
+    current_process = next_proc;
+    current_process->state = RUNNING;
+    uart_printf("Scheduler starting proc: %s, pc: %x \n", current_process->name, current_process->program_counter);
+    restore_context_asm(); // Jump to the process
+    uart_printf("Ummm... we should not be here\n");
+    while(1);
 
-    p->state = RUNNING;
-    current_process = p;
-
-    uart_puts("restoring\n");
-
-    uart_printf("restoring: proc = 0x%x\n", (uint32_t)p);
-    uart_printf("          proc->lr addr = 0x%x\n", (uint32_t)&(p->link_register));
-
-
-
-    uart_printf("restoring: proc = 0x%x\n", (uint32_t)p);
-    uart_printf("  pc = 0x%x\n", p->program_counter);
-    uart_printf("  sp = 0x%x\n", p->stack_pointer);
-    uart_printf("  lr = 0x%x\n", p->link_register);
-    uart_printf("  cpsr = 0x%x\n", p->cpsr);
-
-    uart_printf("  raw PC = 0x%x\n", *(uint32_t *)((uint8_t *)p + PC_OFFSET));
-
-    uart_printf("%x\n", *(uint32_t *)((uint8_t *)p + 64));
-
-
-    restore_context(p);  // clean handoff, no inline context switch here
-
-    uart_printf("Loaded SP: 0x%x\n", debug_loaded_sp);
-    uart_printf("Loaded PC: 0x%x\n", debug_loaded_pc);
     __builtin_unreachable();
 }
 
-
-
-
-
 process_t* process_create(void (*entry_point)(void)) {
     int i;
-    uint32_t paddr;
-    uint32_t code_offset;
-    uint32_t code_addr;
-    unsigned int func_size;
-    uint32_t *ptr;
     process_t *proc;
+    bool status;
+
+    status = generic_circular_buffer_pop(&free_processes, (void**)&proc);
+    if (!status) {
+        uart_puts("No free process slots available\n");
+        return NULL;
+    }
+    proc->state = NEW;
+    proc->priority = 1; // Default priority, can be modified
+    proc->program_counter = (uint32_t)entry_point;
+    proc->segment_base = (uint32_t)proc;
+    /* processes will be run in system mode since 
+        we are currently having issues context switching betweeen
+        system and user mode with the MMU*/
+    proc->current_mode = MODE_System | I_F_BIT;
+    proc->cpsr = MODE_System | I_F_BIT;
+    proc->shared_page = 0;
+
+    /*  Clear registers */
+    for (i = 0; i < 16; i++) {
+        proc->registers[i] = i;
+    }
+
+    proc->link_register = 0;
+
+    /* Setup the user stack */
+    proc->stack_top = (uint32_t)(proc->stack + USER_STACK_SIZE);
+    proc->stack_pointer = proc->stack_top;
+
+    //proc->state = READY;
+    scheduler.num_processes++;
+
+    /* proc->pid set already in scheduler_init() */
 
     uart_puts("Creating Proc\n");
-
-    if (next_proc_index >= MAX_PROCESSES) {
-        uart_puts("No more process slots available.\n");
-        return NULL;
-    }
-
-    paddr = alloc_frame();
-    if (!paddr) {
-        uart_puts("Error: Failed to allocate memory for process.\n");
-        return NULL;
-    }
-
-    if (paddr & 0xFFF) {
-        uart_puts("Error: paddr is not 4 KB aligned!\n");
-        return NULL;
-    }
-
-
-    uart_puts("Clearing Segment Memory\n");
-
-    // Clear the segment memory
-    ptr = (uint32_t *)paddr;
-    for (i = 0; i < SEGMENT_SIZE / sizeof(uint32_t); i++) {
-        ptr[i] = 0;
-    }
-
-
-
-    uart_puts("Post Clear\n");
-    
-
-    // Store the process_t struct at the base of the segment
-    proc = (process_t *)paddr;
-    proc_table[next_proc_index++] = proc;
-
-
-    uart_puts("Stored process t\n");
-
-    // Code starts near the end of the page (but before the stack)
-    code_offset = 0x1000;  // Avoids overwriting struct, still within segment
-    code_addr = paddr + code_offset;
-
-    uart_puts("Before getting function size\n");
-
-    func_size = get_function_size(entry_point);
-    func_size = (func_size + 7) & ~0x7;  // Round up to nearest 4 bytes
-
-
-    uart_printf("Received entry_point = 0x%x\n", (uint32_t)entry_point);
-    uart_printf("Allocated frame for process at paddr = 0x%x\n", paddr);
-    uart_printf("Copying from entry_point = 0x%x to code_addr = 0x%x\n",
-                (uint32_t)entry_point, code_addr);
-
-    for (i = 0; i < func_size; i++) {
-        ((uint8_t *)code_addr)[i] = ((uint8_t *)entry_point)[i];
-    }
-
-    for (i = 0; i < 8; i++) {
-        uart_printf("code[0x%x] = 0x%x\n", code_addr + (i * 4), ((uint32_t *)code_addr)[i]);
-    }
-
-
-    for (i = 0; i < 13; i++) {
-        proc->registers[i] = 0;
-    }
-
-    proc->segment_base    = paddr;
-    proc->program_counter = code_addr;
-    proc->stack_pointer   = paddr + SEGMENT_SIZE - 0x100;
-    proc->state           = READY;
-    proc->link_register   = 0x0;
-    proc->cpsr            = 0x1F;  // user mode, IRQs disabled
-
-    uart_puts("Process created (with copied code).\n");
 
     return proc;
 }
 
+// void print_cpu_regs(void){
+//     __asm__ volatile (
+//         "mov r0, r1\n"                             // r1 = proc
 
+//         // Load SP
+//         "ldr r2, [r0, %[sp_offset]]\n"
+//         "mov sp, r2\n"
 
+//         // Set CPSR to User mode (from proc->cpsr)
+//         "ldr r2, [r0, %[cpsr_offset]]\n"
+//         "msr spsr_cxsf, r2\n"
 
+//         // Load PC
+//         "ldr r2, [r0, %[pc_offset]]\n"
 
+//         // Jump to user mode
+//         "movs pc, r2\n"  // triggers mode switch from SPSR
 
-
-
-
+//         :
+//         : [pc_offset] "I" (PC_OFFSET),
+//           [sp_offset] "I" (SP_OFFSET),
+//           [cpsr_offset] "I" (CPSR_OFFSET)
+//         : "r1", "r2", "memory"
+//     );
+// }
 
 
 void boot_test() {
-    process_t *proc1, *proc2;
-
-    uart_puts("boot_test_start\n");
-
-
-    uart_printf("Passing process1 address: 0x%x\n", (uint32_t)&process1);
-
-    /* Create process 1 */
-    uart_puts("Creating proc 1\n");
-    proc1 = process_create(process1);
-    if (!proc1) {
-        uart_puts("Error: Failed to create proc1\n");
-        return;
-    }
-
-   
-    /* Add processes to the scheduler queue */
-    uart_puts("Adding processes to queue\n");
-    scheduler_add_process(proc1);
-
-    /* Run the scheduler */
-    uart_puts("Running scheduler\n");
-    /*scheduler_run();*/
 }
-
-
 
 
 void process1() {
@@ -394,12 +305,6 @@ void process1() {
 
 __attribute__((used)) 
 volatile uint32_t process1_signiture = 0x600D1DEA;
-
-
-
-
-                                                                               
-
 
 void uart_print_hex(uint32_t value) {
     char hex_string[9]; /* 8 characters + null terminator */

@@ -205,6 +205,8 @@ void undef_handler(void) {
 
 void prefetch_abort_handler(void) {
     uint32_t fault_address, ifsr, spsr, lr;
+    uint32_t r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12;
+    uint32_t sp, pc;
 
     // Faulting address from Instruction Fault Address Register (IFAR)
     __asm__ volatile ("MRC p15, 0, %0, c6, c0, 2" : "=r"(fault_address));
@@ -218,14 +220,63 @@ void prefetch_abort_handler(void) {
     // Get LR (return address to instruction that caused the abort)
     __asm__ volatile ("MOV %0, LR" : "=r"(lr));
 
+    // Print out information about the fault
     uart_printf("PANIC: Prefetch abort exception\n");
     uart_printf("  Fault address (IFAR):  0x%x\n", fault_address);
     uart_printf("  IFSR:                  0x%x\n", ifsr);
     uart_printf("  SPSR:                  0x%x\n", spsr);
     uart_printf("  LR:                    0x%x\n", lr);
 
-    while (1); // Halt
+    uart_printf("CPU Registers at the time of the exception:\n");
+    __asm__ volatile ("MOV %0, r0" : "=r"(r0));
+    uart_printf("r0:  0x%x\n", r0);
+
+    __asm__ volatile ("MOV %0, r1" : "=r"(r1));
+    uart_printf("r1:  0x%x\n", r1);
+
+    __asm__ volatile ("MOV %0, r2" : "=r"(r2));
+    uart_printf("r2:  0x%x\n", r2);
+
+    __asm__ volatile ("MOV %0, r3" : "=r"(r3));
+    uart_printf("r3:  0x%x\n", r3);
+
+    __asm__ volatile ("MOV %0, r4" : "=r"(r4));
+    uart_printf("r4:  0x%x\n", r4);
+
+    __asm__ volatile ("MOV %0, r5" : "=r"(r5));
+    uart_printf("r5:  0x%x\n", r5);
+
+    __asm__ volatile ("MOV %0, r6" : "=r"(r6));
+    uart_printf("r6:  0x%x\n", r6);
+
+    __asm__ volatile ("MOV %0, r7" : "=r"(r7));
+    uart_printf("r7:  0x%x\n", r7);
+
+    __asm__ volatile ("MOV %0, r8" : "=r"(r8));
+    uart_printf("r8:  0x%x\n", r8);
+
+    __asm__ volatile ("MOV %0, r9" : "=r"(r9));
+    uart_printf("r9:  0x%x\n", r9);
+
+    __asm__ volatile ("MOV %0, r10" : "=r"(r10));
+    uart_printf("r10: 0x%x\n", r10);
+
+    __asm__ volatile ("MOV %0, r11" : "=r"(r11));
+    uart_printf("r11: 0x%x\n", r11);
+
+    __asm__ volatile ("MOV %0, r12" : "=r"(r12));
+    uart_printf("r12: 0x%x\n", r12);
+
+    __asm__ volatile ("MOV %0, sp" : "=r"(sp));
+    uart_printf("sp:  0x%x\n", sp);
+
+    __asm__ volatile ("MOV %0, pc" : "=r"(pc));
+    uart_printf("pc:  0x%x\n", pc);
+
+    // Halt the system
+    while (1);
 }
+
 
 
 

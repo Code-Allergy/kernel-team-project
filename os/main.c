@@ -48,13 +48,13 @@ void kmain(bootloader_header_t* boot_header) {
     );
 
     //GPIO_clear(GPIO1_BASE, LED_PINS);
-    motor_test_sequence(); /* infinite loop */
+    // motor_test_sequence(); /* infinite loop */
 
 
     check_mode();
     scheduler_init();
     check_mode();
-    boot_test();
+    //boot_test();
 
 
     /* setup initial kernel crap, stacks,
