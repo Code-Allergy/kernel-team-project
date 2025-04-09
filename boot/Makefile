@@ -67,7 +67,6 @@ OBJFILES := $(patsubst $(BOOT_DIR)/%.S,$(BOOT_DIR)/build/%.o,$(S_FILES)) \
 			$(FS_DIR)/build/fat32.o \
 			$(MMU_DIR)/build/mmu.o
 
-
 all: boot_build_dir $(OUTPUT_ELF) $(OUTPUT_BIN) $(OUTPUT_MLO) disassemble
 
 boot_build_dir:

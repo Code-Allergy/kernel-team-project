@@ -74,3 +74,22 @@ __init:
 idle:
 	wfi 		/* wait for interrupt */
 	b	idle
+
+
+.global save_sp_and_lr_usr
+.global load_os_sp
+.global save_context_asm
+.global scheduler_run
+
+save_sp_and_lr_usr:
+    nop
+    bx lr
+load_os_sp:
+	nop
+    bx lr
+save_context_asm:
+	nop
+    bx lr
+scheduler_run:
+	nop
+    bx lr

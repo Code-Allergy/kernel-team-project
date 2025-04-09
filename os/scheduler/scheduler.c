@@ -6,6 +6,7 @@
 #include <timer.h>
 #include <mmu.h>
 #include <circular_buffer.h>
+#include <syscall.h>
 
 #define REG_OFFSET     12
 #define SP_OFFSET      (REG_OFFSET + 13 * 4)   // 64

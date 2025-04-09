@@ -1,6 +1,11 @@
 .section .text
 .global get_irq_sp
 .global restore_context_asm
+.global save_context_asm
+.global os_sp_cache
+.global usr_sp_cache
+.global save_sp_and_lr_usr
+.global load_os_sp
 .extern current_process
 
 #define R0_OFF        0    /* Offset for register r0*/
@@ -32,6 +37,21 @@ pc_cache:
     .space 4                       @ Allocate 4 bytes for pc cache
 os_sp_cache:
     .space 4                       @ Allocate 4 bytes for os stack cache
+usr_sp_cache:
+    .space 4                       @ Allocate 4 bytes for user stack cache
+irq_lr_cache:
+    .space 4                       @ Allocate 4 bytes for IRQ LR cache
+                                   @ as calling save_context_asm modifies LR
+@ r0 =  sp
+@ r1 =  lr
+save_sp_and_lr_usr:
+    str    r0, usr_sp_cache         @ Save user stack pointer to usr_sp_cache
+    str    r1, irq_lr_cache         @ Save IRQ LR to irq_lr_cache
+    bx    lr                        @ Return to caller (irq or swi top half)
+
+load_os_sp:
+    ldr   r13, os_sp_cache     @ Load OS stack pointer from os_sp_cache
+    bx    lr                   @ Return to caller (irq or swi top half)
 
 restore_context_asm:
     ldr     r0, =current_process     @ r0 = &current_process
@@ -119,113 +139,58 @@ restore_context_asm:
     //mov     r0, r9                   @ r0 = PC
     //bl uart_print_hex
     //b sched_halt
-/*
-    @ Use r0 as base = &registers[0]
-    add     r0, r0, #0               @ r0 = &process->registers[0] (offset 0)
 
-    @ Push r0-r12 to the stack
-    ldmia   r0!, {r2-r12}            @ Load r0 to r12 from registers
-    stmfd   sp!, {r2-r12}            @ Push r2-r12 to the stack
-
-    @ Restore LR
-    ldr     r2, [r0, #56]            @ Link Register is at offset 56
-    mov     lr, r2                   @ Restore link register to lr
-
-    @ Restore CPSR
-    ldr     r2, [r0, #60]            @ CPSR is at offset 60
-    msr     spsr_cxsf, r2            @ Restore CPSR to SPSR
-
-    @ Pop r0-r12 from the stack
-    ldmfd   sp!, {r0-r12}            @ Pop r0-r12 from the stack
-
-    @ Pop PC from the stack (this will return to the process)
-    ldmfd   sp!, {r8}                @ Pop the PC from the stack into r8
-    mov     pc, r8                   @ Restore the PC, and the context switch is complete
-*/
-
-
-@ r1 is offset into pcb
-.extern uart_print_hex
-
-print_reg:
+save_context_asm:
+    @ save r0 and r1 so that we can use them
+    stmfd  sp!, {r0}                @ Push r0 to the stack
+    stmfd  sp!, {r1}                @ Push r1 to the stack
     ldr    r0, =current_process     @ r0 = &current_process
     ldr    r0, [r0]                 @ r0 = current_process
-    add    r0, r0, r1               @ r0 = process->registers + offset
-    ldr    r0, [r0]                 @ r0 = process->registers[reg]
-    bl     uart_print_hex           @ Call print_hex to print r0 (r1 in hex)
-    bx     lr                       @ Return to caller
 
-.global print_pcb_values
-print_pcb_values:
-    ldr     r0, =current_process     @ r0 = &current_process
-    ldr     r0, [r0]                 @ r0 = current_process
+    @ Save r2-r12 to pcb
+    mov     r1, r2
+    str     r1, [r0, #R2_OFF]
+    mov     r1, r3
+    str     r1, [r0, #R3_OFF]
+    mov     r1, r4
+    str     r1, [r0, #R4_OFF]
+    mov     r1, r5
+    str     r1, [r0, #R5_OFF]
+    mov     r1, r6
+    str     r1, [r0, #R6_OFF]
+    mov     r1, r7
+    str     r1, [r0, #R7_OFF]
+    mov     r1, r8
+    str     r1, [r0, #R8_OFF]
+    mov     r1, r9
+    str     r1, [r0, #R9_OFF]
+    mov     r1, r10
+    str     r1, [r0, #R10_OFF]
+    mov     r1, r11
+    str     r1, [r0, #R11_OFF]
+    mov     r1, r12
+    str     r1, [r0, #R12_OFF]
 
-    @ Print r0
-    ldr     r1, =#12            @ r1 = process->registers[0] (offset 12)
-    bl      print_reg                @ Call print_hex to print r1 (r0 in hex)
+    @ Save user-mode SP
+    ldr     r1, usr_sp_cache
+    str     r1, [r0, #SP_OFF]
 
-    @ Print r1
-    ldr     r1, =#16            @ r1 = process->registers[1] (offset 16)
-    bl      print_reg                @ Call print_hex to print r1 (r1 in hex)
+    @ Save user-mode LR
+    ldr     r1, irq_lr_cache
+    str     r1, [r0, #LR_OFF]
 
-    @ Print r2
-    ldr     r1, =#20            @ r1 = process->registers[2] (offset 20)
-    bl      print_reg                @ Call print_hex to print r1 (r2 in hex)
+    @ because we are here because and irq or swi occured, lr is pc
+    @ Save PC (same as LR)
+    str     r1, [r0, #PC_OFF]
 
-    @ Print r3
-    ldr     r1, =#24            @ r1 = process->registers[3] (offset 24)
-    bl      print_reg                @ Call print_hex to print r1 (r3 in hex)
+    @ Save CPSR
+    mrs     r1, spsr                  @ r1 = spsr 
+    str     r1, [r0, #CPSR_OFF]
 
-    @ Print r4
-    ldr     r1, =#28            @ r1 = process->registers[4] (offset 28)
-    bl      print_reg                @ Call print_hex to print r1 (r4 in hex)
+    @ last r0 and r1 are saved in the stack
+    ldmfd   sp!, {r1}                @ Pop r1 from the stack
+    str     r1, [r0, #R0_OFF]        @ Save r1 to pcb
+    ldmfd   sp!, {r1}                @ Pop r0 from the stack
+    str     r1, [r0, #R1_OFF]        @ Save r0 to pcb
 
-    @ Print r5
-    ldr     r1, =#32            @ r1 = process->registers[5] (offset 32)
-    bl      print_reg                @ Call print_hex to print r1 (r5 in hex)
-
-    @ Print r6
-    ldr     r1, =#36            @ r1 = process->registers[6] (offset 36)
-    bl      print_reg                @ Call print_hex to print r1 (r6 in hex)
-
-    @ Print r7
-    ldr     r1, =#40            @ r1 = process->registers[7] (offset 40)
-    bl      print_reg                @ Call print_hex to print r1 (r7 in hex)
-
-    @ Print r8
-    ldr     r1, =#44            @ r1 = process->registers[8] (offset 44)
-    bl      print_reg                @ Call print_hex to print r1 (r8 in hex)
-
-    @ Print r9
-    ldr     r1, =#48            @ r1 = process->registers[9] (offset 48)
-    bl      print_reg                @ Call print_hex to print r1 (r9 in hex)
-
-    @ Print r10
-    ldr     r1, =#52            @ r1 = process->registers[10] (offset 52)
-    bl      print_reg                @ Call print_hex to print r1 (r10 in hex)
-
-    @ Print r11
-    ldr     r1, =#56            @ r1 = process->registers[11] (offset 56)
-    bl      print_reg                @ Call print_hex to print r1 (r11 in hex)
-
-    @ Print r12
-    ldr     r1, =#60            @ r1 = process->registers[12] (offset 60)
-    bl      print_reg                @ Call print_hex to print r1 (r12 in hex)
-
-    @ Print Link Register (LR)
-    ldr     r1, =#64            @ r1 = process->link_register (offset 64)
-    bl      print_reg                @ Call print_hex to print r1 (LR in hex)
-
-    @ Print Program Counter (PC)
-    ldr     r1, =#68            @ r1 = process->program_counter (offset 68)
-    bl      print_reg                @ Call print_hex to print r1 (PC in hex)
-
-    b .                              @ Return from print_pcb_values
-
-get_irq_sp:
-    mrs r0, cpsr              @ Save current mode
-    orr r1, r0, #0x12         @ Switch to IRQ mode
-    msr cpsr_c, r1            @ Set IRQ mode
-    mov r0, sp                @ Load IRQ stack pointer into r0
-    msr cpsr_c, r0            @ Restore original mode
-    bx lr                     @ Return to caller
+    bx      lr                       @ Return to caller (irq or swi top half)

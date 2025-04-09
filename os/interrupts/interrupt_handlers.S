@@ -38,7 +38,12 @@
 .extern dump_undef_info
 .extern irq_handler
 .extern current_process
-
+.extern os_sp_cache
+.extern usr_sp_cache
+.extern irq_lr_cache
+.extern save_context_asm
+.extern save_sp_and_lr_usr
+.extern load_os_sp
 
 
 .section .text
@@ -48,9 +53,11 @@ reset_handler_asm:
     b .
 
 irq_handler_asm:
-    sub      r14, r14, #4             /* Apply lr correction */
-    stmfd    r13!, {r0-r12, r14}  /* Save context */
-    mrs      r12, spsr                /* Copy spsr */
+    sub      r14, r14, #4           /* Apply lr correction */
+    @str      r13, usr_sp_cache
+    @ldr      r13, os_sp_cache       /* Get the os stack pointer */
+    stmfd    r13!, {r0-r12, r14}    /* Save context */
+    mrs      r12, spsr              /* Copy spsr */
     stmfd    r13!, {r12}
 
     /* bl   save_context (save to pcb and return) */
@@ -117,9 +124,38 @@ irq_handler_asm:
 
 
 svc_handler_asm:
-    stmfd    r13!, {r0-r12, r14}
-    mrs      r12, spsr                /* Copy spsr */
-    stmfd    r13!, {r12}
+    @  save r0 and r1 so that we can use them
+    stmfd    sp!, {r0}                /* Push r0 to the stack */
+    stmfd    sp!, {r1}                /* Push r1 to the stack */
+    
+    @switch to system mode (same cpu registers as uer mode)
+    mrs      r1, cpsr                /* Read cpsr */
+    orr      r1, r1, #MODE_System   /* Switch to System Mode */
+    msr      cpsr, r1
+
+    @ cache sp and lr for scheduler ctx saving
+    mov       r0, r13
+    mov       r1, r14
+    bl        save_sp_and_lr_usr
+
+    @ back to SVC mode
+    cpsid    i, #MODE_Supervisor     /* Disable IRQ */
+
+    @ restore r0 and r1
+    ldmfd    sp!, {r1}                /* Pop r1 from the stack */
+    ldmfd    sp!, {r0}                /* Pop r0 from the stack */
+    bl       load_os_sp               /* Load the os stack pointer */
+    bl       save_context_asm         /* Save context to PCB */
+
+    @ call  scheduler_run
+    @ scheduler_run should not return
+    b        scheduler_run
+
+    b        loop_forever
+
+    //stmfd    r13!, {r0-r12, r14}
+    //mrs      r12, spsr                /* Copy spsr */
+    //stmfd    r13!, {r12}
 
     /* bl   save_context (save to pcb and return) */
 
@@ -128,14 +164,14 @@ svc_handler_asm:
     //ldr      r1, =syscall_vector_table   /* Load the base of the vector table */
     //add      r14, pc, #0              /* Save return address in lr */
     //ldr      pc, [r1, r0, lsl #2]     /* Jump to the ISR. pc = vector_base + (intc_num * 4) */
-    bl       handle_syscall
+    //bl       handle_syscall
 
     /* b  scheduler  (should not return) */
     
     /* These will never be reached once scheduler is implemented */
-    ldmfd    r13!, {r12}
-    msr      spsr, r12                /* Restore spsr */
-    ldmfd    r13!, {r0-r12, pc}^ 
+    //ldmfd    r13!, {r12}
+    //msr      spsr, r12                /* Restore spsr */
+    //ldmfd    r13!, {r0-r12, pc}^ 
 
 /*
  * syscall:
