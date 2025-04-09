@@ -5,11 +5,18 @@ ifeq ($(PLATFORM),QEMU)
     TOP_DIR = ./qemu
 endif
 
+ifeq ($(RELEASE),true)
+	OPT_FLAGS = -O2 -DNDEBUG -DRELEASE
+else
+	OPT_FLAGS = -O0
+endif
+
 QEMU_DIR        = $(TOP_DIR)/qemu
 BOOT_DIR 		= $(TOP_DIR)/boot
 DRIVERS_DIR 	= $(OS_DIR)/drivers
 BUILD_DIR 		= $(TOP_DIR)/build
 OUTPUT_SDIMG 	= $(BUILD_DIR)/sd.img
+
 export OS_DIR 	= $(TOP_DIR)/os
 export INTERRUPTS_DIR = $(OS_DIR)/interrupts
 export FS_DIR 		  = $(OS_DIR)/fs
@@ -33,7 +40,8 @@ export CFLAGS 	= 	-Wall \
 					-MMD \
 					-MP \
 					-g \
-					$(CCDEFINES)
+					$(CCDEFINES) \
+					$(OPT_FLAGS)
 
 LIBGCC = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 LIBGCC_PATH = $(dir $(LIBGCC))
@@ -75,13 +83,13 @@ mmu: utils
 		PLATFORM=$(PLATFORM) \
 		mmu
 
-boot: utils drivers fs interrupts mmu | $(BUILD_DIR)
+boot: utils drivers fs interrupts mmu scheduler | $(BUILD_DIR)
 	make -f $(BOOT_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM)
 	cp $(BOOT_DIR)/build/MLO $(BOOT_DIR)/build/boot_disassembly.txt $(BUILD_DIR)/
 
-kernel: utils drivers fs interrupts mmu | $(BUILD_DIR)
+kernel: utils drivers fs interrupts mmu scheduler | $(BUILD_DIR)
 	make -f $(OS_DIR)/Makefile \
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM) \
@@ -94,6 +102,14 @@ interrupts:
 		TOP_DIR=$(TOP_DIR) \
 		PLATFORM=$(PLATFORM) \
 		interrupts
+
+scheduler:
+	make -f $(OS_DIR)/Makefile \
+		TOP_DIR=$(TOP_DIR) \
+		PLATFORM=$(PLATFORM) \
+		scheduler
+
+
 
 os: utils
 	make -f $(OS_DIR)/Makefile \

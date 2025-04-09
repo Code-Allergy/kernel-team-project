@@ -9,6 +9,8 @@ DRIVERS_DIR := $(TOP_DIR)/os/drivers
 FS_DIR      := $(TOP_DIR)/os/fs
 MMU_DIR     := $(TOP_DIR)/os/mmu
 BOOT_DIR    := $(TOP_DIR)/boot
+SCHEDULER_DIR := $(TOP_DIR)/os/scheduler
+
 
 CCDEFINES = -DPLATFORM=$(PLATFORM)
 
@@ -28,8 +30,8 @@ IFLAGS = 	-I$(OS_DIR)/ \
 			-I$(INTERRUPTS_DIR) \
 			-I$(FS_DIR) \
 			-I$(MMU_DIR) \
-			-I$(BOOT_DIR)
-
+			-I$(BOOT_DIR) \
+			-I$(SCHEDULER_DIR)
 
 OUTPUT_ELF = $(OS_DIR)/build/kernel.elf
 OUTPUT_BIN = $(OS_DIR)/build/kernel.bin
@@ -95,6 +97,23 @@ $(MMU_DIR)/build/%.o: $(MMU_DIR)/%.c
 	$(CC) $(IFLAGS) $(CFLAGS) -c $< -o $@
 
 
+#----------- SCHEDULER
+SCHEDULER_OBJS := $(patsubst $(SCHEDULER_DIR)/%.c, $(SCHEDULER_DIR)/build/%.o, $(wildcard $(SCHEDULER_DIR)/*.c))
+SCHEDULER_OBJS += $(patsubst $(SCHEDULER_DIR)/%.S, $(SCHEDULER_DIR)/build/%.o, $(wildcard $(SCHEDULER_DIR)/*.S))
+
+
+scheduler: scheduler_build_dir $(SCHEDULER_OBJS)
+
+scheduler_build_dir:
+	mkdir -p $(SCHEDULER_DIR)/build
+
+$(SCHEDULER_DIR)/build/%.o: $(SCHEDULER_DIR)/%.c | scheduler_build_dir
+	$(CC) $(IFLAGS) $(CFLAGS) -c $< -o $@
+
+$(SCHEDULER_DIR)/build/%.o: $(SCHEDULER_DIR)/%.S | scheduler_build_dir
+	$(CC) $(IFLAGS) $(CFLAGS) $(ASFLAGS) -c $< -o $@
+
+
 #----------- KERNEL
 KERNEL_OBJS := $(patsubst $(OS_DIR)/%.c, $(OS_DIR)/build/%.o, $(wildcard $(OS_DIR)/*.c))
 
@@ -106,7 +125,7 @@ kernel_build_dir:
 $(OUTPUT_BIN): $(OUTPUT_ELF)
 	$(OBJCOPY) -O binary $< $@
 
-$(OUTPUT_ELF): $(KERNEL_OBJS) $(UTILS_OBJS) $(DRIVER_OBJS) $(INTERRUPTS_OBJS) $(FS_OBJS) $(MMU_OBJS)
+$(OUTPUT_ELF): $(KERNEL_OBJS) $(UTILS_OBJS) $(DRIVER_OBJS) $(INTERRUPTS_OBJS) $(FS_OBJS) $(MMU_OBJS) $(SCHEDULER_OBJS)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 $(OS_DIR)/build/%.o: $(OS_DIR)/%.c
@@ -124,4 +143,5 @@ clean:
 		$(DRIVERS_DIR)/build/*.o $(DRIVERS_DIR)/build/*.d \
 		$(INTERRUPTS_DIR)/build/*.o $(INTERRUPTS_DIR)/build/*.d \
 		$(FS_DIR)/build/*.o $(FS_DIR)/build/*.d \
-		$(MMU_DIR)/build/*.o $(MMU_DIR)/build/*.d
+		$(MMU_DIR)/build/*.o $(MMU_DIR)/build/*.d \
+		$(SCHEDULER_DIR)/build/*.o $(SCHEDULER_DIR)/build/*.d

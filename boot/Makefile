@@ -58,13 +58,14 @@ OBJFILES := $(patsubst $(BOOT_DIR)/%.S,$(BOOT_DIR)/build/%.o,$(S_FILES)) \
 			$(DRIVERS_DIR)/build/uart.o \
 			$(DRIVERS_DIR)/build/gpio.o \
 			$(DRIVERS_DIR)/build/timer.o \
+			$(DRIVERS_DIR)/build/motor.o \
 			$(UTILS_DIR)/build/utils.o \
 			$(UTILS_DIR)/build/circular_buffer.o \
 			$(INTERRUPTS_DIR)/build/interrupt.o \
+			$(INTERRUPTS_DIR)/build/syscall.o \
 			$(INTERRUPTS_DIR)/build/interrupt_handlers.o \
 			$(FS_DIR)/build/fat32.o \
 			$(MMU_DIR)/build/mmu.o
-
 
 all: boot_build_dir $(OUTPUT_ELF) $(OUTPUT_BIN) $(OUTPUT_MLO) disassemble
 

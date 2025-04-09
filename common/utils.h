@@ -7,6 +7,9 @@
 /* AOF(array offset), get reg in array form */
 #define ArrOff(x) (x / sizeof(RegIO))
 
+
+void check_mode(void);
+
 /**
  * Write a value to a register
  *
@@ -62,8 +65,8 @@ static inline unsigned int REG32_read_masked(unsigned int base, unsigned int off
 }
 
 
-// either pass a value in for result or panic, maybe making 2 macros,
-// WAIT_FOR_REG32 and WAIT_FOR_REG32_PANIC
+/* either pass a value in for result or panic, maybe making 2 macros, */
+/* WAIT_FOR_REG32 and WAIT_FOR_REG32_PANIC */
 #define WAIT_FOR_REG32(base, offset, mask, expected, timeout)  \
     do {                                                      \
         uint32_t _timeout = (timeout);                        \

@@ -12,17 +12,6 @@ void handle_timer6_irq();
 void handle_timer7_irq();
 void handle_timer_irq(uint16_t timer_index);
 
-static const int timer_l4ls_clk_en_bit[8] = {
-    -1,
-    -1,
-    1 << 14,
-    1 << 15,
-    1 << 16,
-    1 << 27,
-    1 << 28,
-    1 << 13
-};
-
 static const uint32_t timer_base[8] = {
     -1,
     -1,
@@ -96,6 +85,7 @@ bool timer_init(uint16_t timer_index,
                 uint32_t timer_tick_ms, 
                 void (*timer_tick_func)(void)
                 ){
+    int i;
 
     if(timer_index < 2 || timer_index > 7){
         return false;
@@ -109,7 +99,7 @@ bool timer_init(uint16_t timer_index,
     while(
       (REG32_read_masked(CM_PER_BASE, timer_module_clk_off[timer_index], 0x3<<16) & 0x3)
     );
-
+    
     /* OCP interface software reset*/
     REG32_write_masked(timer_base[timer_index], TIOCP_CFG_OFF, 0x1, 0x1);
     while((REG32_read_masked(timer_base[timer_index], TIOCP_CFG_OFF, 0x1) & 0x1));
@@ -134,7 +124,7 @@ bool timer_init(uint16_t timer_index,
         | (0x0 << 14) /*GPO_CFG*/
     );
     TIMER_REG_WRITE_WAIT_DONE();
-    
+   
     /*set timer value for the tick value*/
     REG32_write(
         timer_base[timer_index], 
@@ -202,12 +192,13 @@ void handle_timer_irq(uint16_t timer_index){
 }
 
 void handle_timer2_irq(){
-    uint16_t timer_index = 2;
+    uint16_t timer_index = 2; 
+
     handle_timer_irq(timer_index);
 }
 
 void handle_timer3_irq(){
-    uint16_t timer_index = 3;
+    uint16_t timer_index = 3; 
     handle_timer_irq(timer_index);
 }
 

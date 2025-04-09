@@ -23,7 +23,7 @@ void clear_boot_tables(void) {
 
 /* Just use domain 0 for kernel, enable memory protection */
 void MMU_set_domains(void) {
-    uint32_t dacr = 0x1;
+    uint32_t dacr = 0x55555555;
     __asm__ volatile("mcr p15, 0, %0, c3, c0, 0" : : "r"(dacr));
 }
 
@@ -83,14 +83,33 @@ void d_cache_disable(void) {
     __asm__ volatile("mcr p15, 0, %0, c1, c0, 0" : : "r"(value));
 }
 
-/* Flush instruction cache */
 void flush_i_cache(void) {
-    __asm__ volatile("mcr p15, 0, %0, c7, c5, 0" : : "r"(0));
+    __asm__ volatile (
+        "mrs r1, cpsr\n"
+        "bic r2, r1, #0x1F\n"
+        "orr r2, r2, #0x1F\n"      // Switch to System mode (privileged)
+        "msr cpsr_c, r2\n"
+
+        "mcr p15, 0, %0, c7, c5, 0\n"
+
+        "msr cpsr_c, r1\n"         // Restore original mode
+        : : "r"(0) : "r1", "r2", "memory"
+    );
 }
 
-/* Flush data cache */
 void flush_d_cache(void) {
-    __asm__ volatile("mcr p15, 0, %0, c7, c6, 0" : : "r"(0));
+    __asm__ volatile (
+        "mrs r1, cpsr\n"
+        "bic r2, r1, #0x1F\n"
+        "orr r2, r2, #0x1F\n"
+        "msr cpsr_c, r2\n"
+
+        "mov r0, #0\n"
+        "mcr p15, 0, r0, c7, c14, 0\n"
+
+        "msr cpsr_c, r1\n"
+        : : : "r0", "r1", "r2", "memory"
+    );
 }
 
 
@@ -109,6 +128,11 @@ static void _mmu_disable(void) {
     __asm__ volatile("mcr p15, 0, %0, c1, c0, 0" : : "r"(control));
 }
 
+
+void mmu_disable(void){
+    _mmu_disable();
+}
+
 static void mmu_map_hardware_pages(void) {
     uint32_t i;
     uint32_t* l1_tables = (uint32_t*)MEM_BOOT_PAGE_TABLE_BASE;
@@ -120,41 +144,55 @@ static void mmu_map_hardware_pages(void) {
     MMU_map_section(l1_tables, 0x40300000, 0x40300000, L1_ACCESS_RW_NO | L1_CACHEABLE | L1_SHAREABLE);
 
     /* MAP L4 WKUP */
-    MMU_map_section(l1_tables, 0x44C00000, 0x44C00000, L1_ACCESS_RW_NO);
-    MMU_map_section(l1_tables, 0x44D00000, 0x44D00000, L1_ACCESS_RW_NO);
-    MMU_map_section(l1_tables, 0x44E00000, 0x44E00000, L1_ACCESS_RW_NO);
-    MMU_map_section(l1_tables, 0x44F00000, 0x44F00000, L1_ACCESS_RW_NO);
+    MMU_map_section(l1_tables, 0x44C00000, 0x44C00000, L1_KERNEL_DEVICE_FLAGS);
+    MMU_map_section(l1_tables, 0x44D00000, 0x44D00000, L1_KERNEL_DEVICE_FLAGS);
+    MMU_map_section(l1_tables, 0x44E00000, 0x44E00000, L1_KERNEL_DEVICE_FLAGS);
+    MMU_map_section(l1_tables, 0x44F00000, 0x44F00000, L1_KERNEL_DEVICE_FLAGS);
 
     /* MAP L4 PER (0x4800_0000, 16MB) */
     for (i = 0; i < 16; i++) {
         MMU_map_section(l1_tables, 0x48000000 + (i * MEM_SECTION_SIZE), 0x48000000 + (i * MEM_SECTION_SIZE),
-            L1_ACCESS_RW_NO);
+            L1_KERNEL_DEVICE_FLAGS);
     }
 
     /* MAP L4 FAST (0x4A00_0000, 16MB) */
     for (i = 0; i < 16; i++) {
         MMU_map_section(l1_tables, 0x4A000000 + (i * MEM_SECTION_SIZE), 0x4A000000 + (i * MEM_SECTION_SIZE),
-            L1_ACCESS_RW_NO);
+            L1_KERNEL_DEVICE_FLAGS);
     }
 
     /* MAP EMIF0 (0x4C00_0000, 16MB) */
     for (i = 0; i < 16; i++) {
         MMU_map_section(l1_tables, 0x4C000000 + (i * MEM_SECTION_SIZE), 0x4C000000 + (i * MEM_SECTION_SIZE),
-            L1_ACCESS_RW_NO);
+            L1_KERNEL_DEVICE_FLAGS);
     }
 
     /* MAP GPMC (0x5000_0000, 16MB) */
     for (i = 0; i < 16; i++) {
         MMU_map_section(l1_tables, 0x50000000 + (i * MEM_SECTION_SIZE), 0x50000000 + (i * MEM_SECTION_SIZE),
-            L1_ACCESS_RW_NO);
+            L1_KERNEL_DEVICE_FLAGS);
     }
+
+
+    uint32_t flags = 0x00050C0E; 
 
     /* MAP PHYS MEM */
     for (i = 0; i < MEM_PHYS_SIZE / MEM_SECTION_SIZE; i++) {
         MMU_map_section(l1_tables, MEM_PHYS_BASE + (i * MEM_SECTION_SIZE),
-            MEM_PHYS_BASE + (i * MEM_SECTION_SIZE),
-            L1_ACCESS_RW_NO | L1_CACHEABLE | L1_SHAREABLE);
+            MEM_PHYS_BASE + (i * MEM_SECTION_SIZE), flags);
     }
+
+
+    uint32_t index = 0x9fe00000 >> 20;  // = 0x9FE
+
+
+    uart_printf("L1[0x%x] = 0x%x\n", index, l1_tables[index]);
+
+    if (l1_tables[index] & (1 << 4)) {
+        uart_puts("XN IS SET — cannot execute\n");
+    }
+
+
 }
 
 void MMU_init(void) {
@@ -169,7 +207,11 @@ void MMU_init(void) {
 
     set_ttbr0(l1_tables);
     log_message(LOG_LEVEL_INFO, "Loaded L1 tables located at 0x%x into TTBR0\n", l1_tables);
+
+    flush_tlb();
 }
+
+
 
 void MMU_enable(void) {
     flush_tlb();
@@ -299,3 +341,39 @@ uint32_t alloc_frame(void) {
     }
     return 0;
 }
+
+void free_frame(uint32_t addr) {                                                
+    /* Check alignment */
+    if (addr % MEM_SECTION_SIZE != 0) {                                         
+        uart_puts("Error: Attempt to free unaligned frame.\n");                 
+        return;                                                                 
+    }                                                                           
+
+    /* Check address range */
+    if (addr < MEM_PHYS_BASE || addr >= (MEM_PHYS_BASE + MEM_PHYS_SIZE)) {      
+        uart_puts("Error: Attempt to free address outside valid range.\n");     
+        return;                                                                 
+    }                                                                           
+
+    /* Check for double free */
+    frame_t *current = frame_list;                                               
+    while (current) {                                                            
+        if (current->addr == addr) {                                             
+            uart_puts("Error: Attempt to free an already freed frame.\n");      
+            return;                                                              
+        }                                                                        
+        current = current->next;                                                 
+    }                                                                            
+
+    /* Calculate frame index and get the frame pointer */
+    uint32_t frame_index = (addr - MEM_PHYS_BASE) / MEM_SECTION_SIZE;
+    frame_t *frame = &frames[frame_index];
+
+    /* Add the frame back to the free list */
+    frame->addr = addr;                                                         
+    frame->next = frame_list;                                                   
+    frame_list = frame;                                                         
+
+    uart_puts("Frame successfully freed.\n");                                   
+}
+
