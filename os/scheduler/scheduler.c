@@ -44,6 +44,9 @@ __attribute__((naked)) void idle_task() {
             idle_count--;
         }
         idle_proc_heartbeat++;
+        uart_printf("Yield\n");
+        syscall(0,0);
+        uart_printf("Return after Yield\n");
     }
 }
 __attribute__((used)) 

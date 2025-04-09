@@ -107,6 +107,10 @@ restore_context_asm:
     ldr     r1, [r0, #R0_OFF]
     stmfd   sp!, {r1}                @ Push r0 to the stack
 
+    @ restore cpsr
+    ldr     r1, [r0, #CPSR_OFF]
+    msr     cpsr, r1                 @ Restore CPSR
+
     @ Load the process registers from the stack
     ldmfd   sp!, {r0}                @ Pop r0 from the stack
     ldmfd   sp!, {r1}                @ Pop r1 from the stack

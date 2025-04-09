@@ -144,6 +144,10 @@ svc_handler_asm:
     @ restore r0 and r1
     ldmfd    sp!, {r1}                /* Pop r1 from the stack */
     ldmfd    sp!, {r0}                /* Pop r0 from the stack */
+
+    @ back to system mode
+    msr cpsr, #MODE_System
+
     bl       load_os_sp               /* Load the os stack pointer */
     bl       save_context_asm         /* Save context to PCB */
 
