@@ -157,42 +157,6 @@ svc_handler_asm:
 
     b        loop_forever
 
-    //stmfd    r13!, {r0-r12, r14}
-    //mrs      r12, spsr                /* Copy spsr */
-    //stmfd    r13!, {r12}
-
-    /* bl   save_context (save to pcb and return) */
-
-    //ldr      r0, [r14, #-4]
-    //bic      r0, r0, #0xFF000000
-    //ldr      r1, =syscall_vector_table   /* Load the base of the vector table */
-    //add      r14, pc, #0              /* Save return address in lr */
-    //ldr      pc, [r1, r0, lsl #2]     /* Jump to the ISR. pc = vector_base + (intc_num * 4) */
-    //bl       handle_syscall
-
-    /* b  scheduler  (should not return) */
-    
-    /* These will never be reached once scheduler is implemented */
-    //ldmfd    r13!, {r12}
-    //msr      spsr, r12                /* Restore spsr */
-    //ldmfd    r13!, {r0-r12, pc}^ 
-
-/*
- * syscall:
- * This function triggers a software interrupt (syscall) and returns to the caller.
- * Takes variable args, first argument (r0) is the syscall number
- * and the remaining arguments are the arguments needed by the
- * syscall handler
- * 
- * Arguments:
- * - r0: The syscall number.
- * - r1, r2, r3, etc.: The arguments needed by the syscall handler.
- * 
- * Returns:
- * - The result of the syscall is stored in r0.
- */
-
-
 
 /*
  * syscall:

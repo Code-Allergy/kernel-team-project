@@ -25,17 +25,16 @@ static int scheduler_initialized = 0;
 volatile int scheduler_tick_flag = 0;
 void process1(void);
 
-void recompile(void){
-}
-
-int scheduler_should_switch;
 process_t *current_process = NULL;
 
 static process_t* proc_table[MAX_PROCESSES];
-static int next_proc_index = 0;
 
-volatile uint32_t p2_heartbeat = 0, idle_proc_heartbeat = 0, idle_count = 0;
-__attribute__((naked)) void idle_task() {
+volatile uint32_t p1_heartbeat= 0, p2_heartbeat = 0, idle_proc_heartbeat = 0;
+
+volatile uint32_t sp;
+//__attribute__((naked)) 
+void idle_task() {
+    volatile int idle_count = 0;
     uart_printf("Idle task running...\n");
     while(1){
         uart_printf("Idle task heartbeat: %d\n", idle_proc_heartbeat);
@@ -44,21 +43,55 @@ __attribute__((naked)) void idle_task() {
             idle_count--;
         }
         idle_proc_heartbeat++;
+        /* print sp */
+        // __asm__ volatile ("mov %0, sp" : "=r"(sp));
+        // uart_printf("Idle task sp: 0x%x\n", sp);
         uart_printf("Yield\n");
         syscall(0,0);
         uart_printf("Return after Yield\n");
+        // __asm__ volatile ("mov %0, sp" : "=r"(sp));
+        // uart_printf("Idle task sp: 0x%x\n", sp);
     }
 }
-__attribute__((used)) 
-volatile uint32_t idle_task_signature = 0x600D1DEA;
 
+void P1() {
+    volatile int count = 0;
+    uart_printf("P1 running...\n");
+    while(1){
+        uart_printf("P1: heartbeat: %d\n", p1_heartbeat);
+        count = 0x1FFFFF;
+        while (count > 0) {
+            count--;
+        }
+        p1_heartbeat++;
+        uart_printf("P1: Yield\n");
+        syscall(0,0);
+        uart_printf("P1: Return after Yield\n");
+    }
+}
+
+void P2() {
+    volatile int count = 0;
+    uart_printf("P2 running...\n");
+    while(1){
+        uart_printf("P2: heartbeat: %d\n", p2_heartbeat);
+        count = 0x1FFFFF;
+        while (count > 0) {
+            count--;
+        }
+        p2_heartbeat++;
+        uart_printf("P2: Yield\n");
+        syscall(0,0);
+        uart_printf("P2: Return after Yield\n");
+    }
+}
 
 void scheduler_tick(){
     uart_puts("scheduler_tick\n");
    
     uart_printf("P2 Heartbeat: %u\n", p2_heartbeat);
 
-    scheduler_should_switch = 1;
+    //scheduler_should_switch = 1;
 }
 
 void snprintf(char *dest, const char *src, int n) {
@@ -67,45 +100,6 @@ void snprintf(char *dest, const char *src, int n) {
         dest[i] = src[i];
     }
     dest[i] = '\0';
-}
-
-volatile uint32_t debug_loaded_pc = 0;
-volatile uint32_t debug_loaded_sp = 0;
-
-__attribute__((naked)) void restore_context(process_t *proc) {
-    __asm__ volatile (
-        "mov r1, r0\n"                             // r1 = proc
-
-        // Load SP
-        "ldr r2, [r1, %[sp_offset]]\n"
-        "mov sp, r2\n"
-
-        // Set CPSR to User mode (from proc->cpsr)
-        "ldr r2, [r1, %[cpsr_offset]]\n"
-        "msr spsr_cxsf, r2\n"
-
-        // Load PC
-        "ldr r2, [r1, %[pc_offset]]\n"
-
-        // Jump to user mode
-        "movs pc, r2\n"  // triggers mode switch from SPSR
-
-        :
-        : [pc_offset] "I" (PC_OFFSET),
-          [sp_offset] "I" (SP_OFFSET),
-          [cpsr_offset] "I" (CPSR_OFFSET)
-        : "r1", "r2", "memory"
-    );
-}
-
-
-unsigned int get_function_size(void *func) {
-    uint32_t *ptr = (uint32_t *)func;
-    unsigned int count = 0;
-    while (ptr[count] != 0x600D1DEA) {
-        count++;
-    }
-    return count * sizeof(uint32_t);  // returns size up to (but NOT including) sentinel
 }
 
 void scheduler_init() {
@@ -117,7 +111,7 @@ void scheduler_init() {
     /* Initialize scheduler state */
     scheduler.current_index = 0;
     scheduler.num_processes = 0;
-    scheduler_should_switch = 1;
+    //scheduler_should_switch = 1;
 
     /* Initialize the circular buffer for processes */
     generic_circular_buffer_init(&processes);
@@ -149,7 +143,30 @@ void scheduler_init() {
 
     generic_circular_buffer_push(&processes, (void*)idle_proc);
     scheduler.idle_process = idle_proc;
-    //generic_circular_buffer_push(&ready_queue, (void*)idle_proc);
+
+    /* create P1 and P2 */
+    uart_puts("Creating P1 process...\n");
+    proc = process_create(P1);
+    if (!proc) {
+        uart_puts("Failed to create P1 process\n");
+        while (1);
+    }
+    snprintf(proc->name, "P1", sizeof(proc->name));
+    uart_printf("Created process: %s\n", proc->name);
+    generic_circular_buffer_push(&processes, (void*)proc);
+    generic_circular_buffer_push(&ready_queue, (void*)proc);
+    scheduler.num_processes++;
+    uart_puts("Creating P2 process...\n");
+    proc = process_create(P2);
+    if (!proc) {
+        uart_puts("Failed to create P2 process\n");
+        while (1);
+    }
+    snprintf(proc->name, "P2", sizeof(proc->name));
+    uart_printf("Created process: %s\n", proc->name);
+    generic_circular_buffer_push(&processes, (void*)proc);
+    generic_circular_buffer_push(&ready_queue, (void*)proc);
+    scheduler.num_processes++;
 
     /* Use Timer 2 for scheduling */
     // timer_init(TIMER2, 1000, scheduler_tick);
@@ -159,51 +176,18 @@ void scheduler_init() {
     uart_puts("Scheduler Initialized\n");
 }
 
-
-
-int scheduler_add_process(process_t *proc) {
-    // if (!scheduler_initialized) {
-    //     uart_puts("Error: Cannot add process, scheduler is not initialized!\n");
-    //     return -1;
-    // }
-
-    // if (scheduler.num_processes >= MAX_PROCESSES) {
-    //     return -1;  /* No space for new processes */
-    // }
-
-    // scheduler.processes[scheduler.num_processes] = proc;
-    // proc->state = READY;
-    // scheduler.num_processes++;
-    return 0;
-}
-
-
-
-
-
-
-process_t* round_robin_scheduler() {
-    // int i;
-    // process_t *new_proc = NULL;
-	
-    // uart_puts("robin scheduling\n");
-    
-    // for (i = 0; i < scheduler.num_processes; i++) {
-    //     scheduler.current_index = (scheduler.current_index + 1) % scheduler.num_processes;
-    //     process_t *candidate = scheduler.processes[scheduler.current_index];
-    //     if (candidate && candidate->state == READY) {
-    //         return candidate;
-    //     }
-    // }
-
-    return &scheduler.idle_process;
-}
-
 void scheduler_run() {
     process_t *next_proc;
     bool status;
 
     uart_puts("Scheduler running...\n");
+
+    if (current_process != NULL && current_process != scheduler.idle_process) {
+        current_process->state = READY;
+        uart_printf("Scheduler: process %s added to ready queue\n", current_process->name);
+        generic_circular_buffer_push(&ready_queue, (void*)current_process);
+    }
+
 
     status = generic_circular_buffer_pop(&ready_queue, (void**)&next_proc);
     if (!status) {
@@ -213,7 +197,7 @@ void scheduler_run() {
 
     current_process = next_proc;
     current_process->state = RUNNING;
-    uart_printf("Scheduler starting proc: %s, pc: %x \n", current_process->name, current_process->program_counter);
+    uart_printf("Scheduler: starting proc: %s, pc: %x \n", current_process->name, current_process->program_counter);
     restore_context_asm(); // Jump to the process
     uart_printf("Ummm... we should not be here\n");
     while(1);
@@ -262,33 +246,6 @@ process_t* process_create(void (*entry_point)(void)) {
 
     return proc;
 }
-
-// void print_cpu_regs(void){
-//     __asm__ volatile (
-//         "mov r0, r1\n"                             // r1 = proc
-
-//         // Load SP
-//         "ldr r2, [r0, %[sp_offset]]\n"
-//         "mov sp, r2\n"
-
-//         // Set CPSR to User mode (from proc->cpsr)
-//         "ldr r2, [r0, %[cpsr_offset]]\n"
-//         "msr spsr_cxsf, r2\n"
-
-//         // Load PC
-//         "ldr r2, [r0, %[pc_offset]]\n"
-
-//         // Jump to user mode
-//         "movs pc, r2\n"  // triggers mode switch from SPSR
-
-//         :
-//         : [pc_offset] "I" (PC_OFFSET),
-//           [sp_offset] "I" (SP_OFFSET),
-//           [cpsr_offset] "I" (CPSR_OFFSET)
-//         : "r1", "r2", "memory"
-//     );
-// }
-
 
 void boot_test() {
 }
