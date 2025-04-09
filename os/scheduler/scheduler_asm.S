@@ -109,7 +109,9 @@ restore_context_asm:
 
     @ restore cpsr
     ldr     r1, [r0, #CPSR_OFF]
-    msr     cpsr, r1                 @ Restore CPSR
+    @ Make sure irq is enabled (clear I bit)
+    bic     r1, r1, #0x00000080
+    msr     cpsr_fc, r1                 @ Restore CPSR
 
     @ Load the process registers from the stack
     ldmfd   sp!, {r0}                @ Pop r0 from the stack

@@ -64,15 +64,11 @@ typedef struct {
 
 void scheduler_tick(void);
 
-
 process_t* process_create(void (*entry_point)(void));
 void scheduler_init();
-int scheduler_add_process(process_t *proc);
-int context_switch(process_t *old_proc, process_t *new_proc);
-void boot_test();
-process_t* round_robin_scheduler();
 void scheduler_run();
-void restore_context(process_t *proc);
+
+void yield(void);
 
 
 #endif // SCHED_H

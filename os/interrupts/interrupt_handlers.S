@@ -52,75 +52,72 @@ reset_handler_asm:
     /* .word __init */
     b .
 
+/* Need a spot to cache r0 and r1 
+   When wandering around cpu modes
+*/
+r0_cache:
+    .space 4                       @ Allocate 4 bytes for r0 cache
+r1_cache:
+    .space 4                       @ Allocate 4 bytes for r1 cache
+
 irq_handler_asm:
     sub      r14, r14, #4           /* Apply lr correction */
-    @str      r13, usr_sp_cache
-    @ldr      r13, os_sp_cache       /* Get the os stack pointer */
-    stmfd    r13!, {r0-r12, r14}    /* Save context */
-    mrs      r12, spsr              /* Copy spsr */
+    /*
+    stmfd    r13!, {r0-r12, r14}    
+    mrs      r12, spsr              
     stmfd    r13!, {r12}
+    */
 
-    /* bl   save_context (save to pcb and return) */
+    @  save r0 and r1 so that we can use them
+    str     r0, r0_cache             @ Save r0 to r0_cache
+    str     r1, r1_cache             @ Save r1 to r1_cache
+    
+    @switch to system mode (same cpu registers as uer mode)
+    mrs      r1, cpsr                   @ Read cpsr
+    orr      r1, r1, #MODE_System       @ Switch to System Mode
+    msr      cpsr, r1
 
-    /* Save the threshold value */
-    ldr      r0, =(INTC_BASE_ADDR + INTC_THRESHOLD_OFF)
-    ldr      r1, [r0, #0]
-    stmfd    r13!, {r1}
+    @ cache sp and lr for scheduler ctx saving
+    mov       r0, r13
+    mov       r1, r14
+    bl        save_sp_and_lr_usr
 
-    /* Set the priority as threshold.
-    interrupt with priority less than threshold will not be serviced */
-    ldr      r2, =(INTC_BASE_ADDR + INTC_IRQ_PRIORITY_OFF)
-    ldr      r3, [r2, #0]
-    str      r3, [r0, #0]
+    @ Restore r0 and r1
+    ldr      r0, r0_cache             @ Load r0 from r0_cache
+    ldr      r1, r1_cache             @ Load r1 from r1_cache
 
+    bl       load_os_sp               @ Load the os stack pointer
+    bl       save_context_asm         @ Save context to PCB
+    
     /* Get the active IRQ */
     ldr      r1, =(INTC_BASE_ADDR + INTC_SIR_IRQ_OFF)
     ldr      r2, [r1]
     and      r2, r2, #0x7f
 
-    /* Enable new IRQ generation if priority is > 0 (maskable)*/
-    mov      r0, #0x01
-    ldr      r1, =(INTC_BASE_ADDR + INTC_CONTROL_OFF)
-    cmp      r3, #0
-    strne    r0, [r1]                 /* if > 0 priority, acknowledge INTC */
-    dsb                               /* Make sure acknowledgement is completed */
-
-
-    mrs      r14, cpsr                /* Read cpsr */
-    orr      r14, r14, #MODE_System   /* Switch to System Mode */
-    bicne    r14, r14, #I_BIT         /* Enable IRQ if priority > 0 */
-    msr      cpsr, r14
-
-    stmfd    r13!, {r14}              /* Save lr_usr */
-
     ldr      r0, =intc_vector_table   /* Load the base of the vector table */
     add      r14, pc, #0              /* Save return address in lr */
     ldr      pc, [r0, r2, lsl #2]     /* Jump to the ISR. pc = vector_base + (intc_num * 4) */
 
-    /* Interrupt has been serviced. Restore the context */
-    ldmfd    r13!, {r14}              /* Restore lr_usr */
+    /* Enable new IRQ generation*/
+    mov      r0, #0x01
+    ldr      r1, =(INTC_BASE_ADDR + INTC_CONTROL_OFF)
+    str      r0, [r1]                 /* acknowledge INTC */
+    dsb                               /* Make sure acknowledgement is completed */
 
-    /* Disable IRQ and change back to IRQ mode */
-    cpsid    i, #MODE_IRQ             /* Disable IRQ */
-
-    ldr      r0, =(INTC_BASE_ADDR + INTC_THRESHOLD_OFF)      /* Get the IRQ Threshold */
-    ldr      r1, [r0, #0]
-    /* If the threshold is 0, then enable new IRQ generation
-    (was disabled in the beginning) */
-    cmp      r1, #0                   /* If priority 0 */
-    moveq    r2, #0x01                /* Enable new IRQ Generation */
-    ldreq    r1, =(INTC_BASE_ADDR + INTC_CONTROL_OFF)
-    streq    r2, [r1]
-
-    ldmfd    r13!, {r1}
-    str      r1, [r0, #0]             /* Restore the threshold value */
 
     /* b  scheduler  (should not return) */
+    @ call  scheduler_run
+    @ scheduler_run should not return
+    b        scheduler_run
+
+    b        loop_forever
 
     /* These will never be reached once scheduler is implemented */
+    /*
     ldmfd    r13!, {r12}
-    msr      spsr, r12                /* Restore spsr */
-    ldmfd    r13!, {r0-r12, pc}^  /* Restore the context and return */
+    msr      spsr, r12            
+    ldmfd    r13!, {r0-r12, pc}^  
+    */
 
 
 svc_handler_asm:

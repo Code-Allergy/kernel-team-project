@@ -8,15 +8,6 @@
 #include <circular_buffer.h>
 #include <syscall.h>
 
-#define REG_OFFSET     12
-#define SP_OFFSET      (REG_OFFSET + 13 * 4)   // 64
-#define LR_OFFSET      (SP_OFFSET + 4)         // 68
-#define CPSR_OFFSET    (LR_OFFSET + 4)         // 72
-#define PC_OFFSET      (CPSR_OFFSET + 4)       // 76
-
-
-#define MAX_PROCS 64
-
 static scheduler_t scheduler;
 static generic_circular_buffer_t processes;
 static generic_circular_buffer_t free_processes;
@@ -46,9 +37,9 @@ void idle_task() {
         /* print sp */
         // __asm__ volatile ("mov %0, sp" : "=r"(sp));
         // uart_printf("Idle task sp: 0x%x\n", sp);
-        uart_printf("Yield\n");
-        syscall(0,0);
-        uart_printf("Return after Yield\n");
+        // uart_printf("Yield\n");
+        // syscall(0,0);
+        // uart_printf("Return after Yield\n");
         // __asm__ volatile ("mov %0, sp" : "=r"(sp));
         // uart_printf("Idle task sp: 0x%x\n", sp);
     }
@@ -56,41 +47,46 @@ void idle_task() {
 
 void P1() {
     volatile int count = 0;
+    volatile uint32_t cpsr = 0;
     uart_printf("P1 running...\n");
     while(1){
+        __asm__ volatile ("mrs %0, cpsr" : "=r"(cpsr));
+        uart_printf("P2: cpsr: 0x%x\n", cpsr);
         uart_printf("P1: heartbeat: %d\n", p1_heartbeat);
         count = 0x1FFFFF;
         while (count > 0) {
             count--;
         }
         p1_heartbeat++;
-        uart_printf("P1: Yield\n");
-        syscall(0,0);
-        uart_printf("P1: Return after Yield\n");
+        // uart_printf("P1: Yield\n");
+        // syscall(0,0);
+        // uart_printf("P1: Return after Yield\n");
     }
 }
 
 void P2() {
     volatile int count = 0;
+    volatile uint32_t cpsr = 0;
     uart_printf("P2 running...\n");
     while(1){
+        __asm__ volatile ("mrs %0, cpsr" : "=r"(cpsr));
+        uart_printf("P2: cpsr: 0x%x\n", cpsr);
         uart_printf("P2: heartbeat: %d\n", p2_heartbeat);
         count = 0x1FFFFF;
         while (count > 0) {
             count--;
         }
         p2_heartbeat++;
-        uart_printf("P2: Yield\n");
-        syscall(0,0);
-        uart_printf("P2: Return after Yield\n");
+        // uart_printf("P2: Yield\n");
+        // syscall(0,0);
+        // uart_printf("P2: Return after Yield\n");
     }
 }
 
+volatile uint32_t timer_tick = 0;
 void scheduler_tick(){
-    uart_puts("scheduler_tick\n");
-   
-    uart_printf("P2 Heartbeat: %u\n", p2_heartbeat);
-
+    uart_printf("TICK: %u\n", timer_tick);
+    timer_tick++;
     //scheduler_should_switch = 1;
 }
 
@@ -169,9 +165,9 @@ void scheduler_init() {
     scheduler.num_processes++;
 
     /* Use Timer 2 for scheduling */
-    // timer_init(TIMER2, 1000, scheduler_tick);
-    // timer_start(TIMER2);
-    // uart_puts("Timer started\n");
+    timer_init(TIMER2, 1000, scheduler_tick);
+    timer_start(TIMER2);
+    uart_puts("Timer started\n");
 
     uart_puts("Scheduler Initialized\n");
 }
@@ -180,11 +176,11 @@ void scheduler_run() {
     process_t *next_proc;
     bool status;
 
-    uart_puts("Scheduler running...\n");
+    //uart_puts("Scheduler running...\n");
 
     if (current_process != NULL && current_process != scheduler.idle_process) {
         current_process->state = READY;
-        uart_printf("Scheduler: process %s added to ready queue\n", current_process->name);
+        //uart_printf("Scheduler: process %s added to ready queue\n", current_process->name);
         generic_circular_buffer_push(&ready_queue, (void*)current_process);
     }
 
