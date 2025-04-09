@@ -12,19 +12,6 @@ void handle_timer6_irq();
 void handle_timer7_irq();
 void handle_timer_irq(uint16_t timer_index);
 
-/*
-static const int timer_l4ls_clk_en_bit[8] = {
-    -1,
-    -1,
-    1 << 14,
-    1 << 15,
-    1 << 16,
-    1 << 27,
-    1 << 28,
-    1 << 13
-};
-*/
-
 static const uint32_t timer_base[8] = {
     -1,
     -1,
@@ -104,12 +91,6 @@ bool timer_init(uint16_t timer_index,
         return false;
     }
 
-
-
-    uart_puts("TIMER INIT\n");
-    
-
-
     /*CM_DPLL clock select if required. using CLK_32KHZ clk*/
     REG32_write(CM_DPLL_BASE, timer_pll_clksel_off[timer_index], 0x2);
     while((REG32_read(CM_DPLL_BASE, timer_pll_clksel_off[timer_index]) & 0x3)!= 0x2);
@@ -118,9 +99,6 @@ bool timer_init(uint16_t timer_index,
     while(
       (REG32_read_masked(CM_PER_BASE, timer_module_clk_off[timer_index], 0x3<<16) & 0x3)
     );
-
-
-   for(i = 0; i < 5000; i++); 
     
     /* OCP interface software reset*/
     REG32_write_masked(timer_base[timer_index], TIOCP_CFG_OFF, 0x1, 0x1);
@@ -147,9 +125,6 @@ bool timer_init(uint16_t timer_index,
     );
     TIMER_REG_WRITE_WAIT_DONE();
    
-
-
- 
     /*set timer value for the tick value*/
     REG32_write(
         timer_base[timer_index], 
@@ -163,16 +138,11 @@ bool timer_init(uint16_t timer_index,
     );
     TIMER_REG_WRITE_WAIT_DONE();
 
-
-
-
     /*overflow irq en. Disable the other irq types*/
     REG32_write(timer_base[timer_index], IRQENABLE_SET_OFF, 0x2);
     TIMER_REG_WRITE_WAIT_DONE();
     timer_tick_funcs[timer_index] = timer_tick_func;
     INTC_register_irq(timer_irq_num[timer_index], timer_irq_handlers[timer_index]);
-
-
 
     return true;
 }
@@ -223,10 +193,7 @@ void handle_timer_irq(uint16_t timer_index){
 
 void handle_timer2_irq(){
     uint16_t timer_index = 2; 
-    uart_puts("handle timer 2 irq\n");
-    uart_printf("TCRR: 0x%x\n", *((volatile uint32_t *)(TIMER2_BASE + 0x3C)));
 
-    
     handle_timer_irq(timer_index);
 }
 

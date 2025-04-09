@@ -3,7 +3,7 @@
 
 #include <types.h>
 
-#define SYS_DEFAULT         0
+#define SYS_YIELD           0
 #define SYS_READ            1
 #define SYS_WRITE           3
 /* Define more swi*/

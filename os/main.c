@@ -52,20 +52,8 @@ void kmain(bootloader_header_t* boot_header) {
 
 
     check_mode();
-    scheduler_init();
+    scheduler_init(); /*Creates MVP processes */
     check_mode();
-    //boot_test();
-
-
-    /* setup initial kernel crap, stacks,
-    other drivers init, processes, then schedule */
-
-    while(1){
-        uart_puts("infinite loop\n");
-	for(i = 0; i < 19999; i++);
-	scheduler_run();
-    }
-
-
+    scheduler_run();
     panic("Reached end of kernel main!\n");
 }

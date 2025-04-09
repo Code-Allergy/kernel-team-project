@@ -7,41 +7,29 @@
 #include <mmu.h>
 #include <circular_buffer.h>
 #include <syscall.h>
+#include <motor.h>
+#include <driver_defs.h>
 
 static scheduler_t scheduler;
 static generic_circular_buffer_t processes;
 static generic_circular_buffer_t free_processes;
 static generic_circular_buffer_t ready_queue;
-static int scheduler_initialized = 0;
-volatile int scheduler_tick_flag = 0;
-void process1(void);
-
 process_t *current_process = NULL;
-
-static process_t* proc_table[MAX_PROCESSES];
 
 volatile uint32_t p1_heartbeat= 0, p2_heartbeat = 0, idle_proc_heartbeat = 0;
 
-volatile uint32_t sp;
-//__attribute__((naked)) 
+
 void idle_task() {
     volatile int idle_count = 0;
     uart_printf("Idle task running...\n");
     while(1){
         uart_printf("Idle task heartbeat: %d\n", idle_proc_heartbeat);
-        idle_count = 0x1FFFFF;
+        idle_count = 0xFFFF;
         while (idle_count > 0) {
             idle_count--;
         }
         idle_proc_heartbeat++;
-        /* print sp */
-        // __asm__ volatile ("mov %0, sp" : "=r"(sp));
-        // uart_printf("Idle task sp: 0x%x\n", sp);
-        // uart_printf("Yield\n");
-        // syscall(0,0);
-        // uart_printf("Return after Yield\n");
-        // __asm__ volatile ("mov %0, sp" : "=r"(sp));
-        // uart_printf("Idle task sp: 0x%x\n", sp);
+        yield();
     }
 }
 
@@ -50,17 +38,15 @@ void P1() {
     volatile uint32_t cpsr = 0;
     uart_printf("P1 running...\n");
     while(1){
-        __asm__ volatile ("mrs %0, cpsr" : "=r"(cpsr));
-        uart_printf("P2: cpsr: 0x%x\n", cpsr);
+        // __asm__ volatile ("mrs %0, cpsr" : "=r"(cpsr));
+        // uart_printf("P2: cpsr: 0x%x\n", cpsr);
         uart_printf("P1: heartbeat: %d\n", p1_heartbeat);
-        count = 0x1FFFFF;
+        count = 0xFF;
         while (count > 0) {
             count--;
         }
         p1_heartbeat++;
-        // uart_printf("P1: Yield\n");
-        // syscall(0,0);
-        // uart_printf("P1: Return after Yield\n");
+        yield();
     }
 }
 
@@ -69,19 +55,59 @@ void P2() {
     volatile uint32_t cpsr = 0;
     uart_printf("P2 running...\n");
     while(1){
-        __asm__ volatile ("mrs %0, cpsr" : "=r"(cpsr));
-        uart_printf("P2: cpsr: 0x%x\n", cpsr);
+        // __asm__ volatile ("mrs %0, cpsr" : "=r"(cpsr));
+        // uart_printf("P2: cpsr: 0x%x\n", cpsr);
         uart_printf("P2: heartbeat: %d\n", p2_heartbeat);
-        count = 0x1FFFFF;
+        count = 0xFF;
         while (count > 0) {
             count--;
         }
         p2_heartbeat++;
-        // uart_printf("P2: Yield\n");
-        // syscall(0,0);
-        // uart_printf("P2: Return after Yield\n");
+        yield();
     }
 }
+
+/* Moter driver process */
+void motor_task() {
+	char uart_buffer[10];
+    int x_joystick, y_joystick, read = 0;
+    
+    uart_printf("Motor task running...\n");
+	motor_init();
+    uart_printf("Motor task: Motors initialized\n");
+	
+	while(1){
+		read = uart_readline(1, uart_buffer, 100);
+        if(read == 5) /* xayb*/
+        {
+            x_joystick = (int)uart_buffer[1] - 128;
+            y_joystick = (int)uart_buffer[3] - 128;
+            uart_printf("Received: x:%d, y:%d\n", x_joystick, y_joystick);
+
+			if (x_joystick > -5 && x_joystick < 5 && y_joystick > 5) { /* straight forward*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD);
+			}else if (x_joystick > -5 && x_joystick < 5 && y_joystick < -5) { /* straight backward*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD);
+			}else if (x_joystick > 5 && y_joystick > 5) { /* right forward*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD | MOTOR_DIR_RIGHT);
+			}else if (x_joystick > 5 && y_joystick < -5) { /* right backward*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD | MOTOR_DIR_RIGHT);
+			}else if (x_joystick < -5 && y_joystick > 5) { /* left forward*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_FORWARD | MOTOR_DIR_LEFT);
+			}else if (x_joystick < -5 && y_joystick < -5) { /* left backward*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_BACKWARD | MOTOR_DIR_LEFT);
+			}else if ((x_joystick >-5 && x_joystick < 5) && (y_joystick > -5 && y_joystick < 5)) { /* stop*/
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_STOP);
+			}else{
+				/* stop */
+				motor_ioctl(MOTOR_SET_DIR, MOTOR_DIR_STOP);
+			}
+        }
+        uart_printf("Motor task: yielding...\n");
+        yield();
+	}
+}
+
 
 volatile uint32_t timer_tick = 0;
 void scheduler_tick(){
@@ -164,9 +190,23 @@ void scheduler_init() {
     generic_circular_buffer_push(&ready_queue, (void*)proc);
     scheduler.num_processes++;
 
+    /* create motor process */
+    uart_puts("Creating motor process...\n");
+    proc = process_create(motor_task);
+    if (!proc) {
+        uart_puts("Failed to create motor process\n");
+        while (1);
+    }
+    snprintf(proc->name, "Motor Process", sizeof(proc->name));
+    uart_printf("Created process: %s\n", proc->name);
+    generic_circular_buffer_push(&processes, (void*)proc);
+    generic_circular_buffer_push(&ready_queue, (void*)proc);
+    scheduler.num_processes++;
+
     /* Use Timer 2 for scheduling */
-    timer_init(TIMER2, 1000, scheduler_tick);
-    timer_start(TIMER2);
+    /* 100ms quantum */
+    timer_init(TIMER2, 100, scheduler_tick);
+    // timer_start(TIMER2); (MMU does not like the motor task)
     uart_puts("Timer started\n");
 
     uart_puts("Scheduler Initialized\n");
@@ -187,13 +227,13 @@ void scheduler_run() {
 
     status = generic_circular_buffer_pop(&ready_queue, (void**)&next_proc);
     if (!status) {
-        uart_puts("No READY process. Running idle...\n");
+        //uart_puts("No READY process. Running idle...\n");
         next_proc = scheduler.idle_process;
     }
 
     current_process = next_proc;
     current_process->state = RUNNING;
-    uart_printf("Scheduler: starting proc: %s, pc: %x \n", current_process->name, current_process->program_counter);
+    //uart_printf("Scheduler: starting proc: %s, pc: %x \n", current_process->name, current_process->program_counter);
     restore_context_asm(); // Jump to the process
     uart_printf("Ummm... we should not be here\n");
     while(1);
@@ -238,30 +278,13 @@ process_t* process_create(void (*entry_point)(void)) {
 
     /* proc->pid set already in scheduler_init() */
 
-    uart_puts("Creating Proc\n");
-
     return proc;
 }
 
-void boot_test() {
+void yield() {
+    uart_puts("Yielding...\n");
+    syscall(SYS_YIELD, 0);
 }
-
-
-void process1() {
-    volatile uint32_t p1_counter = 0;
-
-    while (1) {
-        p1_counter++;
-        if (p1_counter > 3000000) {
-            p1_counter = 0;
-
-        }
-    }
-}
-
-
-__attribute__((used)) 
-volatile uint32_t process1_signiture = 0x600D1DEA;
 
 void uart_print_hex(uint32_t value) {
     char hex_string[9]; /* 8 characters + null terminator */
