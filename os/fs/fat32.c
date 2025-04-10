@@ -799,12 +799,13 @@ int read_dir_entry(fat32_fs_t* fs,
                         current_dir->attributes = current_entry->attr;
                         /*
                         /* if (current_dir->start_cluster < 2) { */
-                        /*     printk("Start clister: %d\n", 
+                        /*     printk("Start clister: %d\n",
                         current_dir->start_cluster);
                         /*     return FAT32_ERROR_CORRUPTED_FS; */
                         /* } */
 
-                        /* TODO other metadata crap we don't care about for now */
+                        /* TODO other metadata crap we don't care about for now
+                         */
                     }
                     return 0;
                 }

@@ -82,18 +82,19 @@ static inline void gpio_test(void)
     {
         /*delay(1); */
 
-        timer_val = timer_value(TIMER2);
-        /*uart_printf("Timer value: %u\n", timer_val); */
+    timer_val = timer_value(TIMER2);
+    /*uart_printf("Timer value: %u\n", timer_val); */
 
-        read = uart_readline(1, uart_buffer, 100);
-        if(read == 5) /* xayb*/* * */
+    read = uart_readline(1, uart_buffer, 100);
+    if (read == 5) /* xayb*/
+        *** /
         {
-            a = (int)uart_buffer[1] - 128;
-            b = (int)uart_buffer[3] - 128;
+            a = (int) uart_buffer[1] - 128;
+            b = (int) uart_buffer[3] - 128;
             uart_printf("Received: x:%d, y:%d\n", a, b);
         }
-    }
-    */
+}
+* /
 }
 
 int min(int a, int b, int c)

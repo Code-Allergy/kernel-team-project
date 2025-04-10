@@ -1,9 +1,9 @@
 #ifndef MEMORY_MAP_BBB_H
 #define MEMORY_MAP_BBB_H
 
-/*----------------------------------------/*  */ */
-/*            BBB memory map             /*  */ */
-/*----------------------------------------/*  */ */
+/*----------------------------------------/*  */ * /
+    /*            BBB memory map             /*  */ * /
+    /*----------------------------------------/*  */ * /
 
 /* for handler mode can use: */
 /*	0b11111  system mode (same stack as thread mode) */

@@ -13,7 +13,9 @@
 /* }; */
 
 /* void timer_init(uint32_t idx, uint32_t interval) { */
-/*     /*  clock_timer.global_ticks = 0; */ */
-/*     /*  clock_timer.initialized = 1; */ */
-/*     /*  system_tick_clock(TIMER1_IDX); // TODO this should be a high IDX */ */
-/* } */
+/*     /*  clock_timer.global_ticks = 0; */ * /
+    /*     /*  clock_timer.initialized = 1; */ * /
+    /*     /*  system_tick_clock(TIMER1_IDX); // TODO this should be a high IDX
+     */
+    * /
+    /* } */

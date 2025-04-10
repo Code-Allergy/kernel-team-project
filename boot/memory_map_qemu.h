@@ -1,9 +1,9 @@
 #ifndef MEMORY_MAP_QEMU_H
 #define MEMORY_MAP_QEMU_H
 
-/*----------------------------------------/*  */ */
-/*            Qemu memory map             /*  */ */
-/*----------------------------------------/*  */ */
+/*----------------------------------------/*  */ * /
+    /*            Qemu memory map             /*  */ * /
+    /*----------------------------------------/*  */ * /
 
 /* for handler mode can use: */
 /*	0b11111  system mode (same stack as thread mode) */

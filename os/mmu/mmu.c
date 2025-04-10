@@ -102,17 +102,18 @@ void d_cache_disable(void)
 
 void flush_i_cache(void)
 {
-    __asm__ volatile("mrs r1, cpsr\n"
-                     "bic r2, r1, #0x1F\n"
-                     "orr r2, r2, #0x1F\n" /*  Switch to System mode (privileged) */
-                     "msr cpsr_c, r2\n"
+    __asm__ volatile(
+        "mrs r1, cpsr\n"
+        "bic r2, r1, #0x1F\n"
+        "orr r2, r2, #0x1F\n" /*  Switch to System mode (privileged) */
+        "msr cpsr_c, r2\n"
 
-                     "mcr p15, 0, %0, c7, c5, 0\n"
+        "mcr p15, 0, %0, c7, c5, 0\n"
 
-                     "msr cpsr_c, r1\n" /*  Restore original mode */
-                     :
-                     : "r"(0)
-                     : "r1", "r2", "memory");
+        "msr cpsr_c, r1\n" /*  Restore original mode */
+        :
+        : "r"(0)
+        : "r1", "r2", "memory");
 }
 
 void flush_d_cache(void)

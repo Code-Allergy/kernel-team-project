@@ -14,7 +14,8 @@
 #define INTC_IRQ_REG_BIT(irq_num) (1 << ((irq_num) % 32))
 #define INTC_IRQ_REG_NUM(irq_num) ((irq_num) / 32) /* Either 0, 1, 2, or 3*/
 #define INTC_ILEn_OFF(irq_num)    (0x100 + ((irq_num) * 4))
-#define INTC_MIRn_OFF(irq_num)    (0x84 + ((8 * (INTC_IRQ_REG_NUM(irq_num))) * 4))
+#define INTC_MIRn_OFF(irq_num)    \
+    (0x84 + ((8 * (INTC_IRQ_REG_NUM(irq_num))) * 4))
 #define INTC_MIRn_CLR_OFF(irq_num) \
     (0x88 + ((8 * (INTC_IRQ_REG_NUM(irq_num))) * 4))
 #define INTC_MIRn_SET_OFF(irq_num) \

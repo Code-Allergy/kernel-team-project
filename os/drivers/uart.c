@@ -56,19 +56,20 @@ void uart_init(unsigned short uart_index,
             {
             } /*  Wait for fully enabled */
 
-            /* 1. Pin muxing. This is required because many pins have multiple */
-            /* functions (e.g. UART, GPIO, SPI, etc.) Control module pin muxing */
+            /* 1. Pin muxing. This is required because many pins have multiple
+             */
+            /* functions (e.g. UART, GPIO, SPI, etc.) Control module pin muxing
+             */
             REG32_write(CONTROL_MODULE_BASE,
                         CONTROL_MODULE_UART0_RXD_OFF,
                         0x30); /*  [3] = 0 for pull-up/pull-down enable, */
                                /* [4] = 1 for pull-up select, */
                                /* [5] = 1 for receiver enable */
-            REG32_write(
-                CONTROL_MODULE_BASE,
-                CONTROL_MODULE_UART0_TXD_OFF,
-                0x10); /*  [3] = 0 for pull-up/pull-down enable, */
-                       /* [4] = 1 for pull-up select, */
-                       /* [5] = 0 for receiver disable (this is a TX pin) */
+            REG32_write(CONTROL_MODULE_BASE,
+                        CONTROL_MODULE_UART0_TXD_OFF,
+                        0x10); /*  [3] = 0 for pull-up/pull-down enable, */
+                               /* [4] = 1 for pull-up select, */
+            /* [5] = 0 for receiver disable (this is a TX pin) */
 
             uart_port_init(UART0_BASE,
                            baud_rate,
@@ -96,25 +97,25 @@ void uart_init(unsigned short uart_index,
             {
             } /*  Wait for fully enabled */
 
-
             while (REG32_read(CM_WKUP_BASE, CM_WKUP_L4WKUP_CLKCTRL) &
                    (0x3 << 16))
             {
             } /*  Wait for fully enabled */
 
-            /* 1. Pin muxing. This is required because many pins have multiple */
-            /* functions (e.g. UART, GPIO, SPI, etc.) Control module pin muxing */
+            /* 1. Pin muxing. This is required because many pins have multiple
+             */
+            /* functions (e.g. UART, GPIO, SPI, etc.) Control module pin muxing
+             */
             REG32_write(CONTROL_MODULE_BASE,
                         CONTROL_MODULE_UART1_RXD_OFF,
                         0x30); /*  [3] = 0 for pull-up/pull-down enable, */
                                /* [4] = 1 for pull-up select, */
                                /* [5] = 1 for receiver enable */
-            REG32_write(
-                CONTROL_MODULE_BASE,
-                CONTROL_MODULE_UART1_TXD_OFF,
-                0x10); /*  [3] = 0 for pull-up/pull-down enable, */
-                       /* [4] = 1 for pull-up select, */
-                       /* [5] = 0 for receiver disable (this is a TX pin) */
+            REG32_write(CONTROL_MODULE_BASE,
+                        CONTROL_MODULE_UART1_TXD_OFF,
+                        0x10); /*  [3] = 0 for pull-up/pull-down enable, */
+                               /* [4] = 1 for pull-up select, */
+            /* [5] = 0 for receiver disable (this is a TX pin) */
 
             uart_port_init(UART1_BASE,
                            baud_rate,
@@ -149,7 +150,7 @@ void uart_port_init(uint32_t base_addr,
     REG32_write_masked(
         base_addr, UART_SYSC_OFF, 0x2, 0x2); /*  Initiate software reset */
     while (!(REG32_read(base_addr, UART_SYSS_OFF) & 0x1)) {
-    }                                           /*  Wait for reset to complete */
+    } /*  Wait for reset to complete */
     REG32_write(base_addr, UART_SYSC_OFF, 0x8); /*  Set SYSC config */
 
     /*-------------- 19.4.1.1.2 FIFOs and DMA Settings --------------- */
@@ -157,63 +158,69 @@ void uart_port_init(uint32_t base_addr,
     lcr = REG32_read(base_addr, UART_LCR_OFF);
     REG32_write(base_addr, UART_LCR_OFF, 0xBF);
 
-    /* 2. Enable register submode TCR_TLR to access the UARTi.UART_TLR register */
+    /* 2. Enable register submode TCR_TLR to access the UARTi.UART_TLR register
+     */
     /* (part 1 of 2): */
     efr_bit4 = REG32_read_masked(base_addr, UART_EFR_OFF, 0x10);
     REG32_write_masked(
         base_addr, UART_EFR_OFF, 0x10, 0x10); /*  Set ENHANCEDEN = 1 */
 
-    /* 3. Switch to register configuration mode A to access the UARTi.UART_MCR */
+    /* 3. Switch to register configuration mode A to access the UARTi.UART_MCR
+     */
     /* register */
     REG32_write(base_addr, UART_LCR_OFF, 0x80);
 
-    /* 4. Enable register submode TCR_TLR to access the UARTi.UART_TLR register */
+    /* 4. Enable register submode TCR_TLR to access the UARTi.UART_TLR register
+     */
     /* (part 2 of 2) */
     mcr_bit6 = REG32_read_masked(base_addr, UART_MCR_OFF, 0x40);
-    REG32_write_masked(base_addr, UART_MCR_OFF, 0x40, 0x40); /*  Set TCR_TLR = 1 */
+    REG32_write_masked(
+        base_addr, UART_MCR_OFF, 0x40, 0x40); /*  Set TCR_TLR = 1 */
 
-    /* 5. Enable the FIFO; load the new FIFO triggers (part 1 of 3) and the new */
+    /* 5. Enable the FIFO; load the new FIFO triggers (part 1 of 3) and the new
+     */
     /* DMA mode (part 1 of 2) */
-    REG32_write(base_addr,
-                UART_FCR_OFF,
-                0x07); /*  [0] FIFO_EN = 1 */
-                       /* [1] RX_FIFO_CLEAR = 1 */
-                       /* [2] TX_FIFO_CLEAR = 1 */
-                       /* [3] DMA_MODE = 0 (DMA mode disabled) */
-                       /* [5-4] TX_FIFO_TRIG = 0x0 (8 characters) */
-                       /* [7-6] RX_FIFO_TRIG = 0x0 (8 characters) */
+    REG32_write(base_addr, UART_FCR_OFF, 0x07); /*  [0] FIFO_EN = 1 */
+                                                /* [1] RX_FIFO_CLEAR = 1 */
+                                                /* [2] TX_FIFO_CLEAR = 1 */
+    /* [3] DMA_MODE = 0 (DMA mode disabled) */
+    /* [5-4] TX_FIFO_TRIG = 0x0 (8 characters) */
+    /* [7-6] RX_FIFO_TRIG = 0x0 (8 characters) */
 
-    /* 6. Switch to register configuration mode B to access the UARTi.UART_EFR */
+    /* 6. Switch to register configuration mode B to access the UARTi.UART_EFR
+     */
     /* register */
     REG32_write(base_addr, UART_LCR_OFF, 0xBF);
 
     /* 7. Load the new FIFO triggers (part 2 of 3) */
-    /* For TX SCR[6] = 0, and TLR[3] to TLR[0] = 0, then: Defined by FCR[5] and */
-    /* FCR[4] (either 8, 16, 32, 56 characters) For RX SCR[7] = 0, and TLR[7] to */
+    /* For TX SCR[6] = 0, and TLR[3] to TLR[0] = 0, then: Defined by FCR[5] and
+     */
+    /* FCR[4] (either 8, 16, 32, 56 characters) For RX SCR[7] = 0, and TLR[7] to
+     */
     /* TLR[4]=0, then: Defined by FCR[7] and FCR[6] (either 8, 16, 56, 60 */
     /* characters). */
     REG32_write(
-        base_addr,
-        UART_TLR_OFF,
-        0x00); /*  [3-0] RX_FIFO_TRIG_DMA = 0x00, use setting from FCR register */
-               /* [7-4] TX_FIFO_TRIG_DMA = 0x00, use setting from FCR register */
+        base_addr, UART_TLR_OFF, 0x00); /*  [3-0] RX_FIFO_TRIG_DMA = 0x00, use
+                                           setting from FCR register */
+    /* [7-4] TX_FIFO_TRIG_DMA = 0x00, use setting from FCR register */
 
-    /* 8. Load the new FIFO triggers (part 3 of 3) and the new DMA mode (part 2 */
+    /* 8. Load the new FIFO triggers (part 3 of 3) and the new DMA mode (part 2
+     */
     /* of 2) */
-    REG32_write(
-        base_addr,
-        UART_SCR_OFF,
-        0x00); /*  [0] DMA_MODE_CTL = 0 (DMA set with FCR register) */
-               /* [2-1] DMAMODE2 = 0x0 (Has no effect when DMA_MODE_CTL = 0) */
-               /* [3] TXEMPTYCTL = 0 (Normal mode for THR interrupt) */
-               /* [4] RXCTSDSRWAKEUPENABLE = 0 (CTS/DSR wakeup disabled) */
-               /* [5] DSRIT = 0 (DSR interrupt disabled) */
-               /* [6] TXTRIGGRANU1 = 0 (disable TX trigger granularity) */
-               /* [7] RXTRIGGRANU1 = 0 (disable RX trigger granularity) */
+    REG32_write(base_addr,
+                UART_SCR_OFF,
+                0x00); /*  [0] DMA_MODE_CTL = 0 (DMA set with FCR register) */
+    /* [2-1] DMAMODE2 = 0x0 (Has no effect when DMA_MODE_CTL = 0) */
+    /* [3] TXEMPTYCTL = 0 (Normal mode for THR interrupt) */
+    /* [4] RXCTSDSRWAKEUPENABLE = 0 (CTS/DSR wakeup disabled) */
+    /* [5] DSRIT = 0 (DSR interrupt disabled) */
+    /* [6] TXTRIGGRANU1 = 0 (disable TX trigger granularity) */
+    /* [7] RXTRIGGRANU1 = 0 (disable RX trigger granularity) */
     /* 9. Restore the UARTi.UART_EFR[4] ENHANCED_EN value saved in Step 2a */
     REG32_write_masked(base_addr, UART_EFR_OFF, 0x10, efr_bit4);
 
-    /* 10. Switch to register configuration mode A to access the UARTi.UART_MCR */
+    /* 10. Switch to register configuration mode A to access the UARTi.UART_MCR
+     */
     /* register */
     REG32_write(base_addr, UART_LCR_OFF, 0x80);
 
@@ -225,13 +232,15 @@ void uart_port_init(uint32_t base_addr,
 
     /* -------------- 19.4.1.1.3 Protocol, Baud Rate, and Interrupt Settings
      * -----------*/
-    /* 1. Disable UART to access the UARTi.UART_DLL and UARTi.UART_DLH registers */
+    /* 1. Disable UART to access the UARTi.UART_DLL and UARTi.UART_DLH registers
+     */
     REG32_write_masked(base_addr,
                        UART_MDR1_OFF,
                        0x7,
                        0x7); /*  Set MODE_SELECT = 0x7 (disable UART) */
 
-    /* 2. Switch to register configuration mode B to access the UARTi.UART_EFR */
+    /* 2. Switch to register configuration mode B to access the UARTi.UART_EFR
+     */
     /* register */
     REG32_write(base_addr, UART_LCR_OFF, 0xBF);
 
@@ -250,7 +259,8 @@ void uart_port_init(uint32_t base_addr,
     /*    UARTi.UART_IER register value to 0x0000 */
     REG32_write(base_addr, UART_IER_UART_OFF, 0x00);
 
-    /* 6. Switch to register configuration mode B to access the UARTi.UART_DLL */
+    /* 6. Switch to register configuration mode B to access the UARTi.UART_DLL
+     */
     /* and UARTi.UART_DLH registers */
     REG32_write(base_addr, UART_LCR_OFF, 0xBF);
 
@@ -269,26 +279,28 @@ void uart_port_init(uint32_t base_addr,
     REG32_write(base_addr,
                 UART_IER_UART_OFF,
                 0x01); /*  [0] RHRIT = 1 (Receive holding register interrupt) */
-                       /* [1] THRIT = 0 (Tranmission holding register interrupt) */
-                       /* [2] LINESTIT = 0 (receiver line status interrupt) */
-                       /* [3] MODEMSTSIT = 0 (modem status register interrupt) */
-                       /* [4] SLEEPMODE = 0 (Disables sleep mode) */
-                       /* [5] XOFFIT = 0 (XOFF interrupt) */
-                       /* [6] RTSIT = 0 (RTS (active-low) interrup) */
-                       /* [7] CTSIT = 0 (CTS (active-low) interrupt) */
+    /* [1] THRIT = 0 (Tranmission holding register interrupt) */
+    /* [2] LINESTIT = 0 (receiver line status interrupt) */
+    /* [3] MODEMSTSIT = 0 (modem status register interrupt) */
+    /* [4] SLEEPMODE = 0 (Disables sleep mode) */
+    /* [5] XOFFIT = 0 (XOFF interrupt) */
+    /* [6] RTSIT = 0 (RTS (active-low) interrup) */
+    /* [7] CTSIT = 0 (CTS (active-low) interrupt) */
 
-    /* 10. Switch to register configuration mode B to access the UARTi.UART_EFR */
+    /* 10. Switch to register configuration mode B to access the UARTi.UART_EFR
+     */
     /* register */
     REG32_write(base_addr, UART_LCR_OFF, 0xBF);
 
     /* 11. Restore the UARTi.UART_EFR[4] ENHANCED_EN value saved in Step 3a */
     REG32_write_masked(base_addr, UART_EFR_OFF, 0x10, efr_bit4);
 
-    /* 12. Load the new protocol formatting (parity, stop-bit, character length) */
+    /* 12. Load the new protocol formatting (parity, stop-bit, character length)
+     */
     /* and switch to register operational mode */
     REG32_write(base_addr,
                 UART_LCR_OFF,
-                (0 << 7) |     /*  [7] DIV_EN = 0 (disable divisor latch access) */
+                (0 << 7) | /*  [7] DIV_EN = 0 (disable divisor latch access) */
                     (0 << 6) | /*  [6] BREAK_EN = 0 (disable break condition) */
                     (0 << 5) | /*  [5] PARITY_TYPE_2 */
                     ((parity_type & 0x1) << 4) |   /*  [4] PARITY_TYPE_1 */

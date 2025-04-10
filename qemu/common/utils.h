@@ -87,7 +87,8 @@ static inline unsigned int
     #define LOG_LEVEL_ERROR 0
 
     #ifndef LOG_LEVEL
-        #define LOG_LEVEL LOG_LEVEL_INFO /*  Default log level if not defined */
+        #define LOG_LEVEL LOG_LEVEL_INFO /*  Default log level if not defined \
+                                          */
     #endif
 
 static inline void log_message(int level, const char* fmt, ...)

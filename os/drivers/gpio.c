@@ -11,7 +11,8 @@ void GPIO_init(void)
     /* 2. Wait for the clock to be enabled */
     while ((REG32_read(CM_PER_BASE, CM_PER_GPIO1_CLKCTRL) & (0x3 << 16)) != 0x0)
         ;
-    /* 3. Configure the GPIO1 module clock gating to disabled (module not gated) */
+    /* 3. Configure the GPIO1 module clock gating to disabled (module not gated)
+     */
     REG32_write(GPIO1_BASE, GPIO_CTRL_OFF, 0x0);
 
     /* 4. Configure the GPIO1 pins 21-24 as outputs (LEDs) */

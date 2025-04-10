@@ -1,9 +1,6 @@
 #include <gpio.h>
 
-void GPIO_init(void)
-{
-    /* dummy, we can emulate the GPIOs or log the calls */
-}
+void GPIO_init(void) { /* dummy, we can emulate the GPIOs or log the calls */ }
 
 void GpioSetPinMode(const enum GpioIOBase Gpio,
                     const unsigned int PinMask,
