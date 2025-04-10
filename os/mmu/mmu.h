@@ -1,23 +1,23 @@
-// memory API
+/* memory API */
 
 #include "uart.h"
 #include <boot.h>
 
-// #ifdef PLATFORM_BBB
+/* #ifdef PLATFORM_BBB */
 #define PADDR(x) (x)
 #define VADDR(x) (x)
-// #else
-// #define PADDR(x) (x - 0x40000000)
-// #define VADDR(x) (x + 0x40000000)
-// #endif
+/* #else */
+/* #define PADDR(x) (x - 0x40000000) */
+/* #define VADDR(x) (x + 0x40000000) */
+/* #endif */
 
 /* place the bootloader page tables far off in memory so it doesn't conflict
  * with kernel/clearing bss */
-// #ifdef PLATFORM_BBB
-// #define BOOTLOADER_PAGE_TABLE_BASE 0x90000000U
-// #else
-// #define BOOTLOADER_PAGE_TABLE_BASE 0x50000000U
-// #endif
+/* #ifdef PLATFORM_BBB */
+/* #define BOOTLOADER_PAGE_TABLE_BASE 0x90000000U */
+/* #else */
+/* #define BOOTLOADER_PAGE_TABLE_BASE 0x50000000U */
+/* #endif */
 
 #define VIRT_MEM_START  0x80000000
 #define VIRT_DRAM_START 0x80000000
@@ -67,7 +67,7 @@
 #define L1_ACCESS_NX (1 << 4)
 #define L1_ACCESS_X  (0 << 4)
 
-/// L1 AP bits for read/write access for KERN_USR
+/*/ L1 AP bits for read/write access for KERN_USR */
 #define L1_ACCESS_NO_NO \
     ((RAW_AP_NO_NO << L1_AP_SHIFT) | (RAW_AP2_0 << L1_AP2_SHIFT))
 #define L1_ACCESS_RW_NO \

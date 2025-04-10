@@ -113,7 +113,7 @@ extern void mmu_undef_handler_asm(void);
 #define INTC_BASE    0x48200000
 
 #define DMTIMER_IRQSTATUS_OFFSET 0x28
-#define DMTIMER_IRQ_OVERFLOW     0x2 // Match/overflow interrupt
+#define DMTIMER_IRQ_OVERFLOW     0x2 /*  Match/overflow interrupt */
 #define DMTIMER2_BASE            0x48040000
 
 uint32_t get_active_irq()
@@ -135,7 +135,7 @@ void irq_handler(void)
 
     irq_num = get_active_irq();
 
-    // Only do full debug printout on second IRQ (user mode expected)
+    /* Only do full debug printout on second IRQ (user mode expected) */
     if (irq_count == 2)
     {
         asm volatile("mov %0, sp" : "=r"(irq_sp));
@@ -204,19 +204,19 @@ void prefetch_abort_handler(void)
     uint32_t r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12;
     uint32_t sp, pc;
 
-    // Faulting address from Instruction Fault Address Register (IFAR)
+    /* Faulting address from Instruction Fault Address Register (IFAR) */
     __asm__ volatile("MRC p15, 0, %0, c6, c0, 2" : "=r"(fault_address));
 
-    // Instruction Fault Status Register
+    /* Instruction Fault Status Register */
     __asm__ volatile("MRC p15, 0, %0, c5, c0, 1" : "=r"(ifsr));
 
-    // Get SPSR (state the CPU was in before abort)
+    /* Get SPSR (state the CPU was in before abort) */
     __asm__ volatile("MRS %0, SPSR" : "=r"(spsr));
 
-    // Get LR (return address to instruction that caused the abort)
+    /* Get LR (return address to instruction that caused the abort) */
     __asm__ volatile("MOV %0, LR" : "=r"(lr));
 
-    // Print out information about the fault
+    /* Print out information about the fault */
     uart_printf("PANIC: Prefetch abort exception\n");
     uart_printf("  Fault address (IFAR):  0x%x\n", fault_address);
     uart_printf("  IFSR:                  0x%x\n", ifsr);
@@ -269,7 +269,7 @@ void prefetch_abort_handler(void)
     __asm__ volatile("MOV %0, pc" : "=r"(pc));
     uart_printf("pc:  0x%x\n", pc);
 
-    // Halt the system
+    /* Halt the system */
     while (1)
         ;
 }
@@ -298,17 +298,17 @@ void data_abort_handler(void)
 {
     uint32_t fault_address, dfsr, instr, cpsr, lr;
 
-    // Read DFAR: faulting virtual address
+    /* Read DFAR: faulting virtual address */
     __asm__ volatile("MRC p15, 0, %0, c6, c0, 0" : "=r"(fault_address));
 
-    // Read DFSR: fault type (domain + status)
+    /* Read DFSR: fault type (domain + status) */
     __asm__ volatile("MRC p15, 0, %0, c5, c0, 0" : "=r"(dfsr));
 
-    // Read LR and CPSR at time of exception
+    /* Read LR and CPSR at time of exception */
     __asm__ volatile("MOV %0, lr" : "=r"(lr));
     __asm__ volatile("MRS %0, cpsr" : "=r"(cpsr));
 
-    // Read instruction at LR (should be where fault occurred)
+    /* Read instruction at LR (should be where fault occurred) */
     instr = *((volatile uint32_t*) lr);
 
     uart_puts("PANIC: Data abort exception!\n");

@@ -1,1 +1,1 @@
-// Hardware spinlocks API
+/* Hardware spinlocks API */

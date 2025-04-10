@@ -1,4 +1,4 @@
-//  Motor control API
+/*  Motor control API */
 #ifndef MOTOR_H
 #define MOTOR_H
 
@@ -37,4 +37,4 @@ int motor_ioctl(int cmd, int value);
 
 void motor_test_sequence(void);
 
-#endif //__MOTOR_H__
+#endif /* __MOTOR_H__ */

@@ -45,7 +45,7 @@ void uart_init(unsigned short uart_index,
 }
 void uart_putc(char c)
 {
-    // Wait until Transmit Holding Register is empty (LSR[5] = 1)
+    /* Wait until Transmit Holding Register is empty (LSR[5] = 1) */
     while (!(UART0->LSR & (1 << 5)))
         ;
     UART0->RBR_THR_DLL = c;
@@ -61,7 +61,7 @@ void uart_puts(const char* str)
 
 char uart_getc(void)
 {
-    // Wait until Data Ready (LSR[0] = 1)
+    /* Wait until Data Ready (LSR[0] = 1) */
     while (!(UART0->LSR & 1))
         ;
     return UART0->RBR_THR_DLL;
@@ -70,33 +70,33 @@ char uart_getc(void)
 void uart_handler(int irq, void* data)
 {
     (void) data;
-    char c = UART0->RBR_THR_DLL; // Read the character (clears interrupt)
+    char c = UART0->RBR_THR_DLL; /*  Read the character (clears interrupt) */
     INTC->IRQ_PEND[0] = (irq << 1);
-    uart_putc(c); // echo the character for now
+    uart_putc(c); /*  echo the character for now */
 }
 
 void uart0_interrupt_init(void)
 {
-    // Disable UART first
+    /* Disable UART first */
     UART0->IER_DLH = 0;
 
-    // Configure line control (8N1)
-    UART0->LCR = 0x03; // 8 bits, no parity, 1 stop bit
+    /* Configure line control (8N1) */
+    UART0->LCR = 0x03; /*  8 bits, no parity, 1 stop bit */
 
-    // Enable FIFOs
+    /* Enable FIFOs */
     UART0->IIR_FCR = 0x01;
 
-    // Enable receive interrupts
+    /* Enable receive interrupts */
     UART0->IER_DLH = UART_IER_RX_INT;
 
-    // Enable UART0 interrupt
+    /* Enable UART0 interrupt */
     INTC_register_irq(UART0_INT_NUM, handle_uart0_irq);
     INTC_enable_irq(UART0_INT_NUM);
 }
 
 void handle_uart0_irq(void)
 {
-    char c = UART0->RBR_THR_DLL; // Read the character (clears interrupt)
+    char c = UART0->RBR_THR_DLL; /*  Read the character (clears interrupt) */
     INTC->IRQ_PEND[0] = (UART0_INT_NUM << 1);
     circular_char_buffer_push(&uart0_rx_buffer, c);
 }

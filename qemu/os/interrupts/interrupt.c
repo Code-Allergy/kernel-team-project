@@ -7,18 +7,18 @@ void (*intc_vector_table[NUM_INTERRUPTS])(void);
 static inline void CPU_irq_disable(void);
 static inline void CPU_irq_enable(void);
 
-// TODO
+/* TODO */
 static void INTC_init(void)
 {
-    // uint32_t vbar_addr = (uint32_t)_vectors;
-    // if(vbar_addr & 0x1F) {
-    //     printk("VBAR unaligned! Fix %p → %p\n",
-    //            vbar_addr, vbar_addr & ~0x1F);
-    //     vbar_addr &= ~0x1F;
-    //     panic("VBAR unaligned");
-    // }
+    /* uint32_t vbar_addr = (uint32_t)_vectors; */
+    /* if(vbar_addr & 0x1F) { */
+    /*     printk("VBAR unaligned! Fix %p → %p\n", */
+    /*            vbar_addr, vbar_addr & ~0x1F); */
+    /*     vbar_addr &= ~0x1F; */
+    /*     panic("VBAR unaligned"); */
+    /* } */
 
-    // setup CSPR for IRQ mode
+    /* setup CSPR for IRQ mode */
     __asm__ volatile("mrs r0, cpsr \n"
                      "bic r0, r0, #0x80 \n"
                      "msr cpsr_c, r0 \n");

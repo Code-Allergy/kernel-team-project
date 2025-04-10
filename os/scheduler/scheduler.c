@@ -42,8 +42,8 @@ void P1()
     uart_printf("P1 running...\n");
     while (1)
     {
-        // __asm__ volatile ("mrs %0, cpsr" : "=r"(cpsr));
-        // uart_printf("P2: cpsr: 0x%x\n", cpsr);
+        /* __asm__ volatile ("mrs %0, cpsr" : "=r"(cpsr)); */
+        /* uart_printf("P2: cpsr: 0x%x\n", cpsr); */
         uart_printf("P1: heartbeat: %d\n", p1_heartbeat);
         count = 0xFF;
         while (count > 0)
@@ -62,8 +62,8 @@ void P2()
     uart_printf("P2 running...\n");
     while (1)
     {
-        // __asm__ volatile ("mrs %0, cpsr" : "=r"(cpsr));
-        // uart_printf("P2: cpsr: 0x%x\n", cpsr);
+        /* __asm__ volatile ("mrs %0, cpsr" : "=r"(cpsr)); */
+        /* uart_printf("P2: cpsr: 0x%x\n", cpsr); */
         uart_printf("P2: heartbeat: %d\n", p2_heartbeat);
         count = 0xFF;
         while (count > 0)
@@ -140,7 +140,7 @@ void scheduler_tick()
 {
     uart_printf("TICK: %u\n", timer_tick);
     timer_tick++;
-    // scheduler_should_switch = 1;
+    /* scheduler_should_switch = 1; */
 }
 
 void snprintf(char* dest, const char* src, int n)
@@ -163,7 +163,7 @@ void scheduler_init()
     /* Initialize scheduler state */
     scheduler.current_index = 0;
     scheduler.num_processes = 0;
-    // scheduler_should_switch = 1;
+    /* scheduler_should_switch = 1; */
 
     /* Initialize the circular buffer for processes */
     generic_circular_buffer_init(&processes);
@@ -245,7 +245,7 @@ void scheduler_init()
     /* Use Timer 2 for scheduling */
     /* 100ms quantum */
     timer_init(TIMER2, 100, scheduler_tick);
-    // timer_start(TIMER2); (MMU does not like the motor task)
+    /* timer_start(TIMER2); (MMU does not like the motor task) */
     uart_puts("Timer started\n");
 
     uart_puts("Scheduler Initialized\n");
@@ -256,28 +256,28 @@ void scheduler_run()
     process_t* next_proc;
     bool status;
 
-    // uart_puts("Scheduler running...\n");
+    /* uart_puts("Scheduler running...\n"); */
 
     if (current_process != NULL && current_process != scheduler.idle_process)
     {
         current_process->state = READY;
-        // uart_printf("Scheduler: process %s added to ready queue\n",
-        // current_process->name);
+        /* uart_printf("Scheduler: process %s added to ready queue\n", */
+        /* current_process->name); */
         generic_circular_buffer_push(&ready_queue, (void*) current_process);
     }
 
     status = generic_circular_buffer_pop(&ready_queue, (void**) &next_proc);
     if (!status)
     {
-        // uart_puts("No READY process. Running idle...\n");
+        /* uart_puts("No READY process. Running idle...\n"); */
         next_proc = scheduler.idle_process;
     }
 
     current_process        = next_proc;
     current_process->state = RUNNING;
-    // uart_printf("Scheduler: starting proc: %s, pc: %x \n",
-    // current_process->name, current_process->program_counter);
-    restore_context_asm(); // Jump to the process
+    /* uart_printf("Scheduler: starting proc: %s, pc: %x \n", */
+    /* current_process->name, current_process->program_counter); */
+    restore_context_asm(); /*  Jump to the process */
     uart_printf("Ummm... we should not be here\n");
     while (1)
         ;
@@ -298,7 +298,7 @@ process_t* process_create(void (*entry_point)(void))
         return NULL;
     }
     proc->state           = NEW;
-    proc->priority        = 1; // Default priority, can be modified
+    proc->priority        = 1; /*  Default priority, can be modified */
     proc->program_counter = (uint32_t) entry_point;
     proc->segment_base    = (uint32_t) proc;
     /* processes will be run in system mode since
@@ -320,7 +320,7 @@ process_t* process_create(void (*entry_point)(void))
     proc->stack_top     = (uint32_t) (proc->stack + USER_STACK_SIZE);
     proc->stack_pointer = proc->stack_top;
 
-    // proc->state = READY;
+    /* proc->state = READY; */
     scheduler.num_processes++;
 
     /* proc->pid set already in scheduler_init() */

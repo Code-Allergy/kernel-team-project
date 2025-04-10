@@ -1,4 +1,4 @@
-// Memory management
+/* Memory management */
 #include "boot.h"
 #include "uart.h"
 #include <utils.h>
@@ -104,12 +104,12 @@ void flush_i_cache(void)
 {
     __asm__ volatile("mrs r1, cpsr\n"
                      "bic r2, r1, #0x1F\n"
-                     "orr r2, r2, #0x1F\n" // Switch to System mode (privileged)
+                     "orr r2, r2, #0x1F\n" /*  Switch to System mode (privileged) */
                      "msr cpsr_c, r2\n"
 
                      "mcr p15, 0, %0, c7, c5, 0\n"
 
-                     "msr cpsr_c, r1\n" // Restore original mode
+                     "msr cpsr_c, r1\n" /*  Restore original mode */
                      :
                      : "r"(0)
                      : "r1", "r2", "memory");
@@ -220,7 +220,7 @@ static void mmu_map_hardware_pages(void)
                         flags);
     }
 
-    uint32_t index = 0x9fe00000 >> 20; // = 0x9FE
+    uint32_t index = 0x9fe00000 >> 20; /*  = 0x9FE */
 
     uart_printf("L1[0x%x] = 0x%x\n", index, l1_tables[index]);
 
@@ -275,7 +275,7 @@ uint32_t read_dacr(void)
 
 void set_ttbr0(uint32_t* l1_base)
 {
-    __asm__ volatile("mcr p15, 0, %0, c2, c0, 0 \n" // TTBR0
+    __asm__ volatile("mcr p15, 0, %0, c2, c0, 0 \n" /*  TTBR0 */
                      "dsb \n"
                      "isb \n"
                      :
@@ -382,7 +382,7 @@ void init_frame_allocator(bootloader_header_t* header)
         frame_t* frame = &frames[i];
         uint32_t paddr = MEM_PHYS_BASE + (i * MEM_SECTION_SIZE);
         if (paddr == MEM_BOOT_PAGE_TABLE_BASE)
-        { // preserve bootloader page tables
+        { /*  preserve bootloader page tables */
             continue;
         }
 

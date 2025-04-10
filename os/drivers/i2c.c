@@ -1,1 +1,1 @@
-// I2C driver (Optional)
+/* I2C driver (Optional) */

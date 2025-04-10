@@ -48,8 +48,8 @@ __attribute__((section(".text.kmain"))) void
         8  /* Character length*/
     );
 
-    // GPIO_clear(GPIO1_BASE, LED_PINS);
-    //  motor_test_sequence(); /* infinite loop */
+    /* GPIO_clear(GPIO1_BASE, LED_PINS); */
+    /*  motor_test_sequence(); */
 
     check_mode();
     scheduler_init(); /*Creates MVP processes */

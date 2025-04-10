@@ -1,1 +1,1 @@
-// I2C API
+/* I2C API */

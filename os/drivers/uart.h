@@ -77,59 +77,59 @@ Ch LCR Line Control Register Section 19.5.1.13
 */
 enum UartRegister
 {
-    UART_THR_OFF        = 0x00,      // Transmit Holding Register
-    UART_RHR_OFF        = 0x00,      // Receiver Holding Register
-    UART_DLL_OFF        = 0x00,      // Divisor Latches Low Register
-    UART_IER_IRDA_OFF   = 0x04,      // Interrupt Enable Register (IrDA)
-    UART_IER_CIR_OFF    = 0x04,      // Interrupt Enable Register (CIR)
-    UART_IER_UART_OFF   = 0x04,      // Interrupt Enable Register (UART)
-    UART_DLH_OFF        = 0x04,      // Divisor Latches High Register
-    UART_EFR_OFF        = 0x08,      // Enhanced Feature Register
-    UART_IIR_UART_OFF   = 0x08,      // Interrupt Identification Register (UART)
-    UART_IIR_CIR_OFF    = 0x08,      // Interrupt Identification Register (CIR)
-    UART_FCR_OFF        = 0x08,      // FIFO Control Register
-    UART_IIR_IRDA_OFF   = 0x08,      // Interrupt Identification Register (IrDA)
-    UART_LCR_OFF        = 0x0C,      // Line Control Register
-    UART_MCR_OFF        = 0x10,      // Modem Control Register
-    UART_XON1_ADDR1_OFF = 0x10,      // XON1/ADDR1 Register
-    UART_XON2_ADDR2_OFF = 0x14,      // XON2/ADDR2 Register
-    UART_LSR_CIR_OFF    = 0x14,      // Line Status Register (CIR)
-    UART_LSR_IRDA_OFF   = 0x14,      // Line Status Register (IrDA)
-    UART_LSR_UART_OFF   = 0x14,      // Line Status Register (UART)
-    UART_TCR_OFF        = 0x18,      // Transmission Control Register
-    UART_MSR_OFF        = 0x18,      // Modem Status Register
-    UART_XOFF1_OFF      = 0x18,      // XOFF1 Register
-    UART_SPR_OFF        = 0x1C,      // Scratchpad Register
-    UART_TLR_OFF        = 0x1C,      // Trigger Level Register
-    UART_XOFF2_OFF      = 0x1C,      // XOFF2 Register
-    UART_MDR1_OFF       = 0x20,      // Mode Definition Register 1
-    UART_MDR2_OFF       = 0x24,      // Mode Definition Register 2
-    UART_TXFLL_OFF      = 0x28,      // Transmit Frame Length Low Register
-    UART_SFLSR_OFF      = 0x28,      // Status FIFO Line Status Register
-    UART_RESUME_OFF     = 0x2C,      // RESUME Register
-    UART_TXFLH_OFF      = 0x2C,      // Transmit Frame Length High Register
-    UART_RXFLL_OFF      = 0x30,      // Received Frame Length Low Register
-    UART_SFREGL_OFF     = 0x30,      // Status FIFO Register Low
-    UART_SFREGH_OFF     = 0x34,      // Status FIFO Register High
-    UART_RXFLH_OFF      = 0x34,      // Received Frame Length High Register
-    UART_BLR_OFF        = 0x38,      // BOF Control Register
-    UART_UASR_OFF       = 0x38,      // UART Autobauding Status Register
-    UART_ACREG_OFF      = 0x3C,      // Auxiliary Control Register
-    UART_SCR_OFF        = 0x40,      // Supplementary Control Register
-    UART_SSR_OFF        = 0x44,      // Supplementary Status Register
-    UART_EBLR_OFF       = 0x48,      // BOF Length Register
-    UART_MVR_OFF        = 0x50,      // Module Version Register
-    UART_SYSC_OFF       = 0x54,      // System Configuration Register
-    UART_SYSS_OFF       = 0x58,      // System Status Register
-    UART_WER_OFF        = 0x5C,      // Wake-Up Enable Register
-    UART_CFPS_OFF       = 0x60,      // Carrier Frequency Prescaler Register
-    UART_RXFIFO_LVL_OFF = 0x64,      // Received FIFO Level Register
-    UART_TXFIFO_LVL_OFF = 0x68,      // Transmit FIFO Level Register
-    UART_IER2_OFF       = 0x6C,      // IER2 Register
-    UART_ISR2_OFF       = 0x70,      // ISR2 Register
-    UART_FREQ_SEL_OFF   = 0x74,      // FREQ_SEL Register
-    UART_MDR3_OFF       = 0x80,      // Mode Definition Register 3
-    UART_TX_DMA_THRESHOLD_OFF = 0x84 // TX DMA Threshold Register
+    UART_THR_OFF        = 0x00,      /*  Transmit Holding Register */
+    UART_RHR_OFF        = 0x00,      /*  Receiver Holding Register */
+    UART_DLL_OFF        = 0x00,      /*  Divisor Latches Low Register */
+    UART_IER_IRDA_OFF   = 0x04,      /*  Interrupt Enable Register (IrDA) */
+    UART_IER_CIR_OFF    = 0x04,      /*  Interrupt Enable Register (CIR) */
+    UART_IER_UART_OFF   = 0x04,      /*  Interrupt Enable Register (UART) */
+    UART_DLH_OFF        = 0x04,      /*  Divisor Latches High Register */
+    UART_EFR_OFF        = 0x08,      /*  Enhanced Feature Register */
+    UART_IIR_UART_OFF   = 0x08,      /*  Interrupt Identification Register (UART) */
+    UART_IIR_CIR_OFF    = 0x08,      /*  Interrupt Identification Register (CIR) */
+    UART_FCR_OFF        = 0x08,      /*  FIFO Control Register */
+    UART_IIR_IRDA_OFF   = 0x08,      /*  Interrupt Identification Register (IrDA) */
+    UART_LCR_OFF        = 0x0C,      /*  Line Control Register */
+    UART_MCR_OFF        = 0x10,      /*  Modem Control Register */
+    UART_XON1_ADDR1_OFF = 0x10,      /*  XON1/ADDR1 Register */
+    UART_XON2_ADDR2_OFF = 0x14,      /*  XON2/ADDR2 Register */
+    UART_LSR_CIR_OFF    = 0x14,      /*  Line Status Register (CIR) */
+    UART_LSR_IRDA_OFF   = 0x14,      /*  Line Status Register (IrDA) */
+    UART_LSR_UART_OFF   = 0x14,      /*  Line Status Register (UART) */
+    UART_TCR_OFF        = 0x18,      /*  Transmission Control Register */
+    UART_MSR_OFF        = 0x18,      /*  Modem Status Register */
+    UART_XOFF1_OFF      = 0x18,      /*  XOFF1 Register */
+    UART_SPR_OFF        = 0x1C,      /*  Scratchpad Register */
+    UART_TLR_OFF        = 0x1C,      /*  Trigger Level Register */
+    UART_XOFF2_OFF      = 0x1C,      /*  XOFF2 Register */
+    UART_MDR1_OFF       = 0x20,      /*  Mode Definition Register 1 */
+    UART_MDR2_OFF       = 0x24,      /*  Mode Definition Register 2 */
+    UART_TXFLL_OFF      = 0x28,      /*  Transmit Frame Length Low Register */
+    UART_SFLSR_OFF      = 0x28,      /*  Status FIFO Line Status Register */
+    UART_RESUME_OFF     = 0x2C,      /*  RESUME Register */
+    UART_TXFLH_OFF      = 0x2C,      /*  Transmit Frame Length High Register */
+    UART_RXFLL_OFF      = 0x30,      /*  Received Frame Length Low Register */
+    UART_SFREGL_OFF     = 0x30,      /*  Status FIFO Register Low */
+    UART_SFREGH_OFF     = 0x34,      /*  Status FIFO Register High */
+    UART_RXFLH_OFF      = 0x34,      /*  Received Frame Length High Register */
+    UART_BLR_OFF        = 0x38,      /*  BOF Control Register */
+    UART_UASR_OFF       = 0x38,      /*  UART Autobauding Status Register */
+    UART_ACREG_OFF      = 0x3C,      /*  Auxiliary Control Register */
+    UART_SCR_OFF        = 0x40,      /*  Supplementary Control Register */
+    UART_SSR_OFF        = 0x44,      /*  Supplementary Status Register */
+    UART_EBLR_OFF       = 0x48,      /*  BOF Length Register */
+    UART_MVR_OFF        = 0x50,      /*  Module Version Register */
+    UART_SYSC_OFF       = 0x54,      /*  System Configuration Register */
+    UART_SYSS_OFF       = 0x58,      /*  System Status Register */
+    UART_WER_OFF        = 0x5C,      /*  Wake-Up Enable Register */
+    UART_CFPS_OFF       = 0x60,      /*  Carrier Frequency Prescaler Register */
+    UART_RXFIFO_LVL_OFF = 0x64,      /*  Received FIFO Level Register */
+    UART_TXFIFO_LVL_OFF = 0x68,      /*  Transmit FIFO Level Register */
+    UART_IER2_OFF       = 0x6C,      /*  IER2 Register */
+    UART_ISR2_OFF       = 0x70,      /*  ISR2 Register */
+    UART_FREQ_SEL_OFF   = 0x74,      /*  FREQ_SEL Register */
+    UART_MDR3_OFF       = 0x80,      /*  Mode Definition Register 3 */
+    UART_TX_DMA_THRESHOLD_OFF = 0x84 /*  TX DMA Threshold Register */
 };
 
 /**
@@ -145,17 +145,6 @@ enum UartRegister
  is disabled).
  * @param char_length   Length of the character (number of data bits).
  *
- * Function Call:
- *
- uart_init(
-    0,         // UART index (0 = UART0, 1 = UART1, etc.)
-    115200,    // Baud rate for communication
-    1,         // Stop bit enable (1 = enabled, 0 = disabled)
-    0,         // Number of stop bits (0 = 1 stop bit, 1 = 1.5/2 stop bits)
-    0,         // Parity enable (1 = enabled, 0 = disabled)
-    0,         // Parity type (0 = even, 1 = odd; ignored if parity is disabled)
-    3          // Character length
- );
  */
 void uart_init(unsigned short uart_index,
                unsigned int baud_rate,

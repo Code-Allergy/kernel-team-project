@@ -3,7 +3,7 @@
 
 #include <types.h>
 
-// Making the decision to make all char circular buffers 512 characters long
+/* Making the decision to make all char circular buffers 512 characters long */
 #define CHAR_BUFFER_SIZE 512
 typedef struct _circular_char_buffer
 {
@@ -14,8 +14,8 @@ typedef struct _circular_char_buffer
     uint16_t lines;
 } circular_char_buffer_t;
 
-// Generic circular buffer
-// Making the size 512 as well
+/* Generic circular buffer */
+/* Making the size 512 as well */
 #define GENERIC_BUFFER_SIZE 512
 typedef struct _generic_circular_buffer
 {

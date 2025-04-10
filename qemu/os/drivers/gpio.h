@@ -49,7 +49,7 @@ enum GpioPinDirection
     GpioPinIn  = 1
 };
 
-void GPIO_init(void); // Only configures GPIO1 for now
+void GPIO_init(void); /*  Only configures GPIO1 for now */
 void GPIO_set(unsigned int gpio_base, unsigned int pins);
 void GPIO_clear(unsigned int gpio_base, unsigned int pins);
 void GpioSetPinMode(const enum GpioIOBase Gpio,

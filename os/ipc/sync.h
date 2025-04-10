@@ -1,1 +1,1 @@
-// Sync API
+/* Sync API */

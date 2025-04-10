@@ -1,1 +1,1 @@
-// IPC core implementation
+/* IPC core implementation */

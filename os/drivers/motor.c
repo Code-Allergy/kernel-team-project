@@ -1,4 +1,4 @@
-//  Motor control driver
+/*  Motor control driver */
 
 #include <motor.h>
 #include <gpio.h>

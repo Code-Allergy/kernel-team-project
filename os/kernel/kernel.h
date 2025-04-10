@@ -1,1 +1,1 @@
-// kernel API
+/* kernel API */

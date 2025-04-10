@@ -1,7 +1,7 @@
 #ifndef GPIO_H
 #define GPIO_H
 
-// GPIO Base addresses
+/* GPIO Base addresses */
 enum GpioIOBase
 {
     GPIO0_BASE = 0x44e07000,
@@ -25,7 +25,7 @@ enum GpioIOBase
     (DRIVER_ENA | DRIVER_ENB | DRIVER_IN1 | DRIVER_IN2 | DRIVER_IN3 | \
      DRIVER_IN4)
 
-// GPIO offsets
+/* GPIO offsets */
 /*----------------------------------------------------
 0h GPIO_REVISION Section 25.4.1.1
 10h GPIO_SYSCONFIG Section 25.4.1.2
@@ -97,7 +97,7 @@ enum GpioPinDirection
 };
 
 void dumb_delay(void);
-void GPIO_init(void); // Only configures GPIO1 for now
+void GPIO_init(void); /*  Only configures GPIO1 for now */
 void GPIO_set(unsigned int gpio_base, unsigned int pins);
 void GPIO_clear(unsigned int gpio_base, unsigned int pins);
 void GpioSetPinMode(const enum GpioIOBase Gpio,

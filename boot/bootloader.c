@@ -80,13 +80,13 @@ static inline void gpio_test(void)
     /*
     while (1)
     {
-        //delay(1);
+        delay(1);
 
         timer_val = timer_value(TIMER2);
-        //uart_printf("Timer value: %u\n", timer_val);
+        uart_printf("Timer value: %u\n", timer_val);
 
         read = uart_readline(1, uart_buffer, 100);
-        if(read == 5) /* xayb*//*
+        if(read == 5)
         {
             a = (int)uart_buffer[1] - 128;
             b = (int)uart_buffer[3] - 128;

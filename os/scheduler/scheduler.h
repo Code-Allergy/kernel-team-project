@@ -6,10 +6,10 @@
 #include <uart.h>
 #include <utils.h>
 
-#define SEGMENT_SIZE    0x100000    // 1MB per process
-#define USER_STACK_SIZE (64 * 1024) // 200 KB User Stack
+#define SEGMENT_SIZE    0x100000    /*  1MB per process */
+#define USER_STACK_SIZE (64 * 1024) /*  200 KB User Stack */
 
-#define HEAP_BASE_OFFSET  0xC8000      // Heap base remains at 800 KB
+#define HEAP_BASE_OFFSET  0xC8000      /*  Heap base remains at 800 KB */
 #define PROCESS_CODE_SIZE (600 * 1024) /* 600 KB */
 
 #define MAX_PROCESSES 32
@@ -61,7 +61,7 @@ typedef struct
     int current_index;
     int num_processes;
 
-    // process_t* (*schedule_next)();
+    /* process_t* (*schedule_next)(); */
 } scheduler_t;
 
 void scheduler_tick(void);
@@ -72,4 +72,4 @@ void scheduler_run();
 
 void yield(void);
 
-#endif // SCHED_H
+#endif /*  SCHED_H */
