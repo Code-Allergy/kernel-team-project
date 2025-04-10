@@ -1,1 +1,1 @@
-// IPC API
+/* IPC API */

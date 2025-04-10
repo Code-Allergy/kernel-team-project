@@ -1,1 +1,1 @@
-// Hardware spinlocks
+/* Hardware spinlocks */

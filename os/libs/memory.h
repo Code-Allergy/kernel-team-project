@@ -1,1 +1,1 @@
-// Memory management API
+/* Memory management API */

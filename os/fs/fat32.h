@@ -59,7 +59,10 @@ typedef struct
 
 typedef fat32_path_static_t fat32_path_t;
 
-static inline void fat32_path_init(fat32_path_t* path) { path->num_components = 0; }
+static inline void fat32_path_init(fat32_path_t* path)
+{
+    path->num_components = 0;
+}
 
 /* api structs */
 
@@ -97,10 +100,13 @@ typedef struct
 
     uint32_t first_data_sector; /* The first sector of the data region */
     uint32_t fat_start_sector;  /* The first FAT's starting sector */
-    uint32_t magic;             /* Flag indicating if the fs struct is initialized */
+    uint32_t magic; /* Flag indicating if the fs struct is initialized */
 } fat32_fs_t;
 
-static inline int fat32_is_initialized(const fat32_fs_t* fs) { return fs && fs->magic == FAT32_MAGIC; }
+static inline int fat32_is_initialized(const fat32_fs_t* fs)
+{
+    return fs && fs->magic == FAT32_MAGIC;
+}
 
 /*
  * File handle structure.
@@ -109,14 +115,16 @@ static inline int fat32_is_initialized(const fat32_fs_t* fs) { return fs && fs->
  */
 typedef struct
 {
-    fat32_fs_t* fs;                 /* Reference to the mounted filesystem */
-    char formatted_name[11];        /* 8.3 formatted name */
-    uint32_t start_cluster;         /* Starting cluster number from the directory entry */
+    fat32_fs_t* fs;          /* Reference to the mounted filesystem */
+    char formatted_name[11]; /* 8.3 formatted name */
+    uint32_t
+        start_cluster; /* Starting cluster number from the directory entry */
     uint32_t current_cluster;       /* Current cluster number while reading */
     uint32_t current_cluster_index; /* Index of last cluster */
     uint32_t file_size;             /* Total file size in bytes */
     uint32_t file_offset;           /* Current offset into the file */
-    uint32_t parent_dir_cluster;    /* Cluster of the directory containing this file */
+    uint32_t
+        parent_dir_cluster; /* Cluster of the directory containing this file */
 } fat32_file_t;
 
 typedef struct
@@ -131,7 +139,8 @@ typedef struct
 /*
  * Directory entry structure.
  *
- * A minimal representation of a directory entry (only the short filename variant).
+ * A minimal representation of a directory entry (only the short filename
+ * variant).
  */
 typedef struct
 {
@@ -151,10 +160,12 @@ typedef struct
 /**
  * @brief Mounts (initializes) the FAT32 filesystem.
  *
- * This function reads the boot sector and sets up the FAT32 filesystem structure.
+ * This function reads the boot sector and sets up the FAT32 filesystem
+ * structure.
  *
  * @param fs       Pointer to a fat32_fs_t structure (allocated by the caller).
- * @param io       Pointer to a fat32_diskio_t structure with I/O function pointers.
+ * @param io       Pointer to a fat32_diskio_t structure with I/O function
+ * pointers.
  * @return         FAT32_SUCCESS on success, or an error code.
  */
 int fat32_mount(fat32_fs_t* fs, const fat32_diskio_t* io);
@@ -179,7 +190,8 @@ int fat32_readlabel(fat32_fs_t* fs, char* label_out);
  *
  * @param fs       Mounted FAT32 filesystem pointer.
  * @param path     Null-terminated path to the file.
- * @param file     Pointer to a fat32_file_t structure (allocated by the caller).
+ * @param file     Pointer to a fat32_file_t structure (allocated by the
+ * caller).
  * @return         FAT32_SUCCESS on success, or an error code.
  */
 int fat32_open(fat32_fs_t* fs, const char* path, fat32_file_t* file);
@@ -212,7 +224,6 @@ int fat32_size(fat32_file_t* file);
  */
 int fat32_close(fat32_file_t* file);
 
-
 /* Get a string describing a return code */
 char* fat32_geterror(int32_t err);
 
@@ -238,8 +249,8 @@ typedef struct __attribute__((packed))
     uint32_t sectorsPerFAT32;  /* Sectors per FAT */
     uint16_t extFlags;         /* Mirroring info */
     uint16_t fsVersion;        /* FAT32 version */
-    uint32_t rootCluster;      /* First cluster of root directory (typically 2) */
-    uint16_t fsInfo;           /* Sector number of FSInfo structure */
+    uint32_t rootCluster; /* First cluster of root directory (typically 2) */
+    uint16_t fsInfo;      /* Sector number of FSInfo structure */
     uint16_t backupBootSector; /* Sector number of backup boot sector */
     uint8_t reserved[12];      /* Unused */
     uint8_t driveNumber;       /* BIOS drive number */

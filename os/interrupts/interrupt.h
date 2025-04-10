@@ -4,19 +4,22 @@
 #include <types.h>
 #include <utils.h>
 
-#define INTC_BASE_ADDR              0x48200000
-#define INTC_CONTROL_OFF            0x48
-#define INTC_SIR_IRQ_OFF            0x40
-#define INTC_SYSCONFIG_OFF          0x10
-#define INTC_IDLE_OFF               0x50
-#define INTC_THRESHOLD_OFF          0x68
-#define INTC_STATUS_OFF             0x14
-#define INTC_IRQ_REG_BIT(irq_num)   (1 << ((irq_num) % 32))
-#define INTC_IRQ_REG_NUM(irq_num)   ((irq_num) / 32) /* Either 0, 1, 2, or 3*/
-#define INTC_ILEn_OFF(irq_num)      (0x100 + ((irq_num) * 4))
-#define INTC_MIRn_OFF(irq_num)      (0x84 + ((8*(INTC_IRQ_REG_NUM(irq_num))) * 4))
-#define INTC_MIRn_CLR_OFF(irq_num)  (0x88 + ((8*(INTC_IRQ_REG_NUM(irq_num))) * 4))
-#define INTC_MIRn_SET_OFF(irq_num)  (0x8c + ((8*(INTC_IRQ_REG_NUM(irq_num))) * 4))
+#define INTC_BASE_ADDR            0x48200000
+#define INTC_CONTROL_OFF          0x48
+#define INTC_SIR_IRQ_OFF          0x40
+#define INTC_SYSCONFIG_OFF        0x10
+#define INTC_IDLE_OFF             0x50
+#define INTC_THRESHOLD_OFF        0x68
+#define INTC_STATUS_OFF           0x14
+#define INTC_IRQ_REG_BIT(irq_num) (1 << ((irq_num) % 32))
+#define INTC_IRQ_REG_NUM(irq_num) ((irq_num) / 32) /* Either 0, 1, 2, or 3*/
+#define INTC_ILEn_OFF(irq_num)    (0x100 + ((irq_num) * 4))
+#define INTC_MIRn_OFF(irq_num)    \
+    (0x84 + ((8 * (INTC_IRQ_REG_NUM(irq_num))) * 4))
+#define INTC_MIRn_CLR_OFF(irq_num) \
+    (0x88 + ((8 * (INTC_IRQ_REG_NUM(irq_num))) * 4))
+#define INTC_MIRn_SET_OFF(irq_num) \
+    (0x8c + ((8 * (INTC_IRQ_REG_NUM(irq_num))) * 4))
 
 #define NUM_INTERRUPTS      128
 /* Interrupt numbers */
@@ -84,21 +87,24 @@ void setup_vector_table(void);
 
 /**
  * @brief Does all the necessary setup for the interrupts
- *        calls the functions to setup the vector table 
+ *        calls the functions to setup the vector table
  *        and the interrupt controller and enables cpu interrupts
  */
 void system_interrupt_init(void);
 
-static inline void INTC_set_priority(uint32_t int_num, uint32_t priority) {
+static inline void INTC_set_priority(uint32_t int_num, uint32_t priority)
+{
     /* Always route through IRQ (bit 0 set to 0)*/
     /* bits 2-7 mask the priority*/
-    REG32_write(INTC_BASE_ADDR, INTC_ILEn_OFF(int_num), (priority<<2)&0b111111100);
+    REG32_write(
+        INTC_BASE_ADDR, INTC_ILEn_OFF(int_num), (priority << 2) & 0b111111100);
 }
 
-static inline uint16_t INTC_active_irq_num(void) {
-    return (uint16_t)(REG32_read(INTC_BASE_ADDR, INTC_SIR_IRQ_OFF) & 0x7F);
+static inline uint16_t INTC_active_irq_num(void)
+{
+    return (uint16_t) (REG32_read(INTC_BASE_ADDR, INTC_SIR_IRQ_OFF) & 0x7F);
 }
 
 void dump_undef_info(uint32_t cpsr, uint32_t fault_addr);
 
- #endif /* __INTERRUPT_H    */
+#endif /* __INTERRUPT_H    */

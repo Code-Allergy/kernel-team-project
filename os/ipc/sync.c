@@ -1,1 +1,1 @@
-// Synchronization primitives (mutex, semaphores)
+/* Synchronization primitives (mutex, semaphores) */

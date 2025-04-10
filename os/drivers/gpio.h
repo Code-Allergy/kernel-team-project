@@ -1,7 +1,7 @@
 #ifndef GPIO_H
 #define GPIO_H
 
-// GPIO Base addresses
+/* GPIO Base addresses */
 enum GpioIOBase
 {
     GPIO0_BASE = 0x44e07000,
@@ -9,26 +9,23 @@ enum GpioIOBase
     GPIO2_BASE = 0x481ac000
 };
 
-#define LED_PINS    (0xF << 21)
-#define LED0        (0x1 << 21)
-#define LED1        (0x2 << 21)
-#define LED2        (0x4 << 21)
-#define LED3        (0x8 << 21)
+#define LED_PINS (0xF << 21)
+#define LED0     (0x1 << 21)
+#define LED1     (0x2 << 21)
+#define LED2     (0x4 << 21)
+#define LED3     (0x8 << 21)
 
-#define DRIVER_ENA  (0x1 << 6)
-#define DRIVER_ENB  (0x1 << 7)
-#define DRIVER_IN1  (0x1 << 2)
-#define DRIVER_IN2  (0x1 << 3)
-#define DRIVER_IN3  (0x1 << 4)
-#define DRIVER_IN4  (0x1 << 5)
-#define DRIVER_PINS ( DRIVER_ENA \
-                    | DRIVER_ENB \
-                    | DRIVER_IN1 \
-                    | DRIVER_IN2 \
-                    | DRIVER_IN3 \
-                    | DRIVER_IN4 )
+#define DRIVER_ENA (0x1 << 6)
+#define DRIVER_ENB (0x1 << 7)
+#define DRIVER_IN1 (0x1 << 2)
+#define DRIVER_IN2 (0x1 << 3)
+#define DRIVER_IN3 (0x1 << 4)
+#define DRIVER_IN4 (0x1 << 5)
+#define DRIVER_PINS                                                   \
+    (DRIVER_ENA | DRIVER_ENB | DRIVER_IN1 | DRIVER_IN2 | DRIVER_IN3 | \
+     DRIVER_IN4)
 
-// GPIO offsets
+/* GPIO offsets */
 /*----------------------------------------------------
 0h GPIO_REVISION Section 25.4.1.1
 10h GPIO_SYSCONFIG Section 25.4.1.2
@@ -100,7 +97,7 @@ enum GpioPinDirection
 };
 
 void dumb_delay(void);
-void GPIO_init(void); // Only configures GPIO1 for now
+void GPIO_init(void); /*  Only configures GPIO1 for now */
 void GPIO_set(unsigned int gpio_base, unsigned int pins);
 void GPIO_clear(unsigned int gpio_base, unsigned int pins);
 void GpioSetPinMode(const enum GpioIOBase Gpio,

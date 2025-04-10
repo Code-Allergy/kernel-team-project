@@ -22,7 +22,6 @@
 #define TIMER6_BASE 0x48048000
 #define TIMER7_BASE 0x4804A000
 
-
 /* Register offsets*/
 /*
 0h TIDR Identification Register Section 20.1.5.1
@@ -43,29 +42,29 @@
 54h TSICR Timer Synchronous Interface Control Register Section 20.1.5.16
 58h TCAR2 Timer Capture Register Section 20.1.5.17
 */
-#define TIDR_OFF            0x00
-#define TIOCP_CFG_OFF       0x10
-#define IRQ_EOI_OFF         0x20
-#define IRQSTATUS_RAW_OFF   0x24
-#define IRQSTATUS_OFF       0x28
-#define IRQENABLE_SET_OFF   0x2C
-#define IRQENABLE_CLR_OFF   0x30
-#define IRQWAKEEN_OFF       0x34
-#define TCLR_OFF            0x38
-#define TCRR_OFF            0x3C
-#define TLDR_OFF            0x40
-#define TTGR_OFF            0x44
-#define TWPS_OFF            0x48
-#define TMAR_OFF            0x4C
-#define TCAR1_OFF           0x50
-#define TSICR_OFF           0x54
-#define TCAR2_OFF           0x58
+#define TIDR_OFF          0x00
+#define TIOCP_CFG_OFF     0x10
+#define IRQ_EOI_OFF       0x20
+#define IRQSTATUS_RAW_OFF 0x24
+#define IRQSTATUS_OFF     0x28
+#define IRQENABLE_SET_OFF 0x2C
+#define IRQENABLE_CLR_OFF 0x30
+#define IRQWAKEEN_OFF     0x34
+#define TCLR_OFF          0x38
+#define TCRR_OFF          0x3C
+#define TLDR_OFF          0x40
+#define TTGR_OFF          0x44
+#define TWPS_OFF          0x48
+#define TMAR_OFF          0x4C
+#define TCAR1_OFF         0x50
+#define TSICR_OFF         0x54
+#define TCAR2_OFF         0x58
 
 /*
 We are only supporting timers 2 to 7 for now as they have the same setup process
 and are easier to configure.
-All timers are set up in 32-bit mode, periodic mode, with overflow interrupts enabled
-for tick generation.
+All timers are set up in 32-bit mode, periodic mode, with overflow interrupts
+enabled for tick generation.
 */
 
 /**
@@ -74,16 +73,19 @@ for tick generation.
  * This function sets up a timer with the given index and configures it to
  * trigger at intervals specified by `timer_tick_ms`. When the timer ticks,
  * the provided callback function `timer_tick_func` will be called.
- * 
+ *
  * NOTE: This function only supports timers 2 to 7 currently and will return
  *        false if passed an index not in that range.
  *
  * @param timer_index The index of the timer to initialize.
- * @param timer_tick_ms The interval in milliseconds at which the timer should tick.
+ * @param timer_tick_ms The interval in milliseconds at which the timer should
+ * tick.
  * @param timer_tick_func The callback function to be called on each timer tick.
  * @return true if the timer was successfully initialized, false otherwise.
  */
-bool timer_init(uint16_t timer_index, uint32_t timer_tick_ms, void (*timer_tick_func)(void));
+bool timer_init(uint16_t timer_index,
+                uint32_t timer_tick_ms,
+                void (*timer_tick_func)(void));
 
 /**
  * @brief Starts the timer with the specified index.
@@ -92,7 +94,7 @@ bool timer_init(uint16_t timer_index, uint32_t timer_tick_ms, void (*timer_tick_
  * counting and will trigger the callback function at the interval specified
  * during initialization.
  * The timer must be initialized with timer_init() before it can be started.
- * 
+ *
  * NOTE: This function only supports timers 2 to 7 currently and will return
  *        false if passed an index not in that range.
  *
@@ -106,7 +108,7 @@ bool timer_start(uint16_t timer_index);
  *
  * This function stops the timer with the given index. The timer will stop
  * counting and will no longer trigger the callback function.
- * 
+ *
  * NOTE: This function only supports timers 2 to 7 currently and will return
  *        false if passed an index not in that range.
  *

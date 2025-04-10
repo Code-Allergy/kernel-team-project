@@ -1,1 +1,1 @@
-// Minimal standard library
+/* Minimal standard library */

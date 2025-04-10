@@ -1,1 +1,1 @@
-// Memory functions (malloc, memset, memcpy)
+/* Memory functions (malloc, memset, memcpy) */

@@ -1,1 +1,1 @@
-// kernel main loop
+/* kernel main loop */

@@ -1,1 +1,1 @@
-// Standard I/O functions
+/* Standard I/O functions */

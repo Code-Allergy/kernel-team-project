@@ -1,5 +1,3 @@
 
 
-void setup_memory(void) {
-    return 0;
-}
+void setup_memory(void) { return 0; }

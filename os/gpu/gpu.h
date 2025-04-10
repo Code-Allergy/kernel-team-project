@@ -1,1 +1,1 @@
-// GPU API (if implemented)
+/* GPU API (if implemented) */
