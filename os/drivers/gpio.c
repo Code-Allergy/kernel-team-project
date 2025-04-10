@@ -18,7 +18,9 @@ void GPIO_init(void)
     /* REG32_write_masked(GPIO1_BASE, GPIO_OE_OFF, 0xF << 21, 0x0); */
 }
 
-void GpioSetPinMode(const enum GpioIOBase Gpio, const unsigned int PinMask, const enum GpioPinDirection Dir)
+void GpioSetPinMode(const enum GpioIOBase Gpio,
+                    const unsigned int PinMask,
+                    const enum GpioPinDirection Dir)
 {
     REG32_write_masked(Gpio, GPIO_OE_OFF, PinMask, Dir);
 }
@@ -33,7 +35,8 @@ void GPIO_clear(unsigned int gpio_base, unsigned int pins)
     REG32_write(gpio_base, GPIO_CLEARDATAOUT_OFF, pins);
 }
 
-int GPIO_get(unsigned int gpio_base, unsigned int pin) {
-	int bank =  REG32_read(gpio_base, GPIO_DATAIN_OFF);
-	return (bank >> pin) & 0x1;
+int GPIO_get(unsigned int gpio_base, unsigned int pin)
+{
+    int bank = REG32_read(gpio_base, GPIO_DATAIN_OFF);
+    return (bank >> pin) & 0x1;
 }

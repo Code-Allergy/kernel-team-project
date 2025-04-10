@@ -28,9 +28,11 @@ static inline void gpio_test()
     /*     0,         // UART index (0 = UART0, 1 = UART1, etc.) */
     /*     115200,    // Baud rate for communication */
     /*     1,         // Stop bit enable (1 = enabled, 0 = disabled) */
-    /*     0,         // Number of stop bits (0 = 1 stop bit, 1 = 1.5/2 stop bits) */
+    /*     0,         // Number of stop bits (0 = 1 stop bit, 1 = 1.5/2 stop
+     * bits) */
     /*     0,         // Parity enable (1 = enabled, 0 = disabled) */
-    /*     0,         // Parity type (0 = even, 1 = odd; ignored if parity is disabled) */
+    /*     0,         // Parity type (0 = even, 1 = odd; ignored if parity is
+     * disabled) */
     /*     8          // Character length */
     /* ); */
 

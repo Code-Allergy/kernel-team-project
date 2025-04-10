@@ -12,7 +12,6 @@
 //     TIMER7_BASE
 // };
 
-
 // void timer_init(uint32_t idx, uint32_t interval) {
 //     // clock_timer.global_ticks = 0;
 //     // clock_timer.initialized = 1;

@@ -205,6 +205,8 @@ unsigned int uart_getchar(unsigned short uart_index, char* c);
  * @return Returns the number of characters read, or a non-zero error code on
  * failure.
  */
-unsigned int uart_readline(unsigned short uart_index, char* buffer, unsigned int buffer_size);
+unsigned int uart_readline(unsigned short uart_index,
+                           char* buffer,
+                           unsigned int buffer_size);
 
 #endif
