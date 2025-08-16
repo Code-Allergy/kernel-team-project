@@ -11,7 +11,7 @@
 
 ## 2. Build `sd.img`
 ```bash
-sudo make
+make
 ```
 
 This will generate `build/sd.img`.  
@@ -25,7 +25,7 @@ Then insert the SD card into the BeagleBone Black and boot.
 
 ## 3. Build and Flash to SD Card (Preferred)
 ```bash
-sudo make flash DEV=/path/to/sdcard
+make flash DEV=/path/to/sdcard
 ```
 
 > Replace `/path/to/sdcard` with the correct device (e.g., `/dev/sdb`).  
